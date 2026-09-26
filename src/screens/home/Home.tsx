@@ -1,72 +1,236 @@
+import {
+  ArrowRight,
+  ArrowsLeftRight,
+  Check,
+  Fire,
+  Lightning,
+  Notebook,
+  Play,
+  Sparkle,
+  Target,
+  Trophy,
+} from '@phosphor-icons/react';
 import { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAppData } from '../../contexts/AppDataContext';
-import PatternBackground from '../../components/PatternBackground';
-import ErrosFab from '../../components/ErrosFab';
+import { useAppState } from '../../state/AppStateContext';
+import Brand from '../../components/Brand';
+import { ErrorState, LoadingCards } from '../../components/Feedback';
 import TrilhaPath from './TrilhaPath';
 import TrilhasSheet from './TrilhasSheet';
 
-export default function Home() {
-  const { usuario, activeTrilha, dailyDone, errosCount } = useAppData();
-  const [sheet, setSheet] = useState<'none' | 'trilhas'>('none');
+export function PathIllustration() {
+  return (
+    <div className="hero-path" aria-hidden="true">
+      <span className="hero-step one">
+        <Check size={23} weight="bold" />
+      </span>
+      <span className="hero-step two">
+        <Play size={28} weight="fill" />
+      </span>
+      <span className="hero-step three">
+        <Trophy size={25} weight="duotone" />
+      </span>
+      <span className="hero-spark">✦</span>
+    </div>
+  );
+}
 
-  const dailyGoal = usuario?.meta_diaria ?? 20;
+export default function Home() {
+  const { usuario, activeTrilha, modules, dailyDone, errosCount, loading, loadError, retry } = useAppData();
+  const { dispatch } = useAppState();
+  const navigate = useNavigate();
+  const [sheetOpen, setSheetOpen] = useState(false);
+  const dailyGoal = Math.max(1, usuario?.meta_diaria ?? 20);
   const dailyRatio = Math.min(1, dailyDone / dailyGoal);
+  const questionModules = modules.filter((m) => m.tipo === 'questoes');
+  const done = questionModules.filter((m) => m.status === 'done').length;
+  const current = modules.find((m) => m.status === 'current');
+  const completed = questionModules.length > 0 && done === questionModules.length;
+  const firstName = usuario?.nome?.trim().split(' ')[0] || 'estudante';
+  function start() {
+    dispatch({ type: 'RESET_SESSION' });
+    navigate('/questao');
+  }
 
   return (
-    <>
-      <div className="z-[3] bg-surface p-[16px_18px_14px]" style={{ borderBottom: '1px solid #EDF0F8', boxShadow: '0 6px 20px -14px rgba(11,31,77,.3)' }}>
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2.5">
-            <div className="flex h-[34px] w-[34px] items-center justify-center rounded-[11px] bg-blue">
-              <span className="font-display text-[18px] font-extrabold text-yellow">F</span>
-            </div>
-            <div className="font-display text-[17px] font-extrabold text-ink">Foco</div>
-          </div>
-          <div className="flex gap-2">
-            <div className="flex items-center gap-1.5 rounded-[11px] border-[1.5px] border-yellow-border bg-yellow-tint px-2.5 py-1.5">
-              <span className="h-2 w-2 rounded-full bg-yellow-deep" />
-              <span className="font-sans text-[13px] font-extrabold text-yellow-text">{usuario?.streak ?? 0}</span>
-            </div>
-            <div className="flex items-center gap-1.5 rounded-[11px] border-[1.5px] border-blue-border bg-blue-tint px-2.5 py-1.5">
-              <span className="font-sans text-[11px] font-bold text-blue">XP</span>
-              <span className="font-sans text-[13px] font-extrabold text-blue">{usuario?.xp ?? 0}</span>
-            </div>
-          </div>
+    <div className="workspace-scroll home-workspace">
+      <div className="workspace-content">
+        <div className="mobile-brand">
+          <Brand />
+          <Link to="/perfil" className="avatar" aria-label="Abrir meu perfil">
+            {firstName[0].toUpperCase()}
+          </Link>
         </div>
-
-        <div
-          onClick={() => setSheet('trilhas')}
-          className="mt-3.5 cursor-pointer rounded-[18px] p-[14px_16px]"
-          style={{ background: 'linear-gradient(100deg,#1557E6,#2f6bf0)', boxShadow: '0 10px 24px -12px rgba(21,87,230,.6)' }}
-        >
-          <div className="flex items-center gap-1.5">
-            <span className="font-sans text-[11px] font-bold tracking-[0.4px] text-[#bcd0fb]">TRILHA ATUAL</span>
-            <span className="rounded-md bg-yellow px-1.5 py-0.5 font-sans text-[10px] font-extrabold text-ink">trocar ›</span>
+        <header className="page-heading">
+          <div>
+            <span className="eyebrow">UM POUCO TODO DIA, MAIS LONGE SEMPRE</span>
+            <h1>
+              Bom te ver, {firstName}
+              <span className="text-blue">.</span>
+            </h1>
+            <p>Vamos transformar constância em conquista.</p>
           </div>
-          <div className="mt-0.5 font-sans text-[16px] font-extrabold text-white">{activeTrilha?.nome ?? '—'}</div>
-          <div className="mt-0.5 truncate font-sans text-[12px] font-semibold text-[#c9d7fb]">{activeTrilha?.descricao ?? ''}</div>
-        </div>
-
-        <div className="mt-3 flex items-center gap-2.5">
-          <div className="h-[9px] flex-1 overflow-hidden rounded-md bg-border2">
-            <div
-              className="h-full rounded-md"
-              style={{ width: `${Math.round(dailyRatio * 100)}%`, background: 'linear-gradient(90deg,#FFCB2D,#F5B301)' }}
-            />
+          <div className="header-meta">
+            <span>{new Date().toLocaleDateString('pt-BR', { day: 'numeric', month: 'long' })}</span>
+            <Link to="/perfil" className="avatar" aria-label="Abrir meu perfil">
+              {firstName[0].toUpperCase()}
+            </Link>
           </div>
-          <div className="font-sans text-[12px] font-extrabold text-ink">
-            Meta {dailyDone}/{dailyGoal}
-          </div>
-        </div>
+        </header>
+        {loading ? (
+          <LoadingCards />
+        ) : loadError ? (
+          <ErrorState message={loadError} retry={retry} />
+        ) : (
+          <>
+            <section className="study-hero" aria-label="Continuar os estudos">
+              <div className="hero-copy">
+                <span className="hero-kicker">
+                  <Sparkle size={14} weight="fill" /> SUA TRILHA ATUAL
+                </span>
+                <h2>{activeTrilha?.nome || 'Sua jornada começa aqui.'}</h2>
+                <p>
+                  {current ? (
+                    <>
+                      Próxima etapa: <strong>{current.titulo}</strong>.
+                    </>
+                  ) : completed ? (
+                    'Trilha concluída! Cada passo fez a diferença. Vamos revisar?'
+                  ) : (
+                    'Escolha uma trilha e comece a construir seu ritmo de estudos.'
+                  )}
+                </p>
+                {current ? (
+                  <button className="button button-yellow" onClick={start}>
+                    {done ? 'Continuar estudando' : 'Começar a estudar'}
+                    <ArrowRight size={18} weight="bold" />
+                  </button>
+                ) : completed ? (
+                  <Link className="button button-yellow" to="/caderno-de-erros">
+                    Revisar meus erros
+                    <ArrowRight size={18} />
+                  </Link>
+                ) : (
+                  <button className="button button-yellow" onClick={() => setSheetOpen(true)}>
+                    Explorar trilhas
+                    <ArrowRight size={18} />
+                  </button>
+                )}
+              </div>
+              <PathIllustration />
+            </section>
+            <div className="metrics-row">
+              <div className="metric">
+                <span className="metric-icon yellow">
+                  <Fire size={23} weight="duotone" />
+                </span>
+                <div>
+                  <strong>
+                    {usuario?.streak ?? 0}
+                    <span className="metric-unit"> dias</span>
+                  </strong>
+                  <small>de constância</small>
+                </div>
+              </div>
+              <div className="metric">
+                <span className="metric-icon">
+                  <Lightning size={23} weight="duotone" />
+                </span>
+                <div>
+                  <strong>{(usuario?.xp ?? 0).toLocaleString('pt-BR')}</strong>
+                  <small>XP conquistados</small>
+                </div>
+              </div>
+              <div className="metric">
+                <span className="metric-icon green">
+                  <Target size={23} weight="duotone" />
+                </span>
+                <div>
+                  <strong>
+                    {dailyDone}
+                    <span className="metric-unit">/{dailyGoal}</span>
+                  </strong>
+                  <small>questões hoje</small>
+                </div>
+              </div>
+            </div>
+            <div className="home-columns">
+              <section>
+                <div className="section-heading">
+                  <div>
+                    <h2>Sua trilha de estudos</h2>
+                    <p>{activeTrilha?.nome || 'Escolha uma trilha para começar'}</p>
+                  </div>
+                  <button className="button button-text" onClick={() => setSheetOpen(true)}>
+                    <ArrowsLeftRight size={16} />
+                    Trocar trilha
+                  </button>
+                </div>
+                {questionModules.length > 0 && (
+                  <div className="trail-progress">
+                    <span>
+                      {done} de {questionModules.length} etapas concluídas
+                    </span>
+                    <strong>{Math.round((done / questionModules.length) * 100)}%</strong>
+                    <div className="progress-track">
+                      <span style={{ width: `${(done / questionModules.length) * 100}%` }} />
+                    </div>
+                  </div>
+                )}
+                <TrilhaPath />
+              </section>
+              <aside className="study-aside">
+                <section className="panel">
+                  <div className="section-heading">
+                    <h2>Sua meta de hoje</h2>
+                    <Target size={19} className="text-blue" />
+                  </div>
+                  <div className="goal-ring" style={{ background: `conic-gradient(#1557e6 ${dailyRatio * 360}deg, #eef3ff 0)` }}>
+                    <div>
+                      <strong>{Math.round(dailyRatio * 100)}%</strong>
+                      <small>da meta diária</small>
+                    </div>
+                  </div>
+                  <p className="goal-copy">
+                    {dailyDone >= dailyGoal ? (
+                      <>
+                        <strong>Meta alcançada!</strong>
+                        <br />
+                        Seu compromisso de hoje está em dia.
+                      </>
+                    ) : (
+                      <>
+                        <strong>Faltam {dailyGoal - dailyDone} questões.</strong>
+                        <br />
+                        Um pouco de foco faz a diferença.
+                      </>
+                    )}
+                  </p>
+                </section>
+                <section className="panel review-panel">
+                  <Notebook size={26} weight="duotone" />
+                  <h2>Errar também é aprender.</h2>
+                  <p>
+                    {errosCount > 0 ? (
+                      <>
+                        Você tem <strong>{errosCount} questões</strong> para revisar nesta trilha.
+                      </>
+                    ) : (
+                      'As questões que precisam de reforço ficam no seu caderno de erros.'
+                    )}
+                  </p>
+                  <Link to="/caderno-de-erros" className="button button-text">
+                    Abrir meu caderno
+                    <ArrowRight size={16} />
+                  </Link>
+                </section>
+              </aside>
+            </div>
+          </>
+        )}
+        {sheetOpen && <TrilhasSheet onClose={() => setSheetOpen(false)} />}
       </div>
-
-      <PatternBackground scrollClassName="overflow-x-hidden p-[26px_18px]">
-        <TrilhaPath />
-      </PatternBackground>
-
-      <ErrosFab count={errosCount} />
-
-      {sheet === 'trilhas' && <TrilhasSheet onClose={() => setSheet('none')} />}
-    </>
+    </div>
   );
 }

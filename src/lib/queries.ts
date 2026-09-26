@@ -78,7 +78,12 @@ function mapQuestaoRow(row: ModuloQuestaoRow): Questao {
     tipo: row.tipo ?? undefined,
     anulada: row.anulada,
     desatualizada: row.desatualizada,
-    alternativas: (row.alternativas ?? []).map((a: Alternativa) => ({ letra: a.letra, texto: a.texto, html: a.html ?? undefined, correta: a.correta })),
+    alternativas: (row.alternativas ?? []).map((a: Alternativa) => ({
+      letra: a.letra,
+      texto: a.texto,
+      html: a.html ?? undefined,
+      correta: a.correta,
+    })),
   };
 }
 
@@ -115,7 +120,11 @@ export async function askTutorIA(input: {
 
 export async function recordResposta(usuarioId: string, questaoId: string, acertou: boolean) {
   const { error } = await supabase.from('progresso_questoes').insert({ usuario_id: usuarioId, questao_id: questaoId, acertou });
+  // A retomada de um módulo pode repetir uma questão já registrada. Não
+  // duplicar a resposta nem conceder XP novamente nesse caso.
+  if (error?.code === '23505') return false;
   if (error) throw error;
+  return true;
 }
 
 // ---- Caderno de erros (por trilha, com "responder de novo") ----
@@ -137,7 +146,10 @@ export async function fetchQuestoesErradas(trilhaId: number): Promise<Questao[]>
 export async function atualizarRespostaErro(usuarioId: string, questaoId: string, acertou: boolean) {
   const { error } = await supabase
     .from('progresso_questoes')
-    .upsert({ usuario_id: usuarioId, questao_id: questaoId, acertou, respondido_em: new Date().toISOString() }, { onConflict: 'usuario_id,questao_id' });
+    .upsert(
+      { usuario_id: usuarioId, questao_id: questaoId, acertou, respondido_em: new Date().toISOString() },
+      { onConflict: 'usuario_id,questao_id' },
+    );
   if (error) throw error;
 }
 
@@ -239,7 +251,7 @@ export async function fetchReferrals(usuarioId: string): Promise<ReferralRow[]> 
 
   return rows.map((r) => ({
     id: r.id,
-    indicado_nome: r.indicado_user_id ? nomes.get(r.indicado_user_id) ?? null : null,
+    indicado_nome: r.indicado_user_id ? (nomes.get(r.indicado_user_id) ?? null) : null,
     status: r.status,
     criado_em: r.criado_em,
   }));

@@ -1,113 +1,183 @@
+import { ArrowRight, ArrowUpRight, CheckCircle, ListChecks, Plus, Stack, Users, WarningCircle } from '@phosphor-icons/react';
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { fetchDashboardStats, fetchDashboardTrilhas, type DashboardStats, type DashboardTrilha } from '../lib/adminQueries';
+import { ErrorState, LoadingCards } from '../components/Feedback';
 import AdminLayout from './AdminLayout';
-
-function StatCard({ label, value, sub, warn }: { label: string; value: string | number; sub?: string; warn?: boolean }) {
-  return (
-    <div className={`rounded-xl border bg-white p-4 ${warn ? 'border-amber-300' : 'border-gray-200'}`}>
-      <div className="text-xs font-bold uppercase tracking-wide text-gray-400">{label}</div>
-      <div className={`mt-1 font-display text-2xl font-extrabold ${warn ? 'text-amber-600' : 'text-gray-900'}`}>{value}</div>
-      {sub && <div className="mt-0.5 text-xs font-semibold text-gray-400">{sub}</div>}
-    </div>
-  );
-}
 
 export default function AdminDashboardPage() {
   const [stats, setStats] = useState<DashboardStats | null>(null);
-  const [trilhas, setTrilhas] = useState<DashboardTrilha[] | null>(null);
-
+  const [trilhas, setTrilhas] = useState<DashboardTrilha[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [tick, setTick] = useState(0);
   useEffect(() => {
-    fetchDashboardStats().then(setStats);
-    fetchDashboardTrilhas().then(setTrilhas);
-  }, []);
-
-  const pendentes = stats ? stats.total_questoes - stats.questoes_revisadas : 0;
-  const pctRevisado = stats && stats.total_questoes > 0 ? Math.round((stats.questoes_revisadas / stats.total_questoes) * 100) : 0;
-  const isFullAdmin = stats?.total_alunos != null;
-
+    let cancelled = false;
+    setLoading(true);
+    setError('');
+    Promise.all([fetchDashboardStats(), fetchDashboardTrilhas()])
+      .then(([s, t]) => {
+        if (!cancelled) {
+          setStats(s);
+          setTrilhas(t);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setError('Verifique a conexão e tente novamente.');
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [tick]);
+  const pending = Math.max(0, (stats?.total_questoes ?? 0) - (stats?.questoes_revisadas ?? 0));
+  const reviewedPct = stats?.total_questoes ? Math.round((stats.questoes_revisadas / stats.total_questoes) * 100) : 0;
   return (
     <AdminLayout>
-      <h1 className="text-xl font-extrabold text-gray-900">Visão geral</h1>
-      <p className="mt-1 text-sm text-gray-500">O estado da curadoria e do app, num lugar só.</p>
-
-      <div className="mt-5 grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <StatCard label="Questões no banco" value={stats?.total_questoes ?? '—'} />
-        <StatCard
-          label="Revisadas"
-          value={stats ? `${stats.questoes_revisadas} (${pctRevisado}%)` : '—'}
-          sub={stats ? `${pendentes} pendentes de revisão` : undefined}
-          warn={!!stats && pendentes > 0}
-        />
-        {isFullAdmin && (
-          <>
-            <StatCard label="Alunos" value={stats?.total_alunos ?? '—'} sub={`${stats?.alunos_ativos_hoje ?? 0} ativos hoje`} />
-            <StatCard
-              label="Erros do app (7 dias)"
-              value={stats?.erros_7d ?? '—'}
-              sub={`Tutor IA hoje: ${stats?.tutor_usos_hoje ?? 0} perguntas`}
-              warn={(stats?.erros_7d ?? 0) > 0}
-            />
-          </>
-        )}
-      </div>
-
-      {pendentes > 0 && (
-        <Link
-          to="/admin/questoes"
-          className="mt-4 block rounded-xl border border-blue-200 bg-blue-50 p-4 text-sm font-bold text-blue-700 hover:bg-blue-100"
-        >
-          {pendentes} questões aguardando revisão — ir para o banco de questões ›
+      <div className="admin-intro">
+        <div>
+          <span className="eyebrow">TUDO PRONTO PARA EVOLUIR</span>
+          <h1>Uma visão de todo o Foco.</h1>
+          <p>Acompanhe o conteúdo, encontre prioridades e cuide da experiência dos alunos.</p>
+        </div>
+        <Link to="/admin/trilhas" className="button button-primary">
+          <Plus size={18} />
+          Gerenciar trilhas
         </Link>
-      )}
-
-      <h2 className="mt-8 text-sm font-extrabold uppercase tracking-wide text-gray-500">Trilhas</h2>
-      <div className="mt-2 overflow-hidden rounded-xl border border-gray-200 bg-white">
-        <table className="w-full text-left text-sm">
-          <thead className="bg-gray-50 text-xs font-bold uppercase text-gray-500">
-            <tr>
-              <th className="px-4 py-3">Trilha</th>
-              <th className="px-4 py-3">Status</th>
-              <th className="px-4 py-3">Módulos</th>
-              <th className="px-4 py-3">Questões curadas</th>
-              <th className="px-4 py-3" />
-            </tr>
-          </thead>
-          <tbody>
-            {(trilhas ?? []).map((t) => (
-              <tr key={t.id} className="border-t border-gray-100">
-                <td className="px-4 py-3 font-semibold text-gray-900">{t.nome}</td>
-                <td className="px-4 py-3">
-                  <span className={`rounded-full px-2 py-0.5 text-xs font-bold ${t.ativa ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
-                    {t.ativa ? 'Ativa' : 'Inativa'}
-                  </span>
-                </td>
-                <td className="px-4 py-3 text-gray-600">
-                  {t.modulos}
-                  {t.modulos_sem_questoes > 0 && (
-                    <span className="ml-2 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-bold text-amber-700">
-                      ⚠ {t.modulos_sem_questoes} sem questões
-                    </span>
-                  )}
-                </td>
-                <td className="px-4 py-3 text-gray-600">{t.questoes}</td>
-                <td className="px-4 py-3 text-right">
-                  <Link to={`/admin/trilhas/${t.id}`} className="font-bold text-blue-600 hover:underline">
-                    Abrir ›
-                  </Link>
-                </td>
-              </tr>
-            ))}
-            {trilhas?.length === 0 && (
-              <tr>
-                <td colSpan={5} className="px-4 py-6 text-center text-gray-400">
-                  Nenhuma trilha ainda.
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
       </div>
+      {loading ? (
+        <LoadingCards />
+      ) : error ? (
+        <ErrorState message={error} retry={() => setTick((t) => t + 1)} />
+      ) : (
+        <>
+          <div className="admin-stats">
+            <div className="admin-stat">
+              <div className="admin-stat-top">
+                Questões no banco
+                <Stack size={20} className="text-blue" />
+              </div>
+              <strong>{stats?.total_questoes.toLocaleString('pt-BR') ?? '—'}</strong>
+              <small>Conteúdo disponível para curadoria</small>
+            </div>
+            <div className="admin-stat">
+              <div className="admin-stat-top">
+                Questões revisadas
+                <CheckCircle size={20} className="text-success" />
+              </div>
+              <strong>{stats?.questoes_revisadas.toLocaleString('pt-BR') ?? '—'}</strong>
+              <small>{reviewedPct}% do banco pronto para usar</small>
+            </div>
+            {stats?.total_alunos != null && (
+              <>
+                <div className="admin-stat">
+                  <div className="admin-stat-top">
+                    Alunos cadastrados
+                    <Users size={20} className="text-blue" />
+                  </div>
+                  <strong>{stats.total_alunos.toLocaleString('pt-BR')}</strong>
+                  <small>{stats.alunos_ativos_hoje ?? 0} ativos hoje</small>
+                </div>
+                <div className="admin-stat">
+                  <div className="admin-stat-top">
+                    Erros nos últimos 7 dias
+                    <WarningCircle size={20} className={stats.erros_7d ? 'text-error' : 'text-success'} />
+                  </div>
+                  <strong>{stats.erros_7d ?? 0}</strong>
+                  <small>
+                    <Link to="/admin/erros" className="text-blue">
+                      Ver saúde do aplicativo →
+                    </Link>
+                  </small>
+                </div>
+              </>
+            )}
+          </div>
+          <section className="admin-focus">
+            <ListChecks size={36} weight="duotone" />
+            <div>
+              <span className="hero-kicker">PRÓXIMO PASSO DA CURADORIA</span>
+              <h2>
+                {pending > 0 ? `${pending.toLocaleString('pt-BR')} questões esperando seu olhar.` : 'Sua revisão está em dia.'}
+              </h2>
+              <p>
+                {pending > 0
+                  ? 'Revise os comentários e deixe mais conteúdo pronto para os alunos.'
+                  : 'Continue organizando os módulos e construindo boas trilhas.'}
+              </p>
+            </div>
+            <Link to={pending > 0 ? '/admin/questoes?status=nao_revisadas' : '/admin/trilhas'} className="button button-yellow">
+              {pending > 0 ? 'Revisar questões' : 'Organizar trilhas'}
+              <ArrowRight size={17} />
+            </Link>
+          </section>
+          <div className="section-heading">
+            <div>
+              <h2>Trilhas em um olhar</h2>
+              <p>Publicação, módulos e conteúdo selecionado.</p>
+            </div>
+            <Link to="/admin/trilhas" className="button button-text">
+              Ver todas
+              <ArrowUpRight size={16} />
+            </Link>
+          </div>
+          <div className="admin-table-wrap mobile-card-table">
+            <table>
+              <thead>
+                <tr>
+                  <th>Trilha</th>
+                  <th>Status</th>
+                  <th>Módulos</th>
+                  <th>Questões</th>
+                  <th>
+                    <span className="sr-only">Ações</span>
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {trilhas.map((t) => (
+                  <tr key={t.id}>
+                    <td data-label="Trilha" className="font-bold">
+                      {t.nome}
+                    </td>
+                    <td data-label="Status">
+                      <span className={`pill ${t.ativa ? 'green' : 'neutral'}`}>{t.ativa ? 'Publicada' : 'Rascunho'}</span>
+                    </td>
+                    <td data-label="Módulos">
+                      {t.modulos}
+                      {t.modulos_sem_questoes > 0 && (
+                        <span className="pill amber ml-2">{t.modulos_sem_questoes} sem questões</span>
+                      )}
+                    </td>
+                    <td data-label="Questões">{t.questoes}</td>
+                    <td>
+                      <Link to={`/admin/trilhas/${t.id}`} className="text-blue font-bold">
+                        Gerenciar →
+                      </Link>
+                    </td>
+                  </tr>
+                ))}
+                {!trilhas.length && (
+                  <tr>
+                    <td colSpan={5}>
+                      <div className="empty-state">
+                        <Stack size={28} />
+                        <h3>Sua primeira trilha começa aqui</h3>
+                        <p>Organize o conteúdo em módulos e publique quando estiver pronta.</p>
+                        <Link to="/admin/trilhas" className="button button-primary mt-4">
+                          Criar uma trilha
+                        </Link>
+                      </div>
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </>
+      )}
     </AdminLayout>
   );
 }

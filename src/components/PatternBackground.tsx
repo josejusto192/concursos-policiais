@@ -11,11 +11,8 @@ interface PatternBackgroundProps {
 export default function PatternBackground({ children, scrollClassName = '' }: PatternBackgroundProps) {
   return (
     <div className="relative flex-1 overflow-hidden">
-      <div
-        className="absolute inset-0"
-        style={{ backgroundImage: "url('/assets/trilha-pattern.png')", backgroundSize: 'cover', backgroundPosition: 'top center', backgroundRepeat: 'no-repeat' }}
-      />
-      <div className={`scr relative h-full overflow-y-auto ${scrollClassName}`}>{children}</div>
+      <div className="absolute inset-0 pattern-layer" aria-hidden="true" />
+      <div className={`pattern-scroll relative h-full overflow-y-auto ${scrollClassName}`}>{children}</div>
     </div>
   );
 }

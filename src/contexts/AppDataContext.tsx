@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react';
+import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from 'react';
 import { useUsuario, type Usuario } from '../hooks/useUsuario';
 import {
   fetchContagemErros,
@@ -21,7 +21,16 @@ function computeModules(modulos: ModuloRow[], progresso: Map<number, { acertos: 
     if (m.tipo === 'aula') {
       // Aula é sempre opcional: não entra na sequência obrigatória de questões
       // (não bloqueia nem é bloqueada pelo restante da trilha).
-      return { id: m.id, titulo: m.titulo, ordem: m.ordem, tipo: m.tipo, video_url: m.video_url, status: 'aula' as ModuloStatus, acertos: 0, total: 0 };
+      return {
+        id: m.id,
+        titulo: m.titulo,
+        ordem: m.ordem,
+        tipo: m.tipo,
+        video_url: m.video_url,
+        status: 'aula' as ModuloStatus,
+        acertos: 0,
+        total: 0,
+      };
     }
     const prog = progresso.get(m.id);
     let status: ModuloStatus;
@@ -76,6 +85,8 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
   const [loadingTrilhas, setLoadingTrilhas] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [retryTick, setRetryTick] = useState(0);
+  const [modulesFor, setModulesFor] = useState('');
+  const moduleRequest = useRef(0);
 
   useEffect(() => {
     setLoadingTrilhas(true);
@@ -91,21 +102,28 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       .finally(() => setLoadingTrilhas(false));
   }, [retryTick]);
 
-  const activeTrilha = trilhas.find((t) => t.id === usuario?.trilha_ativa_id) ?? trilhas.find((t) => t.ativa) ?? trilhas[0] ?? null;
+  const activeTrilha =
+    trilhas.find((t) => t.id === usuario?.trilha_ativa_id) ?? trilhas.find((t) => t.ativa) ?? trilhas[0] ?? null;
 
   const refreshModules = useCallback(async () => {
     if (!usuario || !activeTrilha) return;
+    const request = ++moduleRequest.current;
+    const scope = `${usuario.id}:${activeTrilha.id}`;
     try {
       const modulos = await fetchModulos(activeTrilha.id);
       const progresso = await fetchProgressoModulos(
         usuario.id,
-        modulos.map((m) => m.id)
+        modulos.map((m) => m.id),
       );
+      if (request !== moduleRequest.current) return;
       setModules(computeModules(modulos, progresso));
       setLoadError(null);
     } catch (err) {
+      if (request !== moduleRequest.current) return;
       logClientError(err, 'refreshModules');
       setLoadError(LOAD_ERROR_MESSAGE);
+    } finally {
+      if (request === moduleRequest.current) setModulesFor(scope);
     }
   }, [usuario, activeTrilha]);
 
@@ -143,7 +161,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     async (id: number) => {
       await updateUsuario({ trilha_ativa_id: id });
     },
-    [updateUsuario]
+    [updateUsuario],
   );
 
   const retry = useCallback(() => setRetryTick((t) => t + 1), []);
@@ -151,7 +169,8 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
   return (
     <AppDataContext.Provider
       value={{
-        loading: loadingUsuario || loadingTrilhas,
+        loading:
+          loadingUsuario || loadingTrilhas || !!(usuario && activeTrilha && modulesFor !== `${usuario.id}:${activeTrilha.id}`),
         loadError,
         retry,
         usuario,

@@ -1,4 +1,4 @@
-import { Play } from '@phosphor-icons/react';
+import { Check, LockSimple, Play, Path, Trophy } from '@phosphor-icons/react';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAppData } from '../../contexts/AppDataContext';
@@ -6,127 +6,107 @@ import { useAppState } from '../../state/AppStateContext';
 import type { Modulo } from '../../data/types';
 import VideoSheet from '../../components/sheets/VideoSheet';
 
-const AMP = 34;
-const CELL_H = 116;
-
-function offsetX(i: number) {
-  return Math.round(Math.sin((i * Math.PI) / 2) * AMP);
-}
+const STEP_HEIGHT = 170;
+const centerX = (index: number) => 160 + Math.sin((index * Math.PI) / 2) * 66;
 
 export default function TrilhaPath() {
-  const { modules, loading, loadError, retry, activeTrilha } = useAppData();
+  const { modules, activeTrilha } = useAppData();
   const { dispatch } = useAppState();
   const navigate = useNavigate();
   const [aula, setAula] = useState<Modulo | null>(null);
-  const secaoNome = activeTrilha?.secao_nome?.trim() || 'SEÇÃO 1';
-
-  function startModule() {
-    dispatch({ type: 'RESET_SESSION' });
-    navigate('/questao');
-  }
-
-  if (loading) return null;
-
-  if (loadError) {
+  if (!modules.length)
     return (
-      <div className="mt-10 flex flex-col items-center gap-3 text-center font-sans text-[13px] font-semibold text-text3">
-        <div>{loadError}</div>
-        <button onClick={retry} className="rounded-xl bg-blue px-4 py-2 font-sans text-[13px] font-extrabold text-white">
-          Tentar de novo
-        </button>
+      <div className="panel empty-state">
+        <Path size={34} />
+        <h3>Novas etapas a caminho</h3>
+        <p>Os módulos desta trilha estão sendo preparados. Você pode escolher outra trilha enquanto isso.</p>
       </div>
     );
-  }
-
-  if (!modules.length) {
-    return (
-      <div className="mt-10 text-center font-sans text-[13px] font-semibold text-text3">
-        Nenhum módulo cadastrado nesta trilha ainda.
-      </div>
-    );
-  }
-
+  const height = modules.length * STEP_HEIGHT;
+  const route = modules
+    .map((_, i) =>
+      i === 0
+        ? `M ${centerX(0)} 48`
+        : `C ${centerX(i - 1)} ${(i - 1) * STEP_HEIGHT + 130}, ${centerX(i)} ${i * STEP_HEIGHT - 35}, ${centerX(i)} ${i * STEP_HEIGHT + 48}`,
+    )
+    .join(' ');
   return (
-    <div>
-      <div className="mb-2 text-center">
-        <div className="inline-block rounded-[20px] border border-border2 bg-surface px-3.5 py-1.5 font-sans text-[11px] font-bold tracking-[1px] text-text3">
-          {secaoNome}
-        </div>
+    <div className="game-map">
+      <div className="map-section-label">
+        <span>{activeTrilha?.secao_nome || 'Sua trilha de conquistas'}</span>
       </div>
-      {modules.map((m, i) => (
-        <ModuleNode key={m.id} m={m} index={i} onStart={startModule} onOpenAula={setAula} />
-      ))}
+      <div className="map-path" style={{ height }}>
+        <svg className="map-line" viewBox={`0 0 320 ${height}`} preserveAspectRatio="none" aria-hidden="true">
+          <path d={route} fill="none" stroke="#d8e2f5" strokeWidth="5" strokeDasharray="3 12" strokeLinecap="round" />
+        </svg>
+        {modules.map((m, index) => {
+          const current = m.status === 'current';
+          const done = m.status === 'done';
+          const video = m.tipo === 'aula';
+          const title = current
+            ? 'Continuar estudando'
+            : video
+              ? 'Assistir aula'
+              : done
+                ? 'Concluído'
+                : 'Conclua a etapa anterior';
+          return (
+            <div
+              key={m.id}
+              className={`map-stop ${m.status}`}
+              style={{ top: index * STEP_HEIGHT, left: `${(centerX(index) / 320) * 100}%` }}
+            >
+              {current && (
+                <span className="map-current-label">
+                  SEU PRÓXIMO PASSO
+                  <span />
+                </span>
+              )}
+              <button
+                className="map-node"
+                disabled={!current && !(video && m.video_url)}
+                aria-label={`${m.titulo}. ${title}`}
+                title={title}
+                onClick={() => {
+                  if (video) setAula(m);
+                  else {
+                    dispatch({ type: 'RESET_SESSION' });
+                    navigate('/questao');
+                  }
+                }}
+              >
+                {done ? (
+                  <Check size={29} weight="bold" />
+                ) : current || video ? (
+                  <Play size={26} weight="fill" />
+                ) : (
+                  <LockSimple size={24} weight="duotone" />
+                )}
+              </button>
+              <div className="map-caption">
+                <h3>{m.titulo}</h3>
+                <p>
+                  {done
+                    ? `${m.acertos}/${m.total} acertos · concluído`
+                    : video
+                      ? 'AULA EXTRA · OPCIONAL'
+                      : current
+                        ? 'Toque para continuar'
+                        : 'Próxima conquista'}
+                </p>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+      <div className="map-finish">
+        <span>
+          <Trophy size={30} weight="duotone" />
+        </span>
+        <strong>Um passo de cada vez.</strong>
+        <p>Sua constância leva você mais longe.</p>
+      </div>
       {aula?.video_url && <VideoSheet titulo={aula.titulo} videoUrl={aula.video_url} onClose={() => setAula(null)} />}
-    </div>
-  );
-}
-
-function ModuleNode({ m, index, onStart, onOpenAula }: { m: Modulo; index: number; onStart: () => void; onOpenAula: (m: Modulo) => void }) {
-  const isCurrent = m.status === 'current';
-  const isDone = m.status === 'done';
-  const isAula = m.tipo === 'aula';
-
-  let bg: string;
-  let glyphColor: string;
-  let shadow: string;
-
-  if (isAula) {
-    bg = '#F3E8FF';
-    glyphColor = '#7C3AED';
-    shadow = '0 5px 0 #DCC7FA';
-  } else if (isDone) {
-    bg = '#1557E6';
-    glyphColor = '#fff';
-    shadow = '0 6px 0 #0E3DAE';
-  } else if (isCurrent) {
-    bg = '#FFCB2D';
-    glyphColor = '#0B1F4D';
-    shadow = '0 6px 0 #E0A800';
-  } else {
-    bg = '#E6EAF5';
-    glyphColor = '#AEB6CC';
-    shadow = '0 5px 0 #D3D9EA';
-  }
-
-  const size = 66;
-  const titleColor = isAula ? '#7C3AED' : isCurrent ? '#1557E6' : isDone ? '#3a4257' : '#9aa4bd';
-  const clickable = isCurrent || isAula;
-
-  function handleClick() {
-    if (isAula) onOpenAula(m);
-    else if (isCurrent) onStart();
-  }
-
-  return (
-    <div
-      className="relative flex justify-center transition-transform duration-300"
-      style={{ height: `${CELL_H}px`, marginTop: isCurrent ? '22px' : 0, transform: `translateX(${offsetX(index)}px)` }}
-    >
-      <div className="relative flex flex-col items-center">
-        {isCurrent && (
-          <div
-            className="absolute -top-[39px] left-1/2 z-[3] animate-float-y-center whitespace-nowrap rounded-[11px] bg-surface px-[15px] py-[7px] font-sans text-[11px] font-extrabold tracking-[0.6px] text-blue"
-            style={{ transform: 'translateX(-50%)', boxShadow: '0 8px 18px -5px rgba(11,31,77,.28)' }}
-          >
-            COMEÇAR
-            <span
-              className="absolute left-1/2 -bottom-[5px] h-2.5 w-2.5 bg-surface"
-              style={{ transform: 'translateX(-50%) rotate(45deg)' }}
-            />
-          </div>
-        )}
-        <div
-          onClick={clickable ? handleClick : undefined}
-          className={`relative z-[1] flex items-center justify-center rounded-full border-4 border-white font-display font-extrabold ${isCurrent ? 'animate-pulse-node cursor-pointer' : isAula ? 'cursor-pointer' : ''}`}
-          style={{ width: `${size}px`, height: `${size}px`, background: bg, color: glyphColor, fontSize: '22px', boxShadow: shadow }}
-        >
-          {isAula ? <Play weight="fill" size={24} /> : isDone ? '✓' : isCurrent ? '▶' : String(index + 1)}
-        </div>
-        <div className="mt-2.5 max-w-[104px] text-center font-sans text-[12px] font-extrabold leading-[1.2]" style={{ color: titleColor }}>
-          {m.titulo}
-        </div>
-        {isAula && <div className="mt-0.5 font-sans text-[10px] font-bold tracking-[0.4px] text-[#B08BE8]">EXTRA · OPCIONAL</div>}
-      </div>
     </div>
   );
 }

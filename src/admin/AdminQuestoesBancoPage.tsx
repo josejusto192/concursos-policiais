@@ -1,5 +1,6 @@
+import { Funnel, MagnifyingGlass, Sparkle, X } from '@phosphor-icons/react';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import type { QuestaoRow } from '../lib/database.types';
 import {
   searchQuestoes,
@@ -10,10 +11,16 @@ import {
   type FiltrosQuestoes,
 } from '../lib/adminQueries';
 import { useDebouncedValue } from '../hooks/useDebouncedValue';
+import { ErrorState, LoadingCards } from '../components/Feedback';
 import AdminLayout from './AdminLayout';
 
-const FILTROS_VAZIOS: FiltrosQuestoes = { bancas: [], disciplinas: [], cargos: [], niveis: [], orgaos: [] };
-
+const EMPTY: FiltrosQuestoes = { bancas: [], disciplinas: [], cargos: [], niveis: [], orgaos: [] };
+const FILTER_KEYS = ['disciplina', 'banca', 'cargo', 'nivel_escolaridade', 'orgao', 'assunto'] as const;
+const STATUS = [
+  { value: 'todas', label: 'Todas as questões' },
+  { value: 'nao_revisadas', label: 'Aguardando revisão' },
+  { value: 'revisadas', label: 'Revisadas' },
+] as const;
 interface BatchState {
   running: boolean;
   done: number;
@@ -21,260 +28,320 @@ interface BatchState {
   falhas: string[];
 }
 
-function formatData(iso: string | null) {
-  return iso ? new Date(iso).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }) : '';
-}
-
 export default function AdminQuestoesBancoPage() {
-  const [filters, setFilters] = useState<QuestaoSearchFilters>({ apenas: 'todas' });
-  const [texto, setTexto] = useState('');
-  const [assunto, setAssunto] = useState('');
+  const [params, setParams] = useSearchParams();
+  const texto = params.get('q') || '';
   const textoDeb = useDebouncedValue(texto);
-  const assuntoDeb = useDebouncedValue(assunto);
-  const [opcoes, setOpcoes] = useState<FiltrosQuestoes>(FILTROS_VAZIOS);
+  const assuntoDeb = useDebouncedValue(params.get('assunto') || '');
+  const status = STATUS.find((s) => s.value === params.get('status'))?.value || 'todas';
+  const pageValue = Number(params.get('page'));
+  const page = Number.isSafeInteger(pageValue) ? Math.max(0, pageValue) : 0;
+  const [showFilters, setShowFilters] = useState(false);
+  const [opcoes, setOpcoes] = useState<FiltrosQuestoes>(EMPTY);
   const [results, setResults] = useState<QuestaoRow[]>([]);
   const [nomes, setNomes] = useState<Map<string, string>>(new Map());
   const [total, setTotal] = useState(0);
-  const [page, setPage] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [optionsError, setOptionsError] = useState(false);
+  const [tick, setTick] = useState(0);
   const [selecionadas, setSelecionadas] = useState<Set<string>>(new Set());
   const [batch, setBatch] = useState<BatchState | null>(null);
   const cancelRef = useRef(false);
-
-  const effectiveFilters = useMemo(
-    () => ({ ...filters, texto: textoDeb.trim() || undefined, assunto: assuntoDeb.trim() || undefined }),
-    [filters, textoDeb, assuntoDeb]
-  );
+  const filtersKey = FILTER_KEYS.filter((k) => k !== 'assunto')
+    .map((k) => params.get(k) || '')
+    .join('\u0000');
+  const filters = useMemo<QuestaoSearchFilters>(() => {
+    const values = filtersKey.split('\u0000');
+    return {
+      disciplina: values[0] || undefined,
+      banca: values[1] || undefined,
+      cargo: values[2] || undefined,
+      nivel_escolaridade: values[3] || undefined,
+      orgao: values[4] || undefined,
+      apenas: status,
+      texto: textoDeb.trim() || undefined,
+      assunto: assuntoDeb.trim() || undefined,
+    };
+  }, [filtersKey, status, textoDeb, assuntoDeb]);
+  const activeFilters = FILTER_KEYS.filter((k) => params.get(k)).length;
 
   useEffect(() => {
-    fetchFiltrosQuestoes().then(setOpcoes);
+    let alive = true;
+    fetchFiltrosQuestoes()
+      .then((v) => {
+        if (alive) setOpcoes(v);
+      })
+      .catch(() => {
+        if (alive) setOptionsError(true);
+      });
+    return () => {
+      alive = false;
+    };
   }, []);
-
   useEffect(() => {
-    setPage(0);
-  }, [effectiveFilters]);
-
-  function refresh() {
-    searchQuestoes(effectiveFilters, page).then((r) => {
-      setResults(r.rows);
-      setTotal(r.total);
-      const ids = r.rows.map((q) => q.revisado_por).filter((id): id is string => !!id);
-      fetchNomesUsuarios(ids).then(setNomes);
-    });
+    let alive = true;
+    setLoading(true);
+    setError('');
+    setSelecionadas(new Set());
+    searchQuestoes(filters, page)
+      .then(async (result) => {
+        if (!alive) return;
+        setResults(result.rows);
+        setTotal(result.total);
+        const ids = result.rows.map((q) => q.revisado_por).filter((id): id is string => !!id);
+        try {
+          const names = await fetchNomesUsuarios(ids);
+          if (alive) setNomes(names);
+        } catch {
+          if (alive) setNomes(new Map());
+        }
+      })
+      .catch(() => {
+        if (alive) setError('Não foi possível buscar as questões. Seus filtros foram mantidos.');
+      })
+      .finally(() => {
+        if (alive) setLoading(false);
+      });
+    return () => {
+      alive = false;
+    };
+  }, [filters, page, tick]);
+  useEffect(
+    () => () => {
+      cancelRef.current = true;
+    },
+    [],
+  );
+  function change(key: string, value: string) {
+    setParams(
+      (previous) => {
+        const next = new URLSearchParams(previous);
+        if (value) next.set(key, value);
+        else next.delete(key);
+        if (key !== 'page') next.delete('page');
+        return next;
+      },
+      { replace: key === 'q' || key === 'assunto' },
+    );
   }
-
-  useEffect(refresh, [effectiveFilters, page]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  function setFiltro<K extends keyof QuestaoSearchFilters>(key: K, value: QuestaoSearchFilters[K]) {
-    setFilters((f) => ({ ...f, [key]: value || undefined }));
-  }
-
-  function toggleSelecionada(id: string) {
-    setSelecionadas((s) => {
-      const next = new Set(s);
+  function toggle(id: string) {
+    setSelecionadas((previous) => {
+      const next = new Set(previous);
       if (next.has(id)) next.delete(id);
       else next.add(id);
       return next;
     });
   }
-
-  function selecionarPagina() {
-    const naoRevisadas = results.filter((q) => !q.revisado).map((q) => q.id);
-    setSelecionadas((s) => {
-      const todasJa = naoRevisadas.every((id) => s.has(id));
-      const next = new Set(s);
-      for (const id of naoRevisadas) {
-        if (todasJa) next.delete(id);
-        else next.add(id);
-      }
-      return next;
-    });
+  function selectPage() {
+    const ids = results.filter((q) => !q.revisado).map((q) => q.id);
+    setSelecionadas((previous) => (ids.every((id) => previous.has(id)) ? new Set() : new Set(ids)));
   }
-
-  async function revisarSelecionadasComIA() {
+  async function reviewBatch() {
+    if (!selecionadas.size || batch?.running) return;
     const ids = [...selecionadas];
-    if (!ids.length || batch?.running) return;
     cancelRef.current = false;
     setBatch({ running: true, done: 0, total: ids.length, falhas: [] });
-    const falhas: string[] = [];
+    const failures: string[] = [];
     for (let i = 0; i < ids.length; i++) {
       if (cancelRef.current) break;
       try {
         await reviewWithAI(ids[i]);
-      } catch (err) {
-        falhas.push(err instanceof Error ? err.message : 'erro');
+      } catch {
+        failures.push('Não foi possível revisar uma das questões.');
       }
-      setBatch({ running: true, done: i + 1, total: ids.length, falhas });
+      setBatch({ running: true, done: i + 1, total: ids.length, falhas: [...failures] });
     }
-    setBatch((b) => (b ? { ...b, running: false } : null));
+    setBatch((previous) => (previous ? { ...previous, running: false } : null));
     setSelecionadas(new Set());
-    refresh();
+    setTick((t) => t + 1);
   }
-
-  const temFiltroAtivo =
-    texto || assunto || filters.disciplina || filters.banca || filters.cargo || filters.nivel_escolaridade || filters.orgao;
-
+  const filterOptions = [
+    { key: 'disciplina', label: 'Disciplina', values: opcoes.disciplinas },
+    { key: 'banca', label: 'Banca', values: opcoes.bancas },
+    { key: 'cargo', label: 'Cargo', values: opcoes.cargos },
+    { key: 'nivel_escolaridade', label: 'Escolaridade', values: opcoes.niveis },
+    { key: 'orgao', label: 'Órgão', values: opcoes.orgaos },
+  ];
   return (
     <AdminLayout>
-      <h1 className="text-xl font-extrabold text-gray-900">Banco de questões</h1>
-      <p className="mt-1 text-sm text-gray-500">
-        Referência para montar trilhas — o aluno nunca vê esta lista, só as questões escolhidas a dedo para um módulo.
-      </p>
-
-      <div className="mt-4 flex flex-wrap gap-2">
-        <input
-          placeholder="Buscar no enunciado..."
-          value={texto}
-          onChange={(e) => setTexto(e.target.value)}
-          className="min-w-[220px] flex-1 rounded-lg border border-gray-300 px-3 py-1.5 text-sm"
-        />
-        <input
-          placeholder="Assunto"
-          value={assunto}
-          onChange={(e) => setAssunto(e.target.value)}
-          className="w-40 rounded-lg border border-gray-300 px-3 py-1.5 text-sm"
-        />
-      </div>
-
-      <div className="mt-2 flex flex-wrap gap-2">
-        <select value={filters.disciplina ?? ''} onChange={(e) => setFiltro('disciplina', e.target.value)} className="rounded-lg border border-gray-300 px-2 py-1.5 text-sm">
-          <option value="">Todas disciplinas</option>
-          {opcoes.disciplinas.map((d) => (
-            <option key={d} value={d}>
-              {d}
-            </option>
+      <span className="eyebrow">CURADORIA DE CONTEÚDO</span>
+      <h1>Banco de questões</h1>
+      <p className="mt-2 text-sm text-text2">Encontre, revise e prepare o próximo conteúdo dos seus alunos.</p>
+      <section className="admin-search-panel" aria-label="Buscar e filtrar questões">
+        <div className="filter-tabs" aria-label="Status da revisão">
+          {STATUS.map((s) => (
+            <button
+              key={s.value}
+              className={status === s.value ? 'active' : ''}
+              aria-pressed={status === s.value}
+              disabled={batch?.running}
+              onClick={() => change('status', s.value)}
+            >
+              {s.label}
+            </button>
           ))}
-        </select>
-        <select value={filters.banca ?? ''} onChange={(e) => setFiltro('banca', e.target.value)} className="rounded-lg border border-gray-300 px-2 py-1.5 text-sm">
-          <option value="">Todas bancas</option>
-          {opcoes.bancas.map((b) => (
-            <option key={b} value={b}>
-              {b}
-            </option>
-          ))}
-        </select>
-        <select value={filters.cargo ?? ''} onChange={(e) => setFiltro('cargo', e.target.value)} className="rounded-lg border border-gray-300 px-2 py-1.5 text-sm">
-          <option value="">Todos cargos</option>
-          {opcoes.cargos.map((c) => (
-            <option key={c} value={c}>
-              {c}
-            </option>
-          ))}
-        </select>
-        <select
-          value={filters.nivel_escolaridade ?? ''}
-          onChange={(e) => setFiltro('nivel_escolaridade', e.target.value)}
-          className="rounded-lg border border-gray-300 px-2 py-1.5 text-sm"
-        >
-          <option value="">Toda escolaridade</option>
-          {opcoes.niveis.map((n) => (
-            <option key={n} value={n}>
-              {n}
-            </option>
-          ))}
-        </select>
-        <select value={filters.orgao ?? ''} onChange={(e) => setFiltro('orgao', e.target.value)} className="rounded-lg border border-gray-300 px-2 py-1.5 text-sm">
-          <option value="">Todos órgãos</option>
-          {opcoes.orgaos.map((o) => (
-            <option key={o} value={o}>
-              {o}
-            </option>
-          ))}
-        </select>
-        <select
-          value={filters.apenas ?? 'todas'}
-          onChange={(e) => setFiltro('apenas', e.target.value as QuestaoSearchFilters['apenas'])}
-          className="rounded-lg border border-gray-300 px-2 py-1.5 text-sm"
-        >
-          <option value="todas">Revisadas e não revisadas</option>
-          <option value="revisadas">Só revisadas</option>
-          <option value="nao_revisadas">Só não revisadas</option>
-        </select>
-        {temFiltroAtivo && (
+        </div>
+        <div className="admin-search-line">
+          <label className="search-field">
+            <MagnifyingGlass size={20} />
+            <input
+              aria-label="Buscar no enunciado"
+              placeholder="Buscar no enunciado…"
+              value={texto}
+              disabled={batch?.running}
+              onChange={(e) => change('q', e.target.value)}
+            />
+          </label>
           <button
-            onClick={() => {
-              setTexto('');
-              setAssunto('');
-              setFilters({ apenas: 'todas' });
-            }}
-            className="rounded-lg px-2 py-1.5 text-sm font-bold text-gray-500 hover:text-gray-800"
+            className="button button-secondary"
+            aria-expanded={showFilters}
+            aria-controls="question-filters"
+            onClick={() => setShowFilters(!showFilters)}
           >
+            <Funnel size={17} />
+            Filtros{activeFilters > 0 && <span className="nav-count">{activeFilters}</span>}
+          </button>
+        </div>
+        {showFilters && (
+          <div id="question-filters" className="filter-grid">
+            {filterOptions.map((f) => (
+              <label key={f.key}>
+                {f.label}
+                <select value={params.get(f.key) || ''} disabled={batch?.running} onChange={(e) => change(f.key, e.target.value)}>
+                  <option value="">Todas as opções</option>
+                  {f.values.map((v) => (
+                    <option key={v} value={v}>
+                      {v}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            ))}
+            <label>
+              Assunto
+              <input
+                placeholder="Buscar assunto…"
+                value={params.get('assunto') || ''}
+                disabled={batch?.running}
+                onChange={(e) => change('assunto', e.target.value)}
+              />
+            </label>
+          </div>
+        )}
+        {(activeFilters > 0 || texto || status !== 'todas') && (
+          <button className="button button-text mt-3" disabled={batch?.running} onClick={() => setParams({})}>
+            <X size={14} />
             Limpar filtros
           </button>
         )}
-      </div>
-
-      <div className="mt-3 flex flex-wrap items-center gap-2">
-        <button onClick={selecionarPagina} className="rounded-lg border border-gray-300 px-3 py-1.5 text-xs font-bold text-gray-600 hover:bg-gray-50">
-          Selecionar não revisadas da página
-        </button>
-        {selecionadas.size > 0 && !batch?.running && (
+        {showFilters && optionsError && (
+          <p role="status" className="text-xs text-error mt-3">
+            As opções de filtro não carregaram. A busca por texto continua disponível.
+          </p>
+        )}
+      </section>
+      <div className="list-toolbar">
+        <span className="text-xs text-text2" role="status">
+          {loading ? 'Buscando questões…' : `${total.toLocaleString('pt-BR')} questões encontradas`}
+        </span>
+        <div className="flex flex-wrap gap-2">
           <button
-            onClick={revisarSelecionadasComIA}
-            className="rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-bold text-white hover:bg-blue-700"
+            onClick={selectPage}
+            disabled={loading || !!batch?.running || !results.some((q) => !q.revisado)}
+            className="button button-secondary"
           >
-            ✨ Revisar com IA ({selecionadas.size})
+            Selecionar pendentes
           </button>
-        )}
-        {batch && (
-          <span className="flex items-center gap-2 text-xs font-bold text-gray-600">
-            {batch.running ? (
-              <>
-                Revisando {batch.done}/{batch.total}…
-                <button onClick={() => (cancelRef.current = true)} className="font-bold text-red-600 hover:underline">
-                  Cancelar
-                </button>
-              </>
-            ) : (
-              <span className={batch.falhas.length ? 'text-amber-600' : 'text-green-600'}>
-                Concluído: {batch.done - batch.falhas.length}/{batch.total} revisadas
-                {batch.falhas.length > 0 && ` · ${batch.falhas.length} falharam (${batch.falhas[0]})`}
-              </span>
-            )}
-          </span>
-        )}
+          {selecionadas.size > 0 && !batch?.running && (
+            <button onClick={reviewBatch} className="button button-primary">
+              <Sparkle size={17} />
+              Revisar com IA ({selecionadas.size})
+            </button>
+          )}
+        </div>
       </div>
-
-      <div className="mt-3 overflow-hidden rounded-xl border border-gray-200 bg-white">
-        {results.map((q) => (
-          <div key={q.id} className="flex items-start gap-3 border-t border-gray-100 p-3 first:border-t-0">
-            <input
-              type="checkbox"
-              className="mt-1 h-4 w-4 flex-none"
-              disabled={q.revisado || batch?.running}
-              checked={selecionadas.has(q.id)}
-              onChange={() => toggleSelecionada(q.id)}
-              title={q.revisado ? 'Já revisada' : 'Selecionar pra revisão com IA em lote'}
-            />
-            <div className="min-w-0 flex-1">
-              <div className="line-clamp-2 text-sm font-semibold text-gray-800">{q.enunciado}</div>
-              <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-gray-400">
-                <span>
-                  {q.banca} · {q.ano} · {q.disciplina}
-                  {q.cargo ? ` · ${q.cargo}` : ''}
-                  {q.nivel_escolaridade ? ` · ${q.nivel_escolaridade}` : ''}
-                </span>
-                <span className={`rounded-full px-2 py-0.5 font-bold ${q.revisado ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'}`}>
-                  {q.revisado
-                    ? `Revisada${q.revisado_metodo ? ` · ${q.revisado_metodo}` : ''}${q.revisado_por && nomes.get(q.revisado_por) ? ` · ${nomes.get(q.revisado_por)}` : ''}${q.revisado_em ? ` · ${formatData(q.revisado_em)}` : ''}`
-                    : 'Não revisada'}
-                </span>
+      {batch && (
+        <div className="panel mb-4" role="status">
+          {batch.running ? (
+            <>
+              <p>
+                Revisando {batch.done} de {batch.total} questões…
+              </p>
+              <button
+                className="button button-text"
+                onClick={() => {
+                  cancelRef.current = true;
+                }}
+              >
+                Parar após esta questão
+              </button>
+            </>
+          ) : (
+            <p>
+              {batch.done < batch.total ? 'Revisão interrompida' : 'Revisão concluída'}: {batch.done - batch.falhas.length} de{' '}
+              {batch.total} revisadas.
+              {batch.falhas.length > 0 && ` ${batch.falhas.length} falharam. Tente novamente nas questões pendentes.`}
+            </p>
+          )}
+        </div>
+      )}
+      {error ? (
+        <ErrorState message={error} retry={() => setTick((t) => t + 1)} />
+      ) : loading ? (
+        <LoadingCards />
+      ) : (
+        <div className="overflow-hidden rounded-xl border border-gray-200 bg-white">
+          {results.map((q) => (
+            <div key={q.id} className="question-list-row flex items-start gap-3 border-t border-gray-100 first:border-t-0">
+              <input
+                type="checkbox"
+                className="h-5 w-5 flex-none"
+                aria-label={`Selecionar questão: ${q.enunciado?.slice(0, 70)}`}
+                disabled={q.revisado || batch?.running}
+                checked={selecionadas.has(q.id)}
+                onChange={() => toggle(q.id)}
+              />
+              <div className="min-w-0 flex-1">
+                <div className="line-clamp-2 text-sm font-semibold text-ink">{q.enunciado}</div>
+                <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-text2">
+                  <span>{[q.banca, q.ano, q.disciplina].filter(Boolean).join(' · ')}</span>
+                  <span className={`pill ${q.revisado ? 'green' : 'amber'}`}>
+                    {q.revisado ? 'Revisada' : 'Aguardando revisão'}
+                  </span>
+                  {q.revisado_por && nomes.get(q.revisado_por) && <span>por {nomes.get(q.revisado_por)}</span>}
+                </div>
               </div>
+              <Link to={`/admin/questoes/${q.id}`} className="text-xs font-extrabold text-blue">
+                Revisar →
+              </Link>
             </div>
-            <Link to={`/admin/questoes/${q.id}`} className="flex-none text-xs font-bold text-blue-600 hover:underline">
-              Revisar ›
-            </Link>
-          </div>
-        ))}
-        {results.length === 0 && <div className="p-4 text-center text-sm text-gray-400">Nenhuma questão encontrada.</div>}
-      </div>
-      <div className="mt-2 flex items-center justify-between text-xs text-gray-500">
-        <span>{total} questões encontradas</span>
+          ))}
+          {!results.length && (
+            <div className="empty-state">
+              <MagnifyingGlass size={32} />
+              <h3>Nenhuma questão por aqui</h3>
+              <p>Tente uma busca mais ampla ou remova alguns filtros.</p>
+              <button className="button button-text" onClick={() => setParams({})}>
+                Limpar filtros
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+      <div className="pagination">
+        <span>
+          Página {page + 1} de {Math.max(1, Math.ceil(total / 20))}
+        </span>
         <div className="flex gap-2">
-          <button disabled={page === 0} onClick={() => setPage((p) => p - 1)} className="font-bold disabled:opacity-30">
-            ‹ Anterior
+          <button disabled={loading || page === 0 || batch?.running} onClick={() => change('page', String(page - 1))}>
+            ← Anterior
           </button>
-          <button disabled={(page + 1) * 20 >= total} onClick={() => setPage((p) => p + 1)} className="font-bold disabled:opacity-30">
-            Próxima ›
+          <button
+            disabled={loading || (page + 1) * 20 >= total || batch?.running}
+            onClick={() => change('page', String(page + 1))}
+          >
+            Próxima →
           </button>
         </div>
       </div>

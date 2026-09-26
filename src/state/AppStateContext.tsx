@@ -22,12 +22,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
   }, [state.timerOn]);
 
   function navWithLoading(path: string) {
-    if (state.navLoading) return;
-    dispatch({ type: 'SET_NAV_LOADING', loading: true });
-    setTimeout(() => {
-      navigate(path);
-      dispatch({ type: 'SET_NAV_LOADING', loading: false });
-    }, 320);
+    navigate(path);
   }
 
   return <AppStateContext.Provider value={{ state, dispatch, navWithLoading }}>{children}</AppStateContext.Provider>;

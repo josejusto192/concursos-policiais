@@ -63,7 +63,12 @@ export default function OnboardingScreen() {
   } else if (obKind === 'plan') {
     const planConcurso = trilhas.find((t) => t.id === ob.concurso)?.nome || 'IBGE';
     content = (
-      <PlanStep planConcurso={planConcurso} planMeta={qPerDay} planWeeks={Math.max(1, Math.round(prazoDays / 7))} refCode={refCode} />
+      <PlanStep
+        planConcurso={planConcurso}
+        planMeta={qPerDay}
+        planWeeks={Math.max(1, Math.round(prazoDays / 7))}
+        refCode={refCode}
+      />
     );
   } else {
     let title = '';
@@ -129,10 +134,11 @@ export default function OnboardingScreen() {
   }
 
   return (
-    <div className="scr flex flex-1 flex-col overflow-y-auto">
+    <div className={`scr flex flex-1 flex-col overflow-y-auto ${showBar ? 'onboarding-steps' : ''}`}>
       {showBar && (
         <div className="flex items-center gap-3 p-[18px_20px_6px]">
           <button
+            aria-label="Voltar à etapa anterior"
             onClick={() => dispatch({ type: 'OB_SET_STEP', step: Math.max(0, ob.step - 1) })}
             className="flex h-[34px] w-[34px] flex-none items-center justify-center rounded-[10px] border-none bg-app-bg text-text2"
           >

@@ -79,7 +79,7 @@ export type Action =
   | { type: 'OB_PLEDGE' }
   | { type: 'OB_RESET' }
   | { type: 'SELECT_ALT'; letra: string }
-  | { type: 'MARK_ANSWERED'; correct: boolean }
+  | { type: 'MARK_ANSWERED'; correct: boolean; gained: number }
   | { type: 'NEXT_QUESTION' }
   | { type: 'RESET_SESSION' }
   | { type: 'TOGGLE_TIMER' }

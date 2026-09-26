@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { Navigate, Route, Routes } from 'react-router-dom';
+import { Navigate, Route, Routes, useSearchParams } from 'react-router-dom';
 import PhoneShell from './components/PhoneShell';
 import WithNav from './components/WithNav';
 import { AppStateProvider } from './state/AppStateContext';
@@ -46,8 +46,10 @@ function PrivateRoute({ children }: { children: ReactNode }) {
 
 function PublicOnlyRoute({ children }: { children: ReactNode }) {
   const { session, loading } = useAuth();
+  const [params] = useSearchParams();
+  const next = params.get('next');
   if (loading) return <LoadingScreen />;
-  if (session) return <Navigate to="/trilha" replace />;
+  if (session) return <Navigate to={next?.startsWith('/admin') ? next : '/trilha'} replace />;
   return <>{children}</>;
 }
 

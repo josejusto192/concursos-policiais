@@ -1,8 +1,8 @@
-@import "tailwindcss";
+@import 'tailwindcss';
 
 @theme {
-  --font-sans: "Manrope", system-ui, sans-serif;
-  --font-display: "Space Grotesk", sans-serif;
+  --font-sans: 'Manrope', system-ui, sans-serif;
+  --font-display: 'Plus Jakarta Sans', sans-serif;
 
   --color-blue: #1557e6;
   --color-blue-dark: #0e3dae;
@@ -55,7 +55,7 @@ body,
 body {
   margin: 0;
   background: #f4f6fc;
-  font-family: "Manrope", system-ui, sans-serif;
+  font-family: 'Manrope', system-ui, sans-serif;
   min-height: 100dvh;
 }
 
@@ -74,10 +74,14 @@ body {
 @keyframes pulseNode {
   0%,
   100% {
-    box-shadow: 0 6px 0 #e0a800, 0 0 0 0 rgba(255, 203, 45, 0.5);
+    box-shadow:
+      0 6px 0 #e0a800,
+      0 0 0 0 rgba(255, 203, 45, 0.5);
   }
   50% {
-    box-shadow: 0 6px 0 #e0a800, 0 0 0 12px rgba(255, 203, 45, 0);
+    box-shadow:
+      0 6px 0 #e0a800,
+      0 0 0 12px rgba(255, 203, 45, 0);
   }
 }
 @keyframes popIn {

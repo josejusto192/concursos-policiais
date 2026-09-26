@@ -1,9 +1,10 @@
-import type { ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import type { Icon } from '@phosphor-icons/react';
-import { Bug, Eye, GearSix, House, Path, SignOut, Stack, Users } from '@phosphor-icons/react';
-import { NavLink, useNavigate } from 'react-router-dom';
+import { ArrowUpRight, Bug, CaretRight, Eye, GearSix, House, List, Path, SignOut, Stack, Users, X } from '@phosphor-icons/react';
+import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useUsuario } from '../hooks/useUsuario';
+import Brand from '../components/Brand';
 
 interface NavItem {
   to: string;
@@ -12,78 +13,148 @@ interface NavItem {
   adminOnly?: boolean;
   end?: boolean;
 }
-
 const NAV_ITEMS: NavItem[] = [
   { to: '/admin', label: 'Visão geral', icon: House, end: true },
-  { to: '/admin/trilhas', label: 'Trilhas', icon: Path },
+  { to: '/admin/trilhas', label: 'Trilhas de estudo', icon: Path },
   { to: '/admin/questoes', label: 'Banco de questões', icon: Stack },
-  { to: '/admin/usuarios', label: 'Usuários', icon: Users, adminOnly: true },
-  { to: '/admin/erros', label: 'Erros', icon: Bug, adminOnly: true },
+  { to: '/admin/usuarios', label: 'Alunos e equipe', icon: Users, adminOnly: true },
+  { to: '/admin/erros', label: 'Saúde do app', icon: Bug, adminOnly: true },
   { to: '/admin/configuracoes', label: 'Configurações', icon: GearSix, adminOnly: true },
 ];
-
 export default function AdminLayout({ children }: { children: ReactNode }) {
   const { signOut } = useAuth();
   const { usuario } = useUsuario();
   const navigate = useNavigate();
+  const { pathname } = useLocation();
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLElement>(null);
+  const toggleRef = useRef<HTMLButtonElement>(null);
+  useEffect(() => {
+    if (!menuOpen) return;
+    const toggle = toggleRef.current;
+    menuRef.current?.querySelector<HTMLAnchorElement>('a')?.focus();
+    const media = window.matchMedia('(min-width: 761px)');
+    const closeOnDesktop = () => {
+      if (media.matches) setMenuOpen(false);
+    };
+    media.addEventListener('change', closeOnDesktop);
+    return () => {
+      media.removeEventListener('change', closeOnDesktop);
+      toggle?.focus();
+    };
+  }, [menuOpen]);
+  const [logoutError, setLogoutError] = useState('');
   const navItems = NAV_ITEMS.filter((item) => !item.adminOnly || usuario?.is_admin);
-
+  const active = [...NAV_ITEMS].reverse().find((item) => (item.end ? pathname === item.to : pathname.startsWith(item.to)));
   async function logout() {
-    await signOut();
-    navigate('/login');
+    try {
+      await signOut();
+      navigate('/login');
+    } catch {
+      setLogoutError('Não foi possível sair. Tente novamente.');
+    }
   }
-
   return (
-    <div className="flex h-dvh overflow-hidden bg-gray-50">
-      <aside className="flex w-64 flex-none flex-col border-r border-gray-200 bg-white">
-        <div className="flex items-center gap-2.5 p-5">
-          <div className="flex h-9 w-9 flex-none items-center justify-center rounded-xl bg-blue-600">
-            <span className="font-display text-base font-extrabold text-yellow-400">F</span>
-          </div>
-          <div className="min-w-0">
-            <div className="truncate font-display text-[15px] font-extrabold text-gray-900">Foco</div>
-            <div className="truncate text-xs font-semibold text-gray-400">Painel Admin</div>
-          </div>
+    <div className="admin-layout">
+      <a className="skip-link" href="#admin-content">
+        Pular para o conteúdo
+      </a>
+      <button
+        className={`admin-scrim ${menuOpen ? 'open' : ''}`}
+        aria-label="Fechar menu"
+        onClick={() => setMenuOpen(false)}
+        tabIndex={menuOpen ? 0 : -1}
+      />
+      <aside
+        ref={menuRef}
+        id="admin-menu"
+        className={`admin-sidebar ${menuOpen ? 'open' : ''}`}
+        onKeyDown={(event) => {
+          if (event.key === 'Escape') setMenuOpen(false);
+        }}
+      >
+        <div className="flex items-center justify-between">
+          <Link to="/admin">
+            <Brand caption="PAINEL DE GESTÃO" />
+          </Link>
+          <button className="icon-button admin-menu-button" onClick={() => setMenuOpen(false)} aria-label="Fechar menu">
+            <X size={20} />
+          </button>
         </div>
-
-        <nav className="flex flex-1 flex-col gap-1 px-3">
-          {navItems.map(({ to, label, icon: ItemIcon, end }) => (
+        <p className="nav-section-label">GERENCIAR</p>
+        <nav aria-label="Administração">
+          {navItems.map(({ to, label, icon: Icon, end }) => (
             <NavLink
               key={to}
               to={to}
               end={end}
-              className={({ isActive }) =>
-                `flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm font-semibold transition-colors ${
-                  isActive ? 'bg-blue-600 text-white' : 'text-gray-600 hover:bg-gray-100'
-                }`
-              }
+              onClick={() => setMenuOpen(false)}
+              className={({ isActive }) => `side-link ${isActive ? 'active' : ''}`}
             >
-              <ItemIcon weight="bold" size={18} />
+              <Icon size={20} weight="duotone" />
               {label}
             </NavLink>
           ))}
         </nav>
-
-        <div className="flex flex-col gap-1 border-t border-gray-100 p-3">
-          <button
-            onClick={() => navigate('/trilha')}
-            className="flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-left text-sm font-semibold text-gray-500 hover:bg-gray-100"
-          >
-            <Eye weight="bold" size={18} />
+        <div className="sidebar-bottom">
+          <div className="sidebar-note">
+            <strong>Conteúdo que faz a diferença.</strong>
+            <p>Uma boa preparação começa com uma curadoria cuidadosa.</p>
+          </div>
+          <Link to="/trilha" className="side-link">
+            <Eye size={20} />
             Ver como aluno
+            <ArrowUpRight size={15} className="ml-auto" />
+          </Link>
+          <button onClick={logout} className="side-link">
+            <SignOut size={20} />
+            Sair da conta
           </button>
-          <button
-            onClick={logout}
-            className="flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-left text-sm font-semibold text-red-600 hover:bg-red-50"
-          >
-            <SignOut weight="bold" size={18} />
-            Sair
-          </button>
+          {logoutError && (
+            <p role="alert" className="text-error text-xs">
+              {logoutError}
+            </p>
+          )}
+          <div className="sidebar-profile">
+            <span className="avatar">{usuario?.nome?.slice(0, 1) || 'A'}</span>
+            <span>
+              <strong>{usuario?.nome || 'Sua conta'}</strong>
+              <small>{usuario?.is_admin ? 'Administrador' : 'Editor de conteúdo'}</small>
+            </span>
+          </div>
         </div>
       </aside>
-
-      <div className="min-w-0 flex-1 overflow-y-auto">
-        <main className="mx-auto max-w-5xl px-8 py-8">{children}</main>
+      <div className="admin-viewport" inert={menuOpen}>
+        <header className="admin-topbar">
+          <div className="flex items-center gap-3">
+            <button
+              ref={toggleRef}
+              className="icon-button admin-menu-button"
+              aria-label="Abrir menu de administração"
+              aria-expanded={menuOpen}
+              aria-controls="admin-menu"
+              onClick={() => setMenuOpen(true)}
+            >
+              <List size={23} />
+            </button>
+            <div className="admin-breadcrumb">
+              <span>Workspace</span>
+              <CaretRight size={13} />
+              <strong>{active?.label || 'Curadoria de módulos'}</strong>
+            </div>
+          </div>
+          <div className="admin-topbar-right">
+            <Link to="/trilha" className="button button-secondary">
+              <Eye size={16} />
+              Ver aplicativo
+              <ArrowUpRight size={14} />
+            </Link>
+            <span className="pill">{usuario?.is_admin ? 'Admin' : 'Editor'}</span>
+          </div>
+        </header>
+        <main id="admin-content" className="admin-main" tabIndex={-1}>
+          {children}
+        </main>
       </div>
     </div>
   );

@@ -25,7 +25,7 @@ export function reducer(state: AppState, action: Action): AppState {
           answered: true,
           sessionAnswered: state.session.sessionAnswered + 1,
           sessionCorrect: state.session.sessionCorrect + (ok ? 1 : 0),
-          gained: state.session.gained + (ok ? 10 : 0),
+          gained: state.session.gained + action.gained,
         },
       };
     }

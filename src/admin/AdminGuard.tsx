@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { Navigate } from 'react-router-dom';
+import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useUsuario } from '../hooks/useUsuario';
 
@@ -16,9 +16,10 @@ function LoadingScreen() {
 export default function AdminGuard({ children, adminOnly = false }: { children: ReactNode; adminOnly?: boolean }) {
   const { session, loading: loadingAuth } = useAuth();
   const { usuario, loading: loadingUsuario } = useUsuario();
+  const location = useLocation();
 
   if (loadingAuth || (session && loadingUsuario)) return <LoadingScreen />;
-  if (!session) return <Navigate to="/login" replace />;
+  if (!session) return <Navigate to={`/login?next=${encodeURIComponent(location.pathname + location.search)}`} replace />;
   const allowed = usuario?.is_admin || (!adminOnly && usuario?.is_editor);
   if (!allowed) return <Navigate to="/trilha" replace />;
 

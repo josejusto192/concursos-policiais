@@ -1,142 +1,181 @@
+import { ChartBar, Fire, Lightning, Notebook, Target } from '@phosphor-icons/react';
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useAppData } from '../contexts/AppDataContext';
 import { fetchStats, type StatsData } from '../lib/queries';
 import { levelFromXp } from '../lib/format';
-import { useAppState } from '../state/AppStateContext';
-import PatternBackground from '../components/PatternBackground';
-
-const WEEK_LABELS = ['S', 'T', 'Q', 'Q', 'S', 'S', 'D'];
-
-function colorForPct(pct: number) {
-  if (pct >= 75) return '#22A06B';
-  if (pct >= 50) return '#1557E6';
-  return '#F5B301';
-}
+import { ErrorState, LoadingCards } from '../components/Feedback';
 
 export default function Stats() {
-  const { dispatch } = useAppState();
   const { usuario, dailyDone } = useAppData();
+  const usuarioId = usuario?.id;
   const [stats, setStats] = useState<StatsData | null>(null);
-
+  const [error, setError] = useState('');
+  const [tick, setTick] = useState(0);
   useEffect(() => {
-    if (!usuario) return;
-    fetchStats(usuario.id).then(setStats);
-  }, [usuario]);
-
-  const level = levelFromXp(usuario?.xp ?? 0);
-  const dailyGoal = usuario?.meta_diaria ?? 20;
-  const dailyRatio = Math.min(1, dailyDone / dailyGoal);
-  const dailyPct = Math.round(dailyRatio * 100);
-  const dailyLeft = Math.max(0, dailyGoal - dailyDone);
-
-  const weekData = stats?.ultimos7Dias ?? [0, 0, 0, 0, 0, 0, dailyDone];
-  const weekMax = Math.max(1, ...weekData);
+    if (!usuarioId) return;
+    let alive = true;
+    setError('');
+    setStats(null);
+    fetchStats(usuarioId)
+      .then((s) => {
+        if (alive) setStats(s);
+      })
+      .catch(() => {
+        if (alive) setError('Não conseguimos buscar seu desempenho. Tente novamente.');
+      });
+    return () => {
+      alive = false;
+    };
+  }, [usuarioId, tick]);
+  const dailyGoal = Math.max(1, usuario?.meta_diaria ?? 20);
+  const weekMax = Math.max(1, ...(stats?.ultimos7Dias ?? []));
+  const days = Array.from({ length: 7 }, (_, i) => {
+    const date = new Date();
+    date.setDate(date.getDate() - (6 - i));
+    return date;
+  });
   const weakest = stats?.porDisciplina.length ? [...stats.porDisciplina].sort((a, b) => a.pct - b.pct)[0] : null;
-
   return (
-    <>
-      <div className="z-[3] bg-surface p-[18px_18px_14px]" style={{ borderBottom: '1px solid #EDF0F8' }}>
-        <div className="font-display text-[20px] font-extrabold text-ink">Estatísticas</div>
-      </div>
-      <PatternBackground scrollClassName="p-[18px_18px_30px]">
-        <div className="flex gap-3">
-          <div className="flex-1 rounded-[20px] p-4" style={{ background: 'linear-gradient(135deg,#FFCB2D,#F5B301)', boxShadow: '0 12px 26px -16px rgba(245,179,1,.8)' }}>
-            <div className="font-display text-[34px] font-extrabold text-ink">{usuario?.streak ?? 0}</div>
-            <div className="font-sans text-[12px] font-extrabold text-[#7a5900]">dias seguidos 🔥</div>
+    <div className="workspace-scroll">
+      <div className="workspace-content">
+        <header className="page-heading">
+          <div>
+            <span className="eyebrow">SEU ESFORÇO APARECE AQUI</span>
+            <h1>Cada dia, um pouco melhor.</h1>
+            <p>Acompanhe seu ritmo e descubra onde vale reforçar.</p>
           </div>
-          <div className="flex-1 rounded-[20px] p-4" style={{ background: 'linear-gradient(135deg,#1557E6,#2f6bf0)', boxShadow: '0 12px 26px -16px rgba(21,87,230,.7)' }}>
-            <div className="font-display text-[34px] font-extrabold text-white">{level}</div>
-            <div className="font-sans text-[12px] font-extrabold text-[#c9d7fb]">nível · {usuario?.xp ?? 0} XP</div>
-          </div>
-        </div>
-
-        <div className="mt-3.5 rounded-[20px] bg-surface p-[18px]" style={{ boxShadow: '0 10px 28px -20px rgba(11,31,77,.4)' }}>
-          <div className="mb-3.5 flex items-center justify-between">
-            <div className="font-sans text-[14px] font-extrabold text-ink">Meta diária</div>
-            <div className="font-sans text-[12px] font-bold text-text2">
-              {dailyDone} de {dailyGoal} questões
-            </div>
-          </div>
-          <div className="flex items-center gap-4.5">
-            <div
-              className="flex h-[82px] w-[82px] flex-none items-center justify-center rounded-full"
-              style={{ background: `conic-gradient(#F5B301 ${dailyRatio * 360}deg,#EDF0F8 0)` }}
-            >
-              <div className="flex h-[66px] w-[66px] items-center justify-center rounded-full bg-surface font-display text-[17px] font-extrabold text-ink">
-                {dailyPct}%
+          <ChartBar size={32} weight="duotone" className="text-blue" />
+        </header>
+        {error ? (
+          <ErrorState message={error} retry={() => setTick((t) => t + 1)} />
+        ) : !stats ? (
+          <LoadingCards />
+        ) : (
+          <>
+            <div className="metrics-row">
+              <div className="metric">
+                <span className="metric-icon yellow">
+                  <Fire size={23} />
+                </span>
+                <div>
+                  <strong>{usuario?.streak ?? 0}</strong>
+                  <small>dias de constância</small>
+                </div>
+              </div>
+              <div className="metric">
+                <span className="metric-icon">
+                  <Lightning size={23} />
+                </span>
+                <div>
+                  <strong>{levelFromXp(usuario?.xp ?? 0)}</strong>
+                  <small>nível · {usuario?.xp ?? 0} XP</small>
+                </div>
+              </div>
+              <div className="metric">
+                <span className="metric-icon green">
+                  <Target size={23} />
+                </span>
+                <div>
+                  <strong>{stats.taxaAcerto}%</strong>
+                  <small>de acerto geral</small>
+                </div>
               </div>
             </div>
-            <div className="flex-1 font-sans text-[13px] font-semibold leading-[1.5] text-ink-soft">
-              Faltam <b className="text-ink">{dailyLeft} questões</b> para bater sua meta de hoje e manter o streak.
-            </div>
-          </div>
-        </div>
-
-        <div className="mt-3.5 rounded-[20px] bg-surface p-[18px]" style={{ boxShadow: '0 10px 28px -20px rgba(11,31,77,.4)' }}>
-          <div className="mb-4 font-sans text-[14px] font-extrabold text-ink">Questões nos últimos 7 dias</div>
-          <div className="flex h-[120px] items-end justify-between gap-2">
-            {weekData.map((v, i) => {
-              const active = i === 6;
-              return (
-                <div key={i} className="flex h-full flex-1 flex-col items-center justify-end gap-2">
-                  <div
-                    className="w-full max-w-[26px] rounded-[7px]"
-                    style={{ height: `${(v / weekMax) * 100}%`, minHeight: '6px', background: active ? '#1557E6' : '#cfe0ff' }}
-                  />
-                  <div className="font-sans text-[11px] font-bold" style={{ color: active ? '#1557E6' : '#8791a8' }}>
-                    {WEEK_LABELS[i]}
+            <div className="stats-grid">
+              <section className="panel">
+                <div className="section-heading">
+                  <div>
+                    <h2>Seu ritmo de estudo</h2>
+                    <p>Questões respondidas nos últimos 7 dias</p>
+                  </div>
+                  <span className="pill">{stats.ultimos7Dias.reduce((a, b) => a + b, 0)} questões</span>
+                </div>
+                <div
+                  className="chart"
+                  role="img"
+                  aria-label={stats.ultimos7Dias
+                    .map((n, i) => `${days[i].toLocaleDateString('pt-BR')}: ${n} questões`)
+                    .join('; ')}
+                >
+                  {stats.ultimos7Dias.map((n, i) => (
+                    <div className="chart-col" key={i}>
+                      <strong>{n}</strong>
+                      <div className="chart-bar" style={{ height: `${(n / weekMax) * 135}px` }} />
+                      <span>{i === 6 ? 'Hoje' : days[i].toLocaleDateString('pt-BR', { weekday: 'short' }).replace('.', '')}</span>
+                    </div>
+                  ))}
+                </div>
+              </section>
+              <section className="panel">
+                <div className="section-heading">
+                  <h2>Meta de hoje</h2>
+                  <Target size={21} className="text-blue" />
+                </div>
+                <div
+                  className="goal-ring"
+                  style={{ background: `conic-gradient(#1557e6 ${Math.min(1, dailyDone / dailyGoal) * 360}deg, #eef3ff 0)` }}
+                >
+                  <div>
+                    <strong>
+                      {dailyDone}/{dailyGoal}
+                    </strong>
+                    <small>questões</small>
                   </div>
                 </div>
-              );
-            })}
-          </div>
-        </div>
-
-        <div className="mt-3.5 rounded-[20px] bg-surface p-[18px]" style={{ boxShadow: '0 10px 28px -20px rgba(11,31,77,.4)' }}>
-          <div className="mb-4 font-sans text-[14px] font-extrabold text-ink">Desempenho por disciplina</div>
-          {stats && !stats.porDisciplina.length ? (
-            <div className="font-sans text-[13px] font-semibold text-text3">Responda questões para ver seu desempenho aqui.</div>
-          ) : (
-            <div className="flex flex-col gap-3.5">
-              {(stats?.porDisciplina ?? []).map((d) => (
-                <div key={d.disciplina}>
-                  <div className="mb-1.5 flex justify-between">
-                    <span className="font-sans text-[13px] font-bold text-ink">{d.disciplina}</span>
-                    <span className="font-sans text-[12px] font-extrabold" style={{ color: colorForPct(d.pct) }}>
-                      {d.pct}%
-                    </span>
-                  </div>
-                  <div className="h-[9px] overflow-hidden rounded-md bg-border2">
-                    <div className="h-full rounded-md" style={{ width: `${d.pct}%`, background: colorForPct(d.pct) }} />
-                  </div>
+                <p className="goal-copy">
+                  {dailyDone >= dailyGoal
+                    ? 'Meta concluída. Você cumpriu seu compromisso de hoje!'
+                    : `Faltam ${dailyGoal - dailyDone} questões para alcançar sua meta.`}
+                </p>
+              </section>
+              <section className="panel">
+                <div className="section-heading">
+                  <h2>Por disciplina</h2>
+                  <span className="pill neutral">Taxa de acerto</span>
                 </div>
-              ))}
+                {!stats.porDisciplina.length ? (
+                  <p className="empty-state">Responda suas primeiras questões para acompanhar o desempenho por disciplina.</p>
+                ) : (
+                  stats.porDisciplina.map((d) => (
+                    <div key={d.disciplina} className="discipline-item">
+                      <div>
+                        <span>{d.disciplina}</span>
+                        <strong>{d.pct}%</strong>
+                      </div>
+                      <div className="progress-track">
+                        <span
+                          style={{
+                            width: `${d.pct}%`,
+                            background: d.pct >= 75 ? '#22a06b' : d.pct >= 50 ? '#1557e6' : '#e4ad18',
+                          }}
+                        />
+                      </div>
+                    </div>
+                  ))
+                )}
+              </section>
+              <section className="panel review-panel">
+                <Notebook size={28} weight="duotone" />
+                <h2>{weakest ? 'Dê atenção ao que precisa.' : 'Transforme dúvidas em aprendizado.'}</h2>
+                <p>
+                  {weakest ? (
+                    <>
+                      Seu menor aproveitamento está em <strong>{weakest.disciplina}</strong>, com {weakest.pct}% de acerto.
+                      Revisar é parte da evolução.
+                    </>
+                  ) : (
+                    'Seu caderno reúne as questões que merecem uma nova tentativa.'
+                  )}
+                </p>
+                <Link className="button button-text" to="/caderno-de-erros">
+                  Abrir caderno de erros →
+                </Link>
+              </section>
             </div>
-          )}
-        </div>
-
-        {weakest && (
-          <div
-            onClick={() => dispatch({ type: 'SET_MENTOR_OPEN', open: true })}
-            className="mt-3.5 cursor-pointer rounded-[20px] border-[1.5px] border-yellow-border bg-surface p-[18px]"
-            style={{ boxShadow: '0 10px 28px -20px rgba(11,31,77,.4)' }}
-          >
-            <div className="flex items-center gap-3">
-              <div className="flex h-11 w-11 flex-none items-center justify-center rounded-[13px] bg-yellow-tint font-display text-[20px] font-extrabold text-yellow-deep">
-                !
-              </div>
-              <div className="flex-1">
-                <div className="font-sans text-[14px] font-extrabold text-ink">Travando em {weakest.disciplina}?</div>
-                <div className="mt-0.5 font-sans text-[12px] font-bold text-text3">{weakest.pct}% de acerto é seu ponto fraco hoje.</div>
-              </div>
-            </div>
-            <div className="mt-3 rounded-xl bg-yellow-tint p-[12px_13px] font-sans text-[12.5px] font-bold leading-[1.5] text-yellow-text">
-              Um mentor pode montar um plano de reforço focado na sua maior dificuldade.{' '}
-              <span className="text-ink">Conhecer a mentoria ›</span>
-            </div>
-          </div>
+          </>
         )}
-      </PatternBackground>
-    </>
+      </div>
+    </div>
   );
 }
