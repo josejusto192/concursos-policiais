@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import { Navigate, Route, Routes, useSearchParams } from 'react-router-dom';
 import PhoneShell from './components/PhoneShell';
+import { LoadingExperience } from './components/Feedback';
 import WithNav from './components/WithNav';
 import { AppStateProvider } from './state/AppStateContext';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
@@ -29,17 +30,9 @@ import AdminUsuariosPage from './admin/AdminUsuariosPage';
 import AdminErrosPage from './admin/AdminErrosPage';
 import AdminConfiguracoesPage from './admin/AdminConfiguracoesPage';
 
-function LoadingScreen() {
-  return (
-    <div className="flex flex-1 items-center justify-center">
-      <div className="h-11 w-11 animate-spin rounded-full border-4 border-border" style={{ borderTopColor: '#1557E6' }} />
-    </div>
-  );
-}
-
 function PrivateRoute({ children }: { children: ReactNode }) {
   const { session, loading } = useAuth();
-  if (loading) return <LoadingScreen />;
+  if (loading) return <LoadingExperience message="Entrando na sua trilha" />;
   if (!session) return <Navigate to="/login" replace />;
   return <AppDataProvider>{children}</AppDataProvider>;
 }
@@ -48,7 +41,7 @@ function PublicOnlyRoute({ children }: { children: ReactNode }) {
   const { session, loading } = useAuth();
   const [params] = useSearchParams();
   const next = params.get('next');
-  if (loading) return <LoadingScreen />;
+  if (loading) return <LoadingExperience message="Preparando seu espaço" />;
   if (session) return <Navigate to={next?.startsWith('/admin') ? next : '/trilha'} replace />;
   return <>{children}</>;
 }

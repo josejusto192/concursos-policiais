@@ -1,4 +1,23 @@
 import { ArrowClockwise, WarningCircle } from '@phosphor-icons/react';
+import Brand from './Brand';
+
+export function LoadingExperience({ message = 'Preparando seu espaço', fullPage = false }: { message?: string; fullPage?: boolean }) {
+  return (
+    <div className={`loading-experience ${fullPage ? 'full-page' : ''}`} role="status" aria-live="polite">
+      <div className="loading-orbit" aria-hidden="true">
+        <span />
+        <span />
+        <span />
+        <div className="loading-core">
+          <Brand />
+        </div>
+      </div>
+      <strong>{message}</strong>
+      <span className="loading-subtitle">Mais um passo na sua jornada.</span>
+      <span className="loading-dots" aria-hidden="true"><i /><i /><i /></span>
+    </div>
+  );
+}
 
 export function LoadingCards() {
   return (

@@ -1,4 +1,4 @@
-import { ArrowRight, Eye, EyeSlash, ShieldCheck } from '@phosphor-icons/react';
+import { ArrowRight, CircleNotch, Eye, EyeSlash, ShieldCheck } from '@phosphor-icons/react';
 import { useState, type FormEvent } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
@@ -105,7 +105,7 @@ export default function LoginScreen() {
           )}
           <button type="submit" className="button button-primary" disabled={loading}>
             {loading ? 'Entrando…' : 'Entrar na minha conta'}
-            <ArrowRight size={19} />
+            {loading ? <CircleNotch className="busy-icon" size={19} /> : <ArrowRight size={19} />}
           </button>
           <Link to="/onboarding" className="signup-link">
             Ainda não tem conta? <strong>Comece por aqui</strong>

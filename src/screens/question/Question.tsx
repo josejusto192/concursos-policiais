@@ -1,4 +1,4 @@
-import { ArrowRight, X } from '@phosphor-icons/react';
+import { ArrowRight, CircleNotch, X } from '@phosphor-icons/react';
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAppData } from '../../contexts/AppDataContext';
@@ -12,6 +12,7 @@ import ReportSheet from './ReportSheet';
 import AiTutorSheet from './AiTutorSheet';
 import { logClientError } from '../../lib/errorLog';
 import Dialog from '../../components/Dialog';
+import { LoadingExperience } from '../../components/Feedback';
 
 export default function Question() {
   const { state, dispatch } = useAppState();
@@ -51,11 +52,8 @@ export default function Question() {
 
   if (!currentModulo) {
     return (
-      <div
-        className="flex flex-1 flex-col gap-4 items-center justify-center p-6 text-center font-sans text-[13.5px] font-semibold text-text2"
-        role="status"
-      >
-        {loadingModules ? 'Preparando sua sessão…' : 'Nenhum módulo disponível para começar agora.'}
+      <div className="flex flex-1 flex-col gap-4 items-center justify-center p-6 text-center font-sans text-[13.5px] font-semibold text-text2">
+        {loadingModules ? <LoadingExperience message="Preparando sua sessão" /> : 'Nenhum módulo disponível para começar agora.'}
         {!loadingModules && (
           <button className="button button-primary" onClick={() => navigate('/trilha')}>
             Voltar para a trilha
@@ -77,11 +75,7 @@ export default function Question() {
   }
 
   if (!questoes) {
-    return (
-      <div className="flex flex-1 items-center justify-center">
-        <div className="h-11 w-11 animate-spin-fast rounded-full border-4 border-border" style={{ borderTopColor: '#1557E6' }} />
-      </div>
-    );
+    return <LoadingExperience message="Organizando suas questões" />;
   }
 
   if (!questoes.length) {
@@ -398,7 +392,7 @@ export default function Question() {
             style={{ boxShadow: '0 6px 0 #17784f' }}
           >
             {finalizing ? 'Salvando resultado…' : isLast ? 'Ver resultado' : 'Próxima questão'}{' '}
-            <ArrowRight weight="bold" size={18} />
+            {finalizing ? <CircleNotch className="busy-icon" size={18} /> : <ArrowRight weight="bold" size={18} />}
           </button>
         ) : (
           <button
@@ -411,7 +405,8 @@ export default function Question() {
               cursor: confirmReady ? 'pointer' : 'default',
             }}
           >
-            {saving ? 'Salvando resposta…' : 'Confirmar resposta'} <ArrowRight weight="bold" size={18} />
+            {saving ? 'Salvando resposta…' : 'Confirmar resposta'}{' '}
+            {saving ? <CircleNotch className="busy-icon" size={18} /> : <ArrowRight weight="bold" size={18} />}
           </button>
         )}
       </div>

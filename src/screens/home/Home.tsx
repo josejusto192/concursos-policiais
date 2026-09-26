@@ -1,24 +1,14 @@
-import {
-  ArrowRight,
-  ArrowsLeftRight,
-  Check,
-  Fire,
-  Lightning,
-  Notebook,
-  Play,
-  Sparkle,
-  Target,
-  Trophy,
-} from '@phosphor-icons/react';
+import { ArrowsLeftRight, Check, Fire, Lightning, Play, Trophy } from '@phosphor-icons/react';
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
 import { useAppData } from '../../contexts/AppDataContext';
-import { useAppState } from '../../state/AppStateContext';
 import Brand from '../../components/Brand';
+import ErrosFab from '../../components/ErrosFab';
 import { ErrorState, LoadingCards } from '../../components/Feedback';
+import PatternBackground from '../../components/PatternBackground';
 import TrilhaPath from './TrilhaPath';
 import TrilhasSheet from './TrilhasSheet';
 
+// Reused by the login and onboarding illustrations.
 export function PathIllustration() {
   return (
     <div className="hero-path" aria-hidden="true">
@@ -37,200 +27,56 @@ export function PathIllustration() {
 }
 
 export default function Home() {
-  const { usuario, activeTrilha, modules, dailyDone, errosCount, loading, loadError, retry } = useAppData();
-  const { dispatch } = useAppState();
-  const navigate = useNavigate();
+  const { usuario, activeTrilha, dailyDone, errosCount, loading, loadError, retry } = useAppData();
   const [sheetOpen, setSheetOpen] = useState(false);
   const dailyGoal = Math.max(1, usuario?.meta_diaria ?? 20);
   const dailyRatio = Math.min(1, dailyDone / dailyGoal);
-  const questionModules = modules.filter((m) => m.tipo === 'questoes');
-  const done = questionModules.filter((m) => m.status === 'done').length;
-  const current = modules.find((m) => m.status === 'current');
-  const completed = questionModules.length > 0 && done === questionModules.length;
-  const firstName = usuario?.nome?.trim().split(' ')[0] || 'estudante';
-  function start() {
-    dispatch({ type: 'RESET_SESSION' });
-    navigate('/questao');
-  }
 
   return (
-    <div className="workspace-scroll home-workspace">
-      <div className="workspace-content">
-        <div className="mobile-brand">
+    <>
+      <header className="compact-home-header">
+        <div className="compact-home-top">
           <Brand />
-          <Link to="/perfil" className="avatar" aria-label="Abrir meu perfil">
-            {firstName[0].toUpperCase()}
-          </Link>
+          <div className="compact-home-badges" aria-label="Seu progresso">
+            <span className="compact-badge streak" aria-label={`${usuario?.streak ?? 0} dias de sequência`}>
+              <Fire size={16} weight="fill" aria-hidden="true" />
+              <strong>{usuario?.streak ?? 0}</strong>
+            </span>
+            <span className="compact-badge xp" aria-label={`${usuario?.xp ?? 0} pontos de experiência`}>
+              <Lightning size={16} weight="fill" aria-hidden="true" />
+              <strong>{(usuario?.xp ?? 0).toLocaleString('pt-BR')} XP</strong>
+            </span>
+          </div>
         </div>
-        <header className="page-heading">
-          <div>
-            <span className="eyebrow">UM POUCO TODO DIA, MAIS LONGE SEMPRE</span>
-            <h1>
-              Bom te ver, {firstName}
-              <span className="text-blue">.</span>
-            </h1>
-            <p>Vamos transformar constância em conquista.</p>
+
+        <button className="compact-trilha" type="button" onClick={() => setSheetOpen(true)} aria-label="Trocar trilha de estudos">
+          <span className="compact-trilha-label">
+            TRILHA ATUAL
+            <span className="compact-trilha-switch">
+              <ArrowsLeftRight size={12} weight="bold" aria-hidden="true" />
+              trocar
+            </span>
+          </span>
+          <strong>{activeTrilha?.nome || 'Escolha sua trilha'}</strong>
+          {activeTrilha?.descricao && <small>{activeTrilha.descricao}</small>}
+        </button>
+
+        <div className="compact-goal" aria-label={`Meta de hoje: ${dailyDone} de ${dailyGoal} questões`}>
+          <div className="compact-goal-track" aria-hidden="true">
+            <span style={{ width: `${dailyRatio * 100}%` }} />
           </div>
-          <div className="header-meta">
-            <span>{new Date().toLocaleDateString('pt-BR', { day: 'numeric', month: 'long' })}</span>
-            <Link to="/perfil" className="avatar" aria-label="Abrir meu perfil">
-              {firstName[0].toUpperCase()}
-            </Link>
-          </div>
-        </header>
-        {loading ? (
-          <LoadingCards />
-        ) : loadError ? (
-          <ErrorState message={loadError} retry={retry} />
-        ) : (
-          <>
-            <section className="study-hero" aria-label="Continuar os estudos">
-              <div className="hero-copy">
-                <span className="hero-kicker">
-                  <Sparkle size={14} weight="fill" /> SUA TRILHA ATUAL
-                </span>
-                <h2>{activeTrilha?.nome || 'Sua jornada começa aqui.'}</h2>
-                <p>
-                  {current ? (
-                    <>
-                      Próxima etapa: <strong>{current.titulo}</strong>.
-                    </>
-                  ) : completed ? (
-                    'Trilha concluída! Cada passo fez a diferença. Vamos revisar?'
-                  ) : (
-                    'Escolha uma trilha e comece a construir seu ritmo de estudos.'
-                  )}
-                </p>
-                {current ? (
-                  <button className="button button-yellow" onClick={start}>
-                    {done ? 'Continuar estudando' : 'Começar a estudar'}
-                    <ArrowRight size={18} weight="bold" />
-                  </button>
-                ) : completed ? (
-                  <Link className="button button-yellow" to="/caderno-de-erros">
-                    Revisar meus erros
-                    <ArrowRight size={18} />
-                  </Link>
-                ) : (
-                  <button className="button button-yellow" onClick={() => setSheetOpen(true)}>
-                    Explorar trilhas
-                    <ArrowRight size={18} />
-                  </button>
-                )}
-              </div>
-              <PathIllustration />
-            </section>
-            <div className="metrics-row">
-              <div className="metric">
-                <span className="metric-icon yellow">
-                  <Fire size={23} weight="duotone" />
-                </span>
-                <div>
-                  <strong>
-                    {usuario?.streak ?? 0}
-                    <span className="metric-unit"> dias</span>
-                  </strong>
-                  <small>de constância</small>
-                </div>
-              </div>
-              <div className="metric">
-                <span className="metric-icon">
-                  <Lightning size={23} weight="duotone" />
-                </span>
-                <div>
-                  <strong>{(usuario?.xp ?? 0).toLocaleString('pt-BR')}</strong>
-                  <small>XP conquistados</small>
-                </div>
-              </div>
-              <div className="metric">
-                <span className="metric-icon green">
-                  <Target size={23} weight="duotone" />
-                </span>
-                <div>
-                  <strong>
-                    {dailyDone}
-                    <span className="metric-unit">/{dailyGoal}</span>
-                  </strong>
-                  <small>questões hoje</small>
-                </div>
-              </div>
-            </div>
-            <div className="home-columns">
-              <section>
-                <div className="section-heading">
-                  <div>
-                    <h2>Sua trilha de estudos</h2>
-                    <p>{activeTrilha?.nome || 'Escolha uma trilha para começar'}</p>
-                  </div>
-                  <button className="button button-text" onClick={() => setSheetOpen(true)}>
-                    <ArrowsLeftRight size={16} />
-                    Trocar trilha
-                  </button>
-                </div>
-                {questionModules.length > 0 && (
-                  <div className="trail-progress">
-                    <span>
-                      {done} de {questionModules.length} etapas concluídas
-                    </span>
-                    <strong>{Math.round((done / questionModules.length) * 100)}%</strong>
-                    <div className="progress-track">
-                      <span style={{ width: `${(done / questionModules.length) * 100}%` }} />
-                    </div>
-                  </div>
-                )}
-                <TrilhaPath />
-              </section>
-              <aside className="study-aside">
-                <section className="panel">
-                  <div className="section-heading">
-                    <h2>Sua meta de hoje</h2>
-                    <Target size={19} className="text-blue" />
-                  </div>
-                  <div className="goal-ring" style={{ background: `conic-gradient(#1557e6 ${dailyRatio * 360}deg, #eef3ff 0)` }}>
-                    <div>
-                      <strong>{Math.round(dailyRatio * 100)}%</strong>
-                      <small>da meta diária</small>
-                    </div>
-                  </div>
-                  <p className="goal-copy">
-                    {dailyDone >= dailyGoal ? (
-                      <>
-                        <strong>Meta alcançada!</strong>
-                        <br />
-                        Seu compromisso de hoje está em dia.
-                      </>
-                    ) : (
-                      <>
-                        <strong>Faltam {dailyGoal - dailyDone} questões.</strong>
-                        <br />
-                        Um pouco de foco faz a diferença.
-                      </>
-                    )}
-                  </p>
-                </section>
-                <section className="panel review-panel">
-                  <Notebook size={26} weight="duotone" />
-                  <h2>Errar também é aprender.</h2>
-                  <p>
-                    {errosCount > 0 ? (
-                      <>
-                        Você tem <strong>{errosCount} questões</strong> para revisar nesta trilha.
-                      </>
-                    ) : (
-                      'As questões que precisam de reforço ficam no seu caderno de erros.'
-                    )}
-                  </p>
-                  <Link to="/caderno-de-erros" className="button button-text">
-                    Abrir meu caderno
-                    <ArrowRight size={16} />
-                  </Link>
-                </section>
-              </aside>
-            </div>
-          </>
-        )}
-        {sheetOpen && <TrilhasSheet onClose={() => setSheetOpen(false)} />}
-      </div>
-    </div>
+          <strong>
+            Meta {dailyDone}/{dailyGoal}
+          </strong>
+        </div>
+      </header>
+
+      <PatternBackground scrollClassName="compact-path-scroll">
+        {loading ? <LoadingCards /> : loadError ? <ErrorState message={loadError} retry={retry} /> : <TrilhaPath />}
+      </PatternBackground>
+
+      <ErrosFab count={errosCount} />
+      {sheetOpen && <TrilhasSheet onClose={() => setSheetOpen(false)} />}
+    </>
   );
 }

@@ -9,7 +9,7 @@ export default function ErrosFab({ count }: { count: number }) {
   return (
     <button
       onClick={() => navigate('/caderno-de-erros')}
-      className="absolute bottom-20 right-5 z-20 flex h-14 w-14 items-center justify-center rounded-full border-4 border-white"
+      className="absolute bottom-20 right-5 z-20 flex h-14 w-14 animate-pop-in items-center justify-center rounded-full border-4 border-white"
       style={{ background: 'linear-gradient(135deg,#F5484D,#C0392B)', boxShadow: '0 10px 22px -8px rgba(197,57,53,.6)' }}
       aria-label="Caderno de erros"
     >
