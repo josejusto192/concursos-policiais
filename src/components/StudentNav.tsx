@@ -15,12 +15,20 @@ export default function StudentNav() {
       <nav aria-label="Navegação principal">
         {STUDENT_LINKS.map(({ to, label, icon: Icon }) => (
           <NavLink key={to} to={to} className={({ isActive }) => `side-link ${isActive ? 'active' : ''}`}>
-            <Icon size={21} weight="duotone" />
-            {label}
+            {({ isActive }) => (
+              <>
+                <span className="side-icon" aria-hidden="true">
+                  <Icon size={21} weight={isActive ? 'fill' : 'duotone'} />
+                </span>
+                {label}
+              </>
+            )}
           </NavLink>
         ))}
         <NavLink to="/caderno-de-erros" className="side-link">
-          <Notebook size={21} weight="duotone" />
+          <span className="side-icon" aria-hidden="true">
+            <Notebook size={21} weight="duotone" />
+          </span>
           Caderno de erros{errosCount > 0 && <span className="nav-count">{errosCount}</span>}
         </NavLink>
       </nav>

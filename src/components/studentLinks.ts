@@ -1,8 +1,8 @@
-import { ChartBar, House, Trophy, UserCircle } from '@phosphor-icons/react';
+import { ChartLineUp, Path, Trophy, UserCircle } from '@phosphor-icons/react';
 
 export const STUDENT_LINKS = [
-  { to: '/trilha', label: 'Minha trilha', icon: House },
-  { to: '/stats', label: 'Desempenho', icon: ChartBar },
-  { to: '/ranking', label: 'Ranking', icon: Trophy },
-  { to: '/perfil', label: 'Meu perfil', icon: UserCircle },
+  { to: '/trilha', label: 'Minha trilha', shortLabel: 'Trilha', icon: Path },
+  { to: '/stats', label: 'Desempenho', shortLabel: 'Evolução', icon: ChartLineUp },
+  { to: '/ranking', label: 'Ranking', shortLabel: 'Ranking', icon: Trophy },
+  { to: '/perfil', label: 'Meu perfil', shortLabel: 'Perfil', icon: UserCircle },
 ];

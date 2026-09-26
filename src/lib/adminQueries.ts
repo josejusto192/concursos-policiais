@@ -99,6 +99,11 @@ export interface QuestaoSearchFilters {
   nivel_escolaridade?: string;
   orgao?: string;
   assunto?: string;
+  ano?: number;
+  tipo?: string;
+  area?: string;
+  imagem?: 'com' | 'sem';
+  situacao?: 'regulares' | 'anuladas' | 'desatualizadas';
   apenas?: 'todas' | 'revisadas' | 'nao_revisadas';
 }
 
@@ -114,6 +119,13 @@ export async function searchQuestoes(filters: QuestaoSearchFilters, page: number
   if (filters.nivel_escolaridade) query = query.eq('nivel_escolaridade', filters.nivel_escolaridade);
   if (filters.orgao) query = query.eq('orgao', filters.orgao);
   if (filters.assunto) query = query.ilike('assunto', `%${filters.assunto}%`);
+  if (filters.ano) query = query.eq('ano', filters.ano);
+  if (filters.tipo) query = query.ilike('tipo', `%${filters.tipo}%`);
+  if (filters.area) query = query.ilike('area', `%${filters.area}%`);
+  if (filters.imagem) query = query.eq('tem_imagem', filters.imagem === 'com');
+  if (filters.situacao === 'regulares') query = query.eq('anulada', false).eq('desatualizada', false);
+  if (filters.situacao === 'anuladas') query = query.eq('anulada', true);
+  if (filters.situacao === 'desatualizadas') query = query.eq('desatualizada', true);
   if (filters.apenas === 'revisadas') query = query.eq('revisado', true);
   if (filters.apenas === 'nao_revisadas') query = query.eq('revisado', false);
 
