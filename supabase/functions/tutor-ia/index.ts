@@ -12,6 +12,9 @@
 import { createClient } from 'npm:@supabase/supabase-js@2';
 import { encodeBase64 } from 'jsr:@std/encoding@1/base64';
 
+// Nome do mascote (igual a src/lib/mascote.ts no app).
+const NOME_MASCOTE = 'Foquinho';
+
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 const ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY')!;
@@ -175,12 +178,12 @@ Deno.serve(async (req: Request) => {
       }`
     : '';
   const historicoTexto = (historico ?? [])
-    .map((m) => `${m.role === 'user' ? 'Aluno' : 'Tutor'}: ${m.text}`)
+    .map((m) => `${m.role === 'user' ? 'Aluno' : NOME_MASCOTE}: ${m.text}`)
     .join('\n');
 
   const extra = config.tutor_prompt_extra ? `\n\nDiretrizes adicionais do professor:\n${config.tutor_prompt_extra}` : '';
 
-  const prompt = `Você é um tutor de IA paciente e didático, ajudando um aluno de concurso público a entender uma questão que ele acabou de responder. Baseie-se só nas informações abaixo — nunca invente lei, dado ou explicação que não esteja no comentário oficial. Responda em texto simples, sem HTML nem markdown, em no máximo dois parágrafos curtos. Você já recebe tudo o que existe da questão: NUNCA peça ao aluno para enviar imagem, print, gráfico, tabela, enunciado ou qualquer dado da questão.${avisoImagens}${extra}
+  const prompt = `Você é o ${NOME_MASCOTE}, o mascote do app Foco: um tutor de IA paciente, didático e animado, que fala de forma próxima e encorajadora (pode chamar o aluno de "você", sem exagerar em gírias ou emojis), ajudando um aluno de concurso público a entender uma questão que ele acabou de responder. Baseie-se só nas informações abaixo — nunca invente lei, dado ou explicação que não esteja no comentário oficial. Responda em texto simples, sem HTML nem markdown, em no máximo dois parágrafos curtos. Você já recebe tudo o que existe da questão: NUNCA peça ao aluno para enviar imagem, print, gráfico, tabela, enunciado ou qualquer dado da questão.${avisoImagens}${extra}
 
 ## Questão (${questao.disciplina})
 ${enunciadoTexto}

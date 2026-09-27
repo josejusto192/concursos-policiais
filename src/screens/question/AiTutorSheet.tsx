@@ -7,6 +7,8 @@ import { EdgeFunctionError } from '../../lib/edgeFunctions';
 import { logClientError } from '../../lib/errorLog';
 import type { Questao } from '../../data/types';
 import ModalFrame from '../../components/ModalFrame';
+import Mascot from '../../components/Mascot';
+import { NOME_MASCOTE } from '../../lib/mascote';
 
 interface AiTutorSheetProps {
   q: Questao;
@@ -51,21 +53,23 @@ export default function AiTutorSheet({ q, selected, acertou, onClose }: AiTutorS
         type: 'AI_REPLY',
         text: limiteDiario
           ? (err as Error).message
-          : 'Ops, o tutor está indisponível no momento. Já avisamos a equipe — tente de novo mais tarde.',
+          : `Ops, o ${NOME_MASCOTE} está indisponível no momento. Já avisamos a equipe — tente de novo mais tarde.`,
       });
     }
   }
 
   return (
-    <ModalFrame title="Tutor IA" onClose={onClose} sheet className="tutor-sheet">
+    <ModalFrame title={NOME_MASCOTE} onClose={onClose} sheet className="tutor-sheet">
       {(close) => (
         <div className="tutor-sheet-content bg-surface">
           <div className="flex flex-none items-center gap-3 border-b border-border2 p-[14px_18px]">
-            <div className="flex h-[38px] w-[38px] items-center justify-center rounded-[11px] bg-blue font-display text-[15px] font-extrabold text-yellow">
-              IA
+            <div className="flex h-[46px] w-[46px] flex-none items-center justify-center rounded-[14px] bg-blue-tint">
+              <Mascot mood={state.aiTyping ? 'thinking' : 'idle'} size={44} />
             </div>
             <div className="min-w-0 flex-1">
-              <div className="font-sans text-[15px] font-extrabold text-ink">Tutor IA</div>
+              <div className="font-sans text-[15px] font-extrabold text-ink">
+                {NOME_MASCOTE} <span className="font-semibold text-text3">· tutor com IA</span>
+              </div>
               <div className="font-sans text-[11.5px] font-semibold text-text2">
                 {creditos
                   ? `${creditos.restantes} de ${creditos.limite} mensagens restantes hoje`
@@ -82,7 +86,8 @@ export default function AiTutorSheet({ q, selected, acertou, onClose }: AiTutorS
           </div>
           <div className="scr flex flex-1 flex-col gap-2.5 overflow-y-auto p-[16px_16px_8px]">
             {state.aiMessages.map((m, i) => (
-              <div key={i} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+              <div key={i} className={`flex items-end gap-1.5 ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                {m.role === 'ai' && <Mascot mood="idle" size={28} className="flex-none" />}
                 <div
                   className="max-w-[82%] p-[12px_14px] font-sans text-[13.5px] font-semibold leading-[1.5]"
                   style={{
@@ -96,7 +101,7 @@ export default function AiTutorSheet({ q, selected, acertou, onClose }: AiTutorS
               </div>
             ))}
             {state.aiTyping && (
-              <div className="inline-flex w-fit items-center gap-1 self-start rounded-2xl bg-app-bg p-[12px_14px]">
+              <div className="inline-flex w-fit items-center gap-1 self-start rounded-2xl bg-app-bg p-[12px_14px]" aria-label={`${NOME_MASCOTE} está escrevendo`}>
                 <span className="h-1.5 w-1.5 animate-float-y rounded-full bg-text5" />
                 <span className="h-1.5 w-1.5 animate-float-y rounded-full bg-text5" style={{ animationDelay: '.15s' }} />
                 <span className="h-1.5 w-1.5 animate-float-y rounded-full bg-text5" style={{ animationDelay: '.3s' }} />
@@ -107,8 +112,8 @@ export default function AiTutorSheet({ q, selected, acertou, onClose }: AiTutorS
             <div className="flex flex-none flex-col gap-2 border-t border-border2 p-[12px_16px_18px] text-center">
               <div className="font-sans text-[12.5px] font-bold text-text2">
                 {creditos?.assinante
-                  ? 'Seus créditos do tutor acabaram por hoje. Eles renovam à meia-noite.'
-                  : 'Suas mensagens grátis de hoje acabaram. Assinantes conversam muito mais com o tutor.'}
+                  ? `Suas mensagens com o ${NOME_MASCOTE} acabaram por hoje. Elas renovam à meia-noite.`
+                  : `Suas mensagens grátis de hoje acabaram. Assinantes conversam muito mais com o ${NOME_MASCOTE}.`}
               </div>
               {!creditos?.assinante && (
                 <button onClick={() => navigate('/assinar')} className="button button-primary w-full">
@@ -122,7 +127,7 @@ export default function AiTutorSheet({ q, selected, acertou, onClose }: AiTutorS
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && send()}
-                placeholder="Digite sua dúvida..."
+                                placeholder={`Pergunte ao ${NOME_MASCOTE}...`}
                 className="h-[46px] flex-1 rounded-2xl border-[1.5px] border-border bg-[#F8FAFF] px-3.5 font-sans text-[14px] font-semibold text-ink outline-none"
               />
               <button

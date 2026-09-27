@@ -19,7 +19,7 @@ export default function TermosConteudo() {
       <h2 className="font-display text-[15px] font-extrabold text-ink">2. O que oferecemos</h2>
       <p>
         O app disponibiliza trilhas de estudo com questões comentadas, estatísticas de desempenho, ranking, gamificação (XP,
-        streak) e, quando disponível, um tutor de IA para tirar dúvidas sobre questões respondidas incorretamente. O conteúdo é
+        streak) e, quando disponível, o Foquinho, um tutor com inteligência artificial para tirar dúvidas sobre questões respondidas incorretamente. O conteúdo é
         fornecido "como está" — apesar dos cuidados de curadoria, não garantimos ausência total de erros nos comentários ou
         questões.
       </p>

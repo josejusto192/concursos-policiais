@@ -18,7 +18,7 @@ const NOME_CICLO: Record<string, string> = {
   SEMIANNUALLY: 'por semestre',
   YEARLY: 'por ano',
 };
-const BENEFICIOS = ['Todos os módulos de todas as trilhas', 'Caderno de erros completo', 'Tutor de IA nas questões que você errar'];
+const BENEFICIOS = ['Todos os módulos de todas as trilhas', 'Caderno de erros completo', 'Foquinho, seu tutor com IA, nas questões que você errar'];
 
 function formatarCpf(valor: string) {
   const d = valor.replace(/\D/g, '').slice(0, 11);

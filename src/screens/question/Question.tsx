@@ -10,6 +10,7 @@ import type { Questao } from '../../data/types';
 import PatternBackground from '../../components/PatternBackground';
 import ReportSheet from './ReportSheet';
 import AiTutorSheet from './AiTutorSheet';
+import { NOME_MASCOTE } from '../../lib/mascote';
 import { logClientError } from '../../lib/errorLog';
 import Dialog from '../../components/Dialog';
 import { LoadingExperience } from '../../components/Feedback';
@@ -285,7 +286,7 @@ export default function Question() {
   function openAi() {
     dispatch({
       type: 'AI_OPEN_SEED',
-      text: `Vi que você errou essa questão de ${q.disciplina}. Baseado no enunciado, nas alternativas e no comentário, me conta o que ficou confuso — posso te ajudar.`,
+      text: `Oi! Sou o ${NOME_MASCOTE}. Vi que essa questão de ${q.disciplina} te pegou. Já li o enunciado, as alternativas e o comentário — me conta o que ficou confuso que eu te explico.`,
     });
     setAiOpen(true);
   }
@@ -496,10 +497,8 @@ export default function Question() {
                 onClick={openAi}
                 className="mt-3.5 flex w-full items-center justify-center gap-2 rounded-2xl border-[1.5px] border-blue-border bg-blue-tint p-3 font-sans text-[13.5px] font-extrabold text-blue"
               >
-                <span className="flex h-[22px] w-[22px] items-center justify-center rounded-[7px] bg-blue font-display text-[11px] font-extrabold text-yellow">
-                  IA
-                </span>
-                Ainda com dúvida? Perguntar para a IA
+                <Mascot mood="wave" size={34} className="-my-2" />
+                Ainda com dúvida? Chame o {NOME_MASCOTE}
               </button>
             )}
           </div>

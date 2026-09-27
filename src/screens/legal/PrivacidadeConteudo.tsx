@@ -14,7 +14,7 @@ export default function PrivacidadeConteudo() {
       <p>
         Nome, e-mail, WhatsApp, faixa etária, e informações do seu objetivo de estudo (se já prestou concurso, nível de preparo,
         prazo da prova), fornecidos no cadastro. Também registramos seu progresso de estudo (respostas, acertos, XP, streak) e, se
-        você usar o Tutor de IA, o conteúdo das suas dúvidas digitadas.
+        você conversar com o Foquinho (nosso tutor com inteligência artificial), o conteúdo das suas dúvidas digitadas.
       </p>
 
       <h2 className="font-display text-[15px] font-extrabold text-ink">2. Para que usamos</h2>
@@ -26,7 +26,7 @@ export default function PrivacidadeConteudo() {
       <h2 className="font-display text-[15px] font-extrabold text-ink">3. Com quem compartilhamos</h2>
       <p>
         Usamos a Supabase (infraestrutura de banco de dados e autenticação) para armazenar seus dados, e a API do Google Gemini
-        para gerar respostas do Tutor de IA — nesse caso, o enunciado da questão e sua dúvida digitada são enviados ao Google para
+        para gerar as respostas do Foquinho (tutor com IA) — nesse caso, o enunciado da questão e sua dúvida digitada são enviados ao Google para
         processamento. Não vendemos seus dados a terceiros.
       </p>
 
