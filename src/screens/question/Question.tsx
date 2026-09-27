@@ -1,5 +1,5 @@
-import { ArrowClockwise, ArrowRight, CircleNotch, X } from '@phosphor-icons/react';
-import { useEffect, useRef, useState } from 'react';
+import { ArrowClockwise, ArrowRight, CircleNotch, Fire, X } from '@phosphor-icons/react';
+import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAppData } from '../../contexts/AppDataContext';
 import { criarTicket, fetchQuestoesDoModulo, fetchRespostas, recordResposta, upsertProgressoModulo } from '../../lib/queries';
@@ -13,10 +13,20 @@ import AiTutorSheet from './AiTutorSheet';
 import { logClientError } from '../../lib/errorLog';
 import Dialog from '../../components/Dialog';
 import { LoadingExperience } from '../../components/Feedback';
+import Mascot from '../../components/Mascot';
+import { som } from '../../lib/efeitos';
+import { prefereMenosMovimento } from '../../lib/movimento';
+
+// Frases do rodapé de feedback (variam por questão, como no Duolingo).
+const FRASES_ACERTO = ['Mandou bem!', 'Isso aí!', 'Excelente!', 'Na mosca!', 'Perfeito!', 'Arrasou!', 'Muito bom!'];
+const FRASES_ERRO = ['Quase lá!', 'Não foi dessa vez', 'Errar faz parte!', 'Bora aprender com essa', 'Tudo bem, respira'];
+// Comemora 3 acertos seguidos e depois a cada 5 (5, 10, 15…).
+const ehMarcoDeCombo = (combo: number) => combo === 3 || (combo >= 5 && combo % 5 === 0);
 
 export default function Question() {
   const { state, dispatch } = useAppState();
-  const { usuario, activeTrilha, modules, loading: loadingModules, addXp, refreshModules, refreshDailyDone, refreshErrosCount } = useAppData();
+  const { usuario, activeTrilha, modules, loading: loadingModules, addXp, refreshModules, refreshDailyDone, refreshErrosCount, registrarEstudo } =
+    useAppData();
   const navigate = useNavigate();
   const [reportOpen, setReportOpen] = useState(false);
   const [reportReason, setReportReason] = useState<string | null>(null);
@@ -28,12 +38,31 @@ export default function Question() {
   const [saveError, setSaveError] = useState('');
   const [quitOpen, setQuitOpen] = useState(false);
   const savingRef = useRef(false);
+  const explicacaoRef = useRef<HTMLDivElement>(null);
+  const [ultimoGanho, setUltimoGanho] = useState(0);
   // Retomada: módulo não concluído continua da 1ª questão sem resposta.
   // Só na entrada (sessão zerada) — nunca no meio de uma sessão em curso.
   const sessaoNovaRef = useRef(state.session.qIndex === 0 && state.session.sessionAnswered === 0);
   const [retomadaDe, setRetomadaDe] = useState<number | null>(null);
   const [todasRespondidas, setTodasRespondidas] = useState<{ answered: number; correct: number } | null>(null);
   const contentRef = useRef<HTMLDivElement>(null);
+
+  // Depois de responder, rola só o bastante pra mostrar o começo da
+  // explicação acima do rodapé de feedback — sem tirar da tela as
+  // alternativas (o aluno precisa ver qual marcou e qual era a certa).
+  useEffect(() => {
+    if (!state.session.answered) return;
+    const id = window.setTimeout(() => {
+      const painel = explicacaoRef.current;
+      const scroller = painel?.closest<HTMLElement>('.pattern-scroll');
+      if (!painel || !scroller) return;
+      const rodape = document.querySelector<HTMLElement>('.question-actions')?.offsetHeight ?? 0;
+      const visivelAte = scroller.getBoundingClientRect().bottom - rodape;
+      const falta = painel.getBoundingClientRect().top + 105 - visivelAte;
+      if (falta > 0) scroller.scrollBy({ top: falta, behavior: prefereMenosMovimento() ? 'auto' : 'smooth' });
+    }, 340);
+    return () => window.clearTimeout(id);
+  }, [state.session.answered, state.session.qIndex]);
 
   useEffect(() => {
     contentRef.current?.closest('.pattern-scroll')?.scrollTo({ top: 0 });
@@ -192,7 +221,15 @@ export default function Question() {
         }
       }
       dispatch({ type: 'MARK_ANSWERED', correct, gained });
-      await Promise.all([refreshDailyDone(), refreshErrosCount()]);
+      setUltimoGanho(gained);
+      if (correct) {
+        som.acerto();
+        if (ehMarcoDeCombo(state.session.combo + 1)) window.setTimeout(som.combo, 260);
+      } else {
+        som.erro();
+      }
+      const [ofensivaNova] = await Promise.all([registrarEstudo(), refreshDailyDone(), refreshErrosCount()]);
+      if (ofensivaNova) dispatch({ type: 'OFENSIVA_ESTENDIDA', valor: ofensivaNova });
     } catch (err) {
       logClientError(err, 'recordResposta');
       setSaveError('Sua resposta ainda não foi salva. Confira a conexão e toque em confirmar para tentar novamente.');
@@ -228,7 +265,7 @@ export default function Question() {
         return;
       }
     }
-    navigate('/resultado', { state: { moduloTitulo: currentModulo?.titulo, trilhaNome: activeTrilha?.nome } });
+    navigate('/resultado', { state: { moduloId: currentModuloId, moduloTitulo: currentModulo?.titulo, trilhaNome: activeTrilha?.nome } });
   }
 
   // Vira ticket em Admin → Reportes. Erro sobe pro ReportSheet mostrar.
@@ -254,6 +291,11 @@ export default function Question() {
   }
 
   const warn = q.anulada || q.desatualizada;
+  const { combo } = state.session;
+  const frase = isCorrect
+    ? FRASES_ACERTO[(state.session.qIndex * 3 + state.session.sessionAnswered) % FRASES_ACERTO.length]
+    : FRASES_ERRO[(state.session.qIndex * 3 + state.session.sessionAnswered) % FRASES_ERRO.length];
+  const progresso = Math.round(((state.session.qIndex + (answered ? 1 : 0)) / total) * 100);
 
   return (
     <>
@@ -267,14 +309,17 @@ export default function Question() {
           >
             <X weight="bold" size={17} />
           </button>
-          <div className="h-3 flex-1 overflow-hidden rounded-lg bg-border2">
-            <div
-              className="h-full rounded-lg transition-[width] duration-300"
-              style={{
-                width: `${Math.round(((state.session.qIndex + (answered ? 1 : 0)) / total) * 100)}%`,
-                background: 'linear-gradient(90deg,#1557E6,#3a7bff)',
-              }}
-            />
+          <div
+            className="question-progress"
+            role="progressbar"
+            aria-label="Progresso do módulo"
+            aria-valuemin={0}
+            aria-valuemax={100}
+            aria-valuenow={progresso}
+          >
+            <div className={`question-progress-fill ${combo >= 3 ? 'em-chamas' : ''}`} style={{ width: `${Math.max(progresso, 4)}%` }}>
+              {answered && <span className="progress-shine" key={`${state.session.qIndex}-shine`} />}
+            </div>
           </div>
           <button
             aria-label={state.timerOn ? 'Pausar cronômetro' : 'Iniciar cronômetro'}
@@ -292,13 +337,20 @@ export default function Question() {
         </div>
         <div className="question-status">
           <span>{currentModulo.titulo}</span>
-          <span>
-            Questão {state.session.qIndex + 1} de {total}
-          </span>
+          {combo >= 3 ? (
+            <span className="combo-status" key={combo}>
+              <Fire size={13} weight="fill" aria-hidden="true" />
+              {combo} seguidas
+            </span>
+          ) : (
+            <span>
+              Questão {state.session.qIndex + 1} de {total}
+            </span>
+          )}
         </div>
       </div>
 
-      <PatternBackground scrollClassName="p-[18px_18px_150px]">
+      <PatternBackground scrollClassName="p-[18px_18px_230px]">
         <div ref={contentRef} tabIndex={-1} className="sr-only">
           Questão {state.session.qIndex + 1}
         </div>
@@ -366,6 +418,7 @@ export default function Question() {
             let bColor = '#6B7488';
             let bBd = '#E6EAF5';
             let mark: string = a.letra;
+            const estado = !answered ? (sel ? 'alt-selected' : '') : corr ? 'alt-correct' : sel ? 'alt-wrong' : 'alt-dim';
 
             if (!answered) {
               if (sel) {
@@ -400,11 +453,12 @@ export default function Question() {
                 aria-pressed={sel}
                 aria-label={`Alternativa ${a.letra}: ${a.texto}`}
                 onClick={() => !answered && dispatch({ type: 'SELECT_ALT', letra: a.letra })}
-                className="question-alternative flex w-full items-start gap-3 rounded-2xl p-[13px_14px] text-left font-sans text-[14px] font-semibold leading-[1.45] transition-all"
+                className={`question-alternative ${estado} flex w-full items-start gap-3 rounded-2xl p-[13px_14px] text-left font-sans text-[14px] font-semibold leading-[1.45] transition-all`}
                 style={{ border: `1.5px solid ${bd}`, background: bg, color, cursor: answered ? 'default' : 'pointer' }}
               >
                 <span
-                  className="flex h-[30px] w-[30px] flex-none items-center justify-center rounded-[9px] font-sans text-[14px] font-extrabold"
+                  key={mark}
+                  className={`flex h-[30px] w-[30px] flex-none items-center justify-center rounded-[9px] font-sans text-[14px] font-extrabold ${answered && (corr || sel) ? 'alt-mark-pop' : ''}`}
                   style={{ background: bBg, color: bColor, border: `1.5px solid ${bBd}` }}
                 >
                   {mark}
@@ -421,12 +475,12 @@ export default function Question() {
 
         {answered && (
           <div
-            role="status"
-            className="mt-4.5 animate-slide-up rounded-2xl p-4"
+            ref={explicacaoRef}
+            className="explicacao mt-4.5 animate-slide-up rounded-2xl p-4"
             style={{ background: isCorrect ? '#E9F7F0' : '#FDECEC', border: `1.5px solid ${isCorrect ? '#b6e6cd' : '#f6c9cb'}` }}
           >
             <div className="font-sans text-[15px] font-extrabold" style={{ color: isCorrect ? '#17784f' : '#c0392b' }}>
-              {isCorrect ? 'Você acertou! 🎉' : `Ops! Resposta correta: ${q.gabarito_letra}`}
+              {isCorrect ? 'Por que está certo' : `A resposta certa é a ${q.gabarito_letra}`}
             </div>
             {q.comentario_html ? (
               <div
@@ -465,9 +519,30 @@ export default function Question() {
       </PatternBackground>
 
       <div
-        className="question-actions absolute inset-x-0 bottom-0 p-[16px_18px_22px]"
-        style={{ background: 'linear-gradient(180deg,rgba(244,246,252,0),#F4F6FC 30%)' }}
+        className={`question-actions absolute inset-x-0 bottom-0 p-[16px_18px_22px] ${answered ? `feedback-bar ${isCorrect ? 'is-correct' : 'is-wrong'}` : ''}`}
+        style={answered ? undefined : { background: 'linear-gradient(180deg,rgba(244,246,252,0),#F4F6FC 30%)' }}
       >
+        {answered && (
+          <div className="feedback-head" role="status">
+            <Mascot mood={isCorrect ? 'happy' : 'encourage'} size={62} />
+            <div className="min-w-0 flex-1">
+              <div className="feedback-title">{frase}</div>
+              <div className="feedback-sub">
+                {isCorrect ? (
+                  ultimoGanho > 0 ? <span className="xp-pill">+{ultimoGanho} XP</span> : <span>Resposta certa!</span>
+                ) : (
+                  <span>Resposta certa: {q.gabarito_letra}</span>
+                )}
+                {isCorrect && ehMarcoDeCombo(combo) && (
+                  <span className="combo-pill">
+                    <Fire size={13} weight="fill" aria-hidden="true" />
+                    {combo} seguidas!
+                  </span>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
         {saveError && (
           <p className="mb-3 rounded-xl bg-white p-3 text-xs font-semibold text-error" role="alert">
             {saveError}
@@ -477,8 +552,12 @@ export default function Question() {
           <button
             onClick={next}
             disabled={finalizing || saving}
-            className="flex h-[54px] w-full items-center justify-center gap-2 rounded-2xl border-none bg-success font-sans text-[16px] font-extrabold text-white"
-            style={{ boxShadow: '0 6px 0 #17784f' }}
+            className="btn-3d flex h-[54px] w-full items-center justify-center gap-2 rounded-2xl border-none font-sans text-[16px] font-extrabold text-white"
+            style={
+              (isCorrect
+                ? { background: '#22A06B', '--btn-sombra': '#17784f' }
+                : { background: '#E5484D', '--btn-sombra': '#b8343a' }) as CSSProperties
+            }
           >
             {finalizing ? 'Salvando resultado…' : isLast ? 'Ver resultado' : 'Próxima questão'}{' '}
             {finalizing ? <CircleNotch className="busy-icon" size={18} /> : <ArrowRight weight="bold" size={18} />}
@@ -487,12 +566,14 @@ export default function Question() {
           <button
             onClick={confirm}
             disabled={!confirmReady || saving}
-            className="flex h-[54px] w-full items-center justify-center gap-2 rounded-2xl border-none font-sans text-[16px] font-extrabold text-white transition-all"
-            style={{
-              background: confirmReady ? '#1557E6' : '#c9d2e8',
-              boxShadow: confirmReady ? '0 6px 0 #0E3DAE' : 'none',
-              cursor: confirmReady ? 'pointer' : 'default',
-            }}
+            className="btn-3d flex h-[54px] w-full items-center justify-center gap-2 rounded-2xl border-none font-sans text-[16px] font-extrabold text-white"
+            style={
+              {
+                background: confirmReady ? '#1557E6' : '#c9d2e8',
+                '--btn-sombra': confirmReady ? '#0E3DAE' : 'transparent',
+                cursor: confirmReady ? 'pointer' : 'default',
+              } as CSSProperties
+            }
           >
             {saving ? 'Salvando resposta…' : 'Confirmar resposta'}{' '}
             {saving ? <CircleNotch className="busy-icon" size={18} /> : <ArrowRight weight="bold" size={18} />}
@@ -504,7 +585,7 @@ export default function Question() {
       {quitOpen && (
         <Dialog title="Pausar por aqui?" onClose={() => setQuitOpen(false)}>
           <p className="dialog-description">
-            As respostas já confirmadas ficam salvas. Você poderá reiniciar este módulo pela trilha.
+            Suas respostas já estão salvas. Quando voltar, você continua exatamente de onde parou.
           </p>
           <div className="flex flex-wrap gap-3">
             <button className="button button-primary" onClick={() => setQuitOpen(false)}>

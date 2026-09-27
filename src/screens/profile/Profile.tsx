@@ -1,4 +1,4 @@
-import { Crown } from '@phosphor-icons/react';
+import { Crown, SpeakerHigh, SpeakerSlash } from '@phosphor-icons/react';
 import { useNavigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { CATEGORY_COLOR, CONQUISTAS } from '../../data/mock';
@@ -9,14 +9,26 @@ import { fetchReferrals, fetchStats } from '../../lib/queries';
 import PatternBackground from '../../components/PatternBackground';
 import ReferralSheet from './ReferralSheet';
 import LegalSheet, { type LegalDoc } from '../../components/sheets/LegalSheet';
+import { desbloquearAudio, setSonsAtivos, som, sonsAtivos } from '../../lib/efeitos';
 
 export default function Profile() {
   const navigate = useNavigate();
   const { signOut } = useAuth();
-  const { usuario, activeTrilha, modules } = useAppData();
+  const { usuario, activeTrilha, modules, ofensiva } = useAppData();
   const assinaturaPaga = !!usuario?.acesso_ate && new Date(usuario.acesso_ate) > new Date();
   const [referralOpen, setReferralOpen] = useState(false);
   const [legalDoc, setLegalDoc] = useState<LegalDoc | null>(null);
+  const [sons, setSons] = useState(sonsAtivos);
+
+  function alternarSons() {
+    const ligar = !sons;
+    setSonsAtivos(ligar);
+    setSons(ligar);
+    if (ligar) {
+      desbloquearAudio();
+      som.acerto();
+    }
+  }
   const [totalRespondidas, setTotalRespondidas] = useState(0);
   const [taxaAcerto, setTaxaAcerto] = useState(0);
   const [bestAccuracy, setBestAccuracy] = useState(0);
@@ -35,7 +47,7 @@ export default function Profile() {
   const level = levelFromXp(usuario?.xp ?? 0);
   const doneModules = modules.filter((m) => m.status === 'done').length;
   const ctx = {
-    streak: usuario?.streak ?? 0,
+    streak: ofensiva,
     totalQuestoes: totalRespondidas,
     bestAccuracy,
     doneModules,
@@ -165,7 +177,26 @@ export default function Profile() {
             ))}
           </div>
 
-          <div className="mt-5.5 flex justify-center gap-4 font-sans text-[12px] font-bold text-text3">
+          <button
+            type="button"
+            role="switch"
+            aria-checked={sons}
+            onClick={alternarSons}
+            className="mt-5.5 flex w-full items-center gap-3 rounded-2xl border-[1.5px] border-border bg-surface p-[12px_14px] text-left"
+          >
+            <span className="flex h-10 w-10 flex-none items-center justify-center rounded-xl bg-blue-tint text-blue">
+              {sons ? <SpeakerHigh size={20} weight="fill" /> : <SpeakerSlash size={20} weight="fill" />}
+            </span>
+            <span className="flex-1">
+              <span className="block font-sans text-[14px] font-extrabold text-ink">Sons e vibração</span>
+              <span className="block font-sans text-[12px] font-semibold text-text2">Ao acertar, errar e concluir módulos</span>
+            </span>
+            <span className={`chave-sons ${sons ? 'ligada' : ''}`} aria-hidden="true">
+              <span />
+            </span>
+          </button>
+
+          <div className="mt-4 flex justify-center gap-4 font-sans text-[12px] font-bold text-text3">
             <button onClick={() => setLegalDoc('termos')} className="border-none bg-transparent p-0 underline">
               Termos de Uso
             </button>

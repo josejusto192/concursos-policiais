@@ -1,28 +1,17 @@
 import { ArrowClockwise, WarningCircle } from '@phosphor-icons/react';
-function JourneyMascot() {
-  return (
-    <svg className="journey-mascot" viewBox="0 0 144 144" fill="none" aria-hidden="true">
-      <ellipse cx="72" cy="125" rx="35" ry="7" fill="#DCE6F8" />
-      <g className="mascot-body">
-        <path d="M42 72 28 81M102 72l14 9" stroke="#1557E6" strokeWidth="8" strokeLinecap="round" />
-        <path d="M51 105v12m42-12v12" stroke="#0B3FAF" strokeWidth="9" strokeLinecap="round" />
-        <path d="M41 119h20m22 0h20" stroke="#FFCB2D" strokeWidth="10" strokeLinecap="round" />
-        <rect x="34" y="25" width="76" height="86" rx="32" fill="#1557E6" />
-        <path d="M42 38c8-12 20-17 35-17 11 0 22 5 28 13" stroke="#FFCB2D" strokeWidth="8" strokeLinecap="round" />
-        <rect x="46" y="42" width="52" height="42" rx="21" fill="white" />
-        <g className="mascot-eyes" fill="#0B1F4D">
-          <circle cx="62" cy="59" r="3.2" />
-          <circle cx="82" cy="59" r="3.2" />
-        </g>
-        <path d="M65 70c4 5 10 5 14 0" stroke="#0B1F4D" strokeWidth="2.7" strokeLinecap="round" />
-        <circle cx="53" cy="69" r="3" fill="#FFDDA1" />
-        <circle cx="91" cy="69" r="3" fill="#FFDDA1" />
-        <path d="M60 96h24" stroke="#FFCB2D" strokeWidth="5" strokeLinecap="round" />
-      </g>
-      <path className="mascot-spark" d="m115 28 2.4 6.6L124 37l-6.6 2.4L115 46l-2.4-6.6L106 37l6.6-2.4L115 28Z" fill="#FFCB2D" />
-    </svg>
-  );
-}
+import { useEffect, useState } from 'react';
+import Mascot from './Mascot';
+// Dicas curtas que se alternam enquanto carrega (o Duolingo faz igual:
+// transforma a espera em algo útil).
+const DICAS = [
+  'Revisar seus erros no dia seguinte fixa muito mais o conteúdo.',
+  '10 minutos todo dia valem mais do que 2 horas no domingo.',
+  'Errou? Ótimo: a questão vai para o seu caderno de erros para revisar.',
+  'Leia o enunciado até o fim antes de olhar as alternativas.',
+  'Na dúvida entre duas alternativas, elimine primeiro as absurdas.',
+  'Constância vence intensidade: proteja sua sequência de dias.',
+  'Se você consegue explicar a resposta com suas palavras, aprendeu de verdade.',
+];
 
 export function LoadingExperience({
   message = 'Preparando seu espaço',
@@ -31,20 +20,28 @@ export function LoadingExperience({
   message?: string;
   fullPage?: boolean;
 }) {
+  const [dica, setDica] = useState(() => Math.floor(Math.random() * DICAS.length));
+  useEffect(() => {
+    const id = window.setInterval(() => setDica((d) => (d + 1) % DICAS.length), 3400);
+    return () => window.clearInterval(id);
+  }, []);
+
   return (
     <div className={`loading-experience ${fullPage ? 'full-page' : ''}`} role="status" aria-live="polite">
       <div className="loading-journey" aria-hidden="true">
         <span className="journey-halo" />
-        <JourneyMascot />
-        <span className="journey-ground">
-          <i />
-          <i />
-          <i />
-        </span>
+        <Mascot mood="thinking" size={144} />
       </div>
-      <span className="loading-eyebrow">FOCO EM MOVIMENTO</span>
       <strong>{message}</strong>
-      <span className="loading-subtitle">Seu próximo passo está sendo preparado.</span>
+      <span className="loading-steps" aria-hidden="true">
+        <i />
+        <i />
+        <i />
+      </span>
+      <div className="loading-tip" aria-hidden="true">
+        <span className="loading-eyebrow">DICA DE ESTUDO</span>
+        <p key={dica}>{DICAS[dica]}</p>
+      </div>
     </div>
   );
 }

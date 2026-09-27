@@ -2529,18 +2529,6 @@ textarea:focus-visible {
     transform: rotate(360deg);
   }
 }
-@keyframes mascot-hop {
-  0%, 100% { transform: translateY(0) rotate(-3deg); }
-  50% { transform: translateY(-9px) rotate(3deg); }
-}
-@keyframes mascot-blink {
-  0%, 90%, 100% { transform: scaleY(1); }
-  94% { transform: scaleY(.12); }
-}
-@keyframes mascot-sparkle {
-  0%, 100% { opacity: .45; transform: scale(.8); }
-  50% { opacity: 1; transform: scale(1.12); }
-}
 @keyframes skeleton-sheen {
   to { background-position-x: -200%; }
 }
@@ -2641,13 +2629,6 @@ textarea:focus-visible {
   font-weight: 900;
   letter-spacing: .15em;
 }
-.loading-subtitle {
-  max-width: 240px;
-  font-size: 12px;
-  line-height: 1.5;
-  color: #66748e;
-  margin-top: 8px;
-}
 .loading-journey {
   position: relative;
   width: 174px;
@@ -2661,37 +2642,6 @@ textarea:focus-visible {
   inset: 8px;
   border-radius: 50%;
   background: radial-gradient(circle, #e6efff 0, #e6efff88 58%, #e6efff00 70%);
-}
-.journey-mascot {
-  position: relative;
-  width: 144px;
-  height: 144px;
-  overflow: visible;
-}
-.mascot-body {
-  transform-origin: 72px 116px;
-  animation: mascot-hop 1.5s ease-in-out infinite;
-}
-.mascot-eyes {
-  transform-origin: 72px 59px;
-  animation: mascot-blink 3.6s infinite;
-}
-.mascot-spark {
-  transform-origin: 115px 37px;
-  animation: mascot-sparkle 2s ease-in-out infinite;
-}
-.journey-ground {
-  position: absolute;
-  bottom: 4px;
-  display: flex;
-  gap: 7px;
-}
-.journey-ground i {
-  width: 8px;
-  height: 5px;
-  border-radius: 50%;
-  background: #ffcb2d;
-  opacity: .72;
 }
 .trail-loading {
   min-height: 520px;
@@ -2751,9 +2701,6 @@ textarea:focus-visible {
   .bottom-nav a.active .tab-icon svg,
   .busy-icon,
   .loading-experience,
-  .mascot-body,
-  .mascot-eyes,
-  .mascot-spark,
   .skeleton-shape,
   .trail-loading-stop,
   .skeleton-card span,

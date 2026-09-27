@@ -7,7 +7,7 @@ import { levelFromXp } from '../lib/format';
 import { ErrorState, LoadingCards } from '../components/Feedback';
 
 export default function Stats() {
-  const { usuario, dailyDone } = useAppData();
+  const { usuario, dailyDone, ofensiva } = useAppData();
   const usuarioId = usuario?.id;
   const [stats, setStats] = useState<StatsData | null>(null);
   const [error, setError] = useState('');
@@ -59,7 +59,7 @@ export default function Stats() {
                   <Fire size={23} />
                 </span>
                 <div>
-                  <strong>{usuario?.streak ?? 0}</strong>
+                  <strong>{ofensiva}</strong>
                   <small>dias de constância</small>
                 </div>
               </div>

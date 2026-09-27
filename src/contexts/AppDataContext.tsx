@@ -12,6 +12,7 @@ import {
 import type { Database } from '../lib/database.types';
 import type { Modulo, ModuloStatus } from '../data/types';
 import { logClientError } from '../lib/errorLog';
+import { diaLocal, diaLocalDeslocado } from '../lib/datas';
 
 type UsuarioUpdate = Database['public']['Tables']['usuarios']['Update'];
 
@@ -69,6 +70,12 @@ interface AppDataContextValue {
   // Assinatura ativa (cortesia ou paga) ou equipe — libera todos os módulos.
   temAcesso: boolean;
   refreshUsuario: () => Promise<void>;
+  // Ofensiva (dias seguidos estudando): a efetiva já vem zerada se o aluno
+  // pulou um dia. registrarEstudo() é chamado a cada resposta; na 1ª do dia
+  // estende (ou recomeça) a ofensiva e devolve o novo valor.
+  ofensiva: number;
+  estudouHoje: boolean;
+  registrarEstudo: () => Promise<number | null>;
   dailyDone: number;
   refreshDailyDone: () => Promise<void>;
   errosCount: number;
@@ -169,6 +176,25 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
 
   const retry = useCallback(() => setRetryTick((t) => t + 1), []);
 
+  const hoje = diaLocal();
+  const ontem = diaLocalDeslocado(-1);
+  const estudouHoje = usuario?.ultimo_estudo === hoje;
+  const ofensiva = usuario && (estudouHoje || usuario.ultimo_estudo === ontem) ? usuario.streak : 0;
+
+  const registrarEstudo = useCallback(async (): Promise<number | null> => {
+    if (!usuario) return null;
+    const dia = diaLocal();
+    if (usuario.ultimo_estudo === dia) return null;
+    const nova = usuario.ultimo_estudo === diaLocalDeslocado(-1) ? usuario.streak + 1 : 1;
+    try {
+      await updateUsuario({ streak: nova, ultimo_estudo: dia });
+      return nova;
+    } catch (err) {
+      logClientError(err, 'registrarEstudo');
+      return null;
+    }
+  }, [usuario, updateUsuario]);
+
   // Mesma regra de modulo_liberado() no banco (migration 022): sem
   // assinatura, só o 1º módulo de questões da trilha é grátis.
   const temAcesso = useMemo(
@@ -212,6 +238,9 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
         refreshModules,
         temAcesso,
         refreshUsuario: recarregarUsuario,
+        ofensiva,
+        estudouHoje,
+        registrarEstudo,
         dailyDone,
         refreshDailyDone,
         errosCount,

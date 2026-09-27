@@ -85,6 +85,8 @@ export type Database = {
           assinatura_ativa: boolean;
           streak: number;
           ultimo_acesso: string | null;
+          // Último dia (local) em que respondeu questão — base da ofensiva (migration 026).
+          ultimo_estudo: string | null;
           created_at: string;
           whatsapp: string | null;
           faixa_etaria: string | null;
@@ -113,6 +115,7 @@ export type Database = {
           email: string;
           streak?: number;
           ultimo_acesso?: string | null;
+          ultimo_estudo?: string | null;
           whatsapp?: string | null;
           faixa_etaria?: string | null;
           ja_prestou_concurso?: boolean | null;
@@ -129,6 +132,7 @@ export type Database = {
           assinatura_cortesia?: boolean;
           streak?: number;
           ultimo_acesso?: string | null;
+          ultimo_estudo?: string | null;
           whatsapp?: string | null;
           faixa_etaria?: string | null;
           ja_prestou_concurso?: boolean | null;

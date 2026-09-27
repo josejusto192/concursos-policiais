@@ -288,6 +288,23 @@ export async function atualizarRespostaErro(usuarioId: string, questaoId: string
   if (error) throw error;
 }
 
+// Dias (no fuso do aparelho) em que o aluno respondeu questão, nos últimos
+// `dias` dias — o calendário da ofensiva. Vale a data da resposta mais
+// recente de cada questão (responder de novo move a data).
+export async function fetchDiasDeEstudo(usuarioId: string, dias = 7): Promise<Set<string>> {
+  const desde = new Date();
+  desde.setHours(0, 0, 0, 0);
+  desde.setDate(desde.getDate() - (dias - 1));
+  const { data, error } = await supabase
+    .from('progresso_questoes')
+    .select('respondido_em')
+    .eq('usuario_id', usuarioId)
+    .gte('respondido_em', desde.toISOString())
+    .limit(2000);
+  if (error) throw error;
+  return new Set((data ?? []).map((r) => new Date(r.respondido_em).toLocaleDateString('en-CA')));
+}
+
 export async function fetchDailyDone(usuarioId: string): Promise<number> {
   const startOfDay = new Date();
   startOfDay.setHours(0, 0, 0, 0);

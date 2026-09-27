@@ -1,10 +1,12 @@
 import { Check, LockSimple, Play, Path, Trophy } from '@phosphor-icons/react';
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useEffect, useRef, useState, type CSSProperties } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useAppData } from '../../contexts/AppDataContext';
 import { useAppState } from '../../state/AppStateContext';
 import type { Modulo } from '../../data/types';
 import VideoSheet from '../../components/sheets/VideoSheet';
+import { som, vibrar } from '../../lib/efeitos';
+import { prefereMenosMovimento } from '../../lib/movimento';
 
 const STEP_HEIGHT = 170;
 const centerX = (index: number) => 160 + Math.sin((index * Math.PI) / 2) * 66;
@@ -13,7 +15,56 @@ export default function TrilhaPath() {
   const { modules, activeTrilha } = useAppData();
   const { dispatch } = useAppState();
   const navigate = useNavigate();
+  const location = useLocation();
   const [aula, setAula] = useState<Modulo | null>(null);
+  const mapaRef = useRef<HTMLDivElement>(null);
+  // Voltando do resultado (Result.tsx manda `concluido`): o módulo que
+  // acabou de fechar comemora e o próximo "desbloqueia".
+  const concluidoAgora = (location.state as { concluido?: number } | null)?.concluido;
+  const [acabouId] = useState(() => (modules.some((m) => m.id === concluidoAgora && m.status === 'done') ? concluidoAgora : undefined));
+  // Etapa bloqueada tocada: balança e explica em vez de não fazer nada.
+  const [balancando, setBalancando] = useState<number | null>(null);
+  const balancoTimer = useRef(0);
+  const indiceAtual = modules.findIndex((m) => m.status === 'current');
+
+  useEffect(() => {
+    // Consome o aviso: recarregar a página não repete a comemoração.
+    if (concluidoAgora != null) navigate(location.pathname, { replace: true, state: null });
+  }, [concluidoAgora, location.pathname, navigate]);
+
+  // Abre a trilha já no próximo passo (trilhas longas não obrigam a rolar).
+  useEffect(() => {
+    const mapa = mapaRef.current;
+    const scroller = mapa?.closest<HTMLElement>('.pattern-scroll');
+    if (!mapa || !scroller) return;
+    const centralizar = (el: Element | null, suave: boolean) => {
+      if (!el) return;
+      const topo = el.getBoundingClientRect().top - scroller.getBoundingClientRect().top + scroller.scrollTop;
+      scroller.scrollTo({ top: Math.max(0, topo - scroller.clientHeight * 0.35), behavior: suave && !prefereMenosMovimento() ? 'smooth' : 'auto' });
+    };
+    const atual = mapa.querySelector('.map-stop.current');
+    if (acabouId == null) {
+      centralizar(atual, false);
+      return;
+    }
+    centralizar(mapa.querySelector('.map-stop.acabou'), false);
+    const id = window.setTimeout(() => {
+      centralizar(atual, true);
+      if (atual) som.combo();
+    }, 1000);
+    return () => window.clearTimeout(id);
+  }, [acabouId]);
+
+  useEffect(() => () => window.clearTimeout(balancoTimer.current), []);
+
+  function balancar(id: number) {
+    window.clearTimeout(balancoTimer.current);
+    setBalancando(null);
+    requestAnimationFrame(() => setBalancando(id));
+    vibrar(25);
+    balancoTimer.current = window.setTimeout(() => setBalancando(null), 1800);
+  }
+
   if (!modules.length)
     return (
       <div className="panel empty-state">
@@ -31,7 +82,7 @@ export default function TrilhaPath() {
     )
     .join(' ');
   return (
-    <div className="game-map">
+    <div className="game-map" ref={mapaRef}>
       <div className="map-section-label">
         <span>{activeTrilha?.secao_nome || 'Sua trilha de conquistas'}</span>
       </div>
@@ -46,6 +97,7 @@ export default function TrilhaPath() {
           // Módulo pago sem assinatura: toca e vai pra tela de planos (já
           // concluído num período de assinatura continua só como concluído).
           const premium = m.premium && !done;
+          const travado = m.status === 'locked' && !premium;
           const title = premium
             ? 'Assine para desbloquear'
             : current
@@ -58,8 +110,17 @@ export default function TrilhaPath() {
           return (
             <div
               key={m.id}
-              className={`map-stop ${m.status}${premium ? ' premium' : ''}`}
-              style={{ top: index * STEP_HEIGHT, left: `${(centerX(index) / 320) * 100}%` }}
+              className={`map-stop ${m.status}${premium ? ' premium' : ''}${m.id === acabouId ? ' acabou' : ''}${
+                current && acabouId != null ? ' desbloqueou' : ''
+              }${balancando === m.id ? ' balanca' : ''}`}
+              style={
+                {
+                  top: index * STEP_HEIGHT,
+                  left: `${(centerX(index) / 320) * 100}%`,
+                  // entrada em cascata a partir do próximo passo
+                  '--atraso': `${Math.min(Math.abs(index - Math.max(0, indiceAtual)), 6) * 70}ms`,
+                } as CSSProperties
+              }
             >
               {current && (
                 <span className="map-current-label">
@@ -69,11 +130,13 @@ export default function TrilhaPath() {
               )}
               <button
                 className="map-node"
-                disabled={!premium && !current && !(video && m.video_url)}
+                disabled={!premium && !current && !travado && !(video && m.video_url)}
+                aria-disabled={travado || undefined}
                 aria-label={`${m.titulo}. ${title}`}
                 title={title}
                 onClick={() => {
-                  if (premium) navigate('/assinar');
+                  if (travado) balancar(m.id);
+                  else if (premium) navigate('/assinar');
                   else if (video) setAula(m);
                   else {
                     dispatch({ type: 'RESET_SESSION' });
@@ -102,7 +165,9 @@ export default function TrilhaPath() {
                       ? 'AULA EXTRA · OPCIONAL'
                       : current
                         ? 'Toque para continuar'
-                        : 'Próxima conquista'}
+                        : balancando === m.id
+                          ? 'Conclua a etapa anterior'
+                          : 'Próxima conquista'}
                 </p>
               </div>
             </div>

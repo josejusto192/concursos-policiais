@@ -26,6 +26,8 @@ export function reducer(state: AppState, action: Action): AppState {
           sessionAnswered: state.session.sessionAnswered + 1,
           sessionCorrect: state.session.sessionCorrect + (ok ? 1 : 0),
           gained: state.session.gained + action.gained,
+          combo: ok ? state.session.combo + 1 : 0,
+          maxCombo: ok ? Math.max(state.session.maxCombo, state.session.combo + 1) : state.session.maxCombo,
         },
       };
     }
@@ -47,15 +49,18 @@ export function reducer(state: AppState, action: Action): AppState {
           sessionCorrect: action.correct,
           // XP já ganho nas questões respondidas antes (10 por acerto).
           gained: action.correct * 10,
+          combo: 0,
+          maxCombo: 0,
         },
       };
     case 'RESET_SESSION':
       return {
         ...state,
-        session: { qIndex: 0, selected: null, answered: false, sessionCorrect: 0, sessionAnswered: 0, gained: 0 },
+        session: { qIndex: 0, selected: null, answered: false, sessionCorrect: 0, sessionAnswered: 0, gained: 0, combo: 0, maxCombo: 0 },
         timerOn: false,
         aiMessages: [],
         aiTyping: false,
+        ofensivaEstendida: null,
       };
     case 'TOGGLE_TIMER':
       return { ...state, timerOn: !state.timerOn };
@@ -73,6 +78,8 @@ export function reducer(state: AppState, action: Action): AppState {
       return { ...state, aiMessages: [...state.aiMessages, { role: 'ai', text: action.text }], aiTyping: false };
     case 'AI_RESET':
       return { ...state, aiMessages: [], aiTyping: false };
+    case 'OFENSIVA_ESTENDIDA':
+      return { ...state, ofensivaEstendida: action.valor };
     default:
       return state;
   }

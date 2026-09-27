@@ -32,27 +32,20 @@ export function useUsuario() {
       const { data: existing } = await supabase.from('usuarios').select('*').eq('id', user.id).single()
 
       if (existing) {
-        const lastAccess = existing.ultimo_acesso
-        let newStreak = existing.streak
-
-        if (lastAccess) {
-          const last = new Date(lastAccess)
-          const todayDate = new Date(today)
-          const diffDays = Math.floor((todayDate.getTime() - last.getTime()) / 86400000)
-          if (diffDays === 1) newStreak = existing.streak + 1
-          else if (diffDays > 1) newStreak = 1
+        // Só registra o acesso. A ofensiva (streak) NÃO muda ao abrir o app:
+        // ela cresce ao estudar (registrarEstudo em AppDataContext).
+        if (existing.ultimo_acesso === today) {
+          if (!cancelled) setUsuario(existing)
         } else {
-          newStreak = 1
+          const { data: updated } = await supabase
+            .from('usuarios')
+            .update({ ultimo_acesso: today })
+            .eq('id', user.id)
+            .select()
+            .single()
+
+          if (!cancelled) setUsuario(updated ?? existing)
         }
-
-        const { data: updated } = await supabase
-          .from('usuarios')
-          .update({ ultimo_acesso: today, streak: newStreak })
-          .eq('id', user.id)
-          .select()
-          .single()
-
-        if (!cancelled) setUsuario(updated)
       } else {
         const { data: created } = await supabase
           .from('usuarios')
@@ -60,7 +53,7 @@ export function useUsuario() {
             id: user.id,
             email: user.email!,
             nome: user.user_metadata?.full_name ?? null,
-            streak: 1,
+            streak: 0,
             ultimo_acesso: today,
           })
           .select()

@@ -27,6 +27,9 @@ export interface QuestionSession {
   sessionCorrect: number;
   sessionAnswered: number;
   gained: number;
+  // Acertos seguidos agora e o maior da sessão (comemorações e resultado).
+  combo: number;
+  maxCombo: number;
 }
 
 export interface AiMessage {
@@ -43,6 +46,9 @@ export interface AppState {
   navLoading: boolean;
   aiMessages: AiMessage[];
   aiTyping: boolean;
+  // Novo valor da ofensiva quando esta sessão foi a 1ª do dia (a tela de
+  // resultado comemora). Zera ao começar outra sessão.
+  ofensivaEstendida: number | null;
 }
 
 export const initialAppState: AppState = {
@@ -63,13 +69,14 @@ export const initialAppState: AppState = {
     authError: null,
     submitting: false,
   },
-  session: { qIndex: 0, selected: null, answered: false, sessionCorrect: 0, sessionAnswered: 0, gained: 0 },
+  session: { qIndex: 0, selected: null, answered: false, sessionCorrect: 0, sessionAnswered: 0, gained: 0, combo: 0, maxCombo: 0 },
   timerOn: false,
   seconds: 1500,
   mentorOpen: false,
   navLoading: false,
   aiMessages: [],
   aiTyping: false,
+  ofensivaEstendida: null,
 };
 
 export type Action =
@@ -91,4 +98,5 @@ export type Action =
   | { type: 'AI_OPEN_SEED'; text: string }
   | { type: 'AI_SEND_USER'; text: string }
   | { type: 'AI_REPLY'; text: string }
-  | { type: 'AI_RESET' };
+  | { type: 'AI_RESET' }
+  | { type: 'OFENSIVA_ESTENDIDA'; valor: number };

@@ -4,12 +4,17 @@ import { BrowserRouter } from 'react-router-dom';
 import { Analytics } from '@vercel/analytics/react';
 import './index.css';
 import './redesign.css';
+import './delight.css';
 import App from './App.tsx';
 import ErrorBoundary from './components/ErrorBoundary.tsx';
 import { logClientError } from './lib/errorLog.ts';
+import { desbloquearAudio } from './lib/efeitos.ts';
 
 window.addEventListener('error', (e) => logClientError(e.error ?? e.message, 'window.onerror'));
 window.addEventListener('unhandledrejection', (e) => logClientError(e.reason, 'unhandledrejection'));
+// iOS só libera áudio dentro de um toque: todo toque "acorda" o áudio (sai
+// de suspenso após o app ir pro fundo), pros sons de feedback funcionarem.
+window.addEventListener('pointerdown', desbloquearAudio, { passive: true });
 
 // PWA: registra o service worker só em produção (no dev ele atrapalharia o
 // HMR). Sem esperar o evento load — recursos externos lentos (fontes,
