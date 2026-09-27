@@ -14,6 +14,11 @@ import { asaas, registrarErro, sincronizarCliente } from '../_shared/asaas.ts';
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 const ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY')!;
+// Endereço do app (ex.: https://app.seudominio.com.br). Com ele, a fatura do
+// Asaas manda o aluno de volta pra /assinar depois de pagar (Pix/cartão).
+// O domínio precisa ser o mesmo cadastrado em Asaas → Configurações da
+// conta → Informações; sem APP_URL não há redirecionamento.
+const APP_URL = Deno.env.get('APP_URL')?.replace(/\/$/, '');
 
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
@@ -124,19 +129,35 @@ Deno.serve(async (req: Request) => {
     if (upErr) throw upErr;
 
     const hoje = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' });
-    const assinatura = await asaas<{ id: string; status: string; billingType: string; value: number; cycle: string; nextDueDate: string }>(
-      'POST',
-      '/subscriptions',
-      {
-        customer: customerId,
-        billingType: 'UNDEFINED',
-        value: Number(plano.valor),
-        nextDueDate: hoje,
-        cycle: plano.ciclo,
-        description: plano.nome,
-        externalReference: usuarioId,
-      },
-    );
+    type AsaasSubscription = { id: string; status: string; billingType: string; value: number; cycle: string; nextDueDate: string };
+    const dadosAssinatura = {
+      customer: customerId,
+      billingType: 'UNDEFINED',
+      value: Number(plano.valor),
+      nextDueDate: hoje,
+      cycle: plano.ciclo,
+      description: plano.nome,
+      externalReference: usuarioId,
+    };
+    let assinatura: AsaasSubscription;
+    if (APP_URL) {
+      try {
+        assinatura = await asaas<AsaasSubscription>('POST', '/subscriptions', {
+          ...dadosAssinatura,
+          callback: { successUrl: `${APP_URL}/assinar?pagamento=ok`, autoRedirect: true },
+        });
+      } catch (err) {
+        // Domínio do APP_URL diferente do cadastrado no Asaas: não deixa
+        // isso impedir a venda — assina sem redirecionamento e registra.
+        // Só em recusa de validação (400): falha de rede poderia ter criado
+        // a assinatura, e repetir duplicaria.
+        if (!(err instanceof Error && err.message.includes('HTTP 400'))) throw err;
+        await registrarErro(admin, usuarioId, 'asaas-assinar · callback recusado (confira APP_URL e o domínio no Asaas)', err);
+        assinatura = await asaas<AsaasSubscription>('POST', '/subscriptions', dadosAssinatura);
+      }
+    } else {
+      assinatura = await asaas<AsaasSubscription>('POST', '/subscriptions', dadosAssinatura);
+    }
 
     await admin.from('assinaturas').upsert(
       {

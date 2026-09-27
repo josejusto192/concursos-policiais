@@ -1,6 +1,6 @@
-import { ArrowSquareOut, Check, CheckCircle, Crown, X } from '@phosphor-icons/react';
-import { useCallback, useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { ArrowSquareOut, Check, CheckCircle, CircleNotch, Crown, X } from '@phosphor-icons/react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAppData } from '../contexts/AppDataContext';
 import { assinarPlano, fetchMinhaAssinatura, fetchPlanos, type MinhaAssinatura, type PlanoRow } from '../lib/queries';
 import { EdgeFunctionError } from '../lib/edgeFunctions';
@@ -39,7 +39,32 @@ export default function Assinar() {
   const [erro, setErro] = useState('');
   const [loadError, setLoadError] = useState(false);
 
-  const pago = !!usuario?.acesso_ate && new Date(usuario.acesso_ate) > new Date();
+  const acessoAte = usuario?.acesso_ate;
+  const pago = useMemo(() => !!acessoAte && new Date(acessoAte) > new Date(), [acessoAte]);
+  // Voltou da fatura do Asaas (callback.successUrl da assinatura). O acesso
+  // só é liberado pelo webhook, que pode levar alguns segundos: confere de
+  // 3 em 3 s por até 1 minuto.
+  const [params] = useSearchParams();
+  const voltouDoPagamento = params.get('pagamento') === 'ok';
+  const [aguardandoConfirmacao, setAguardandoConfirmacao] = useState(voltouDoPagamento);
+
+  useEffect(() => {
+    if (!aguardandoConfirmacao) return;
+    if (pago) {
+      setAguardandoConfirmacao(false);
+      return;
+    }
+    let tentativas = 0;
+    const id = window.setInterval(() => {
+      tentativas += 1;
+      refreshUsuario();
+      if (tentativas >= 20) {
+        window.clearInterval(id);
+        setAguardandoConfirmacao(false);
+      }
+    }, 3000);
+    return () => window.clearInterval(id);
+  }, [aguardandoConfirmacao, pago, refreshUsuario]);
 
   const carregar = useCallback(async () => {
     if (!usuario) return;
@@ -121,6 +146,25 @@ export default function Assinar() {
 
   if (!planos || !usuario) return <LoadingExperience message="Buscando os planos" />;
 
+  if (aguardandoConfirmacao && !pago) {
+    return (
+      <>
+        {cabecalho}
+        <PatternBackground scrollClassName="p-[28px_20px_60px]">
+          <div className="mx-auto flex max-w-[440px] flex-col items-center gap-3 text-center" role="status">
+            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-blue-tint text-blue">
+              <CircleNotch size={34} weight="bold" className="animate-spin" />
+            </div>
+            <div className="font-display text-[20px] font-extrabold text-ink">Pagamento recebido!</div>
+            <div className="font-sans text-[13.5px] font-semibold leading-[1.5] text-text2">
+              Estamos liberando seu acesso. Isso leva só alguns segundos.
+            </div>
+          </div>
+        </PatternBackground>
+      </>
+    );
+  }
+
   // Assinatura paga em dia.
   if (pago) {
     return (
@@ -131,7 +175,9 @@ export default function Assinar() {
             <div className="flex h-16 w-16 items-center justify-center rounded-full bg-success-tint text-success">
               <CheckCircle size={36} weight="fill" />
             </div>
-            <div className="font-display text-[20px] font-extrabold text-ink">Sua assinatura está ativa</div>
+            <div className="font-display text-[20px] font-extrabold text-ink">
+              {voltouDoPagamento ? 'Pagamento confirmado! 🎉' : 'Sua assinatura está ativa'}
+            </div>
             <div className="font-sans text-[13.5px] font-semibold text-text2">
               {assinatura?.planoNome ? `${assinatura.planoNome} · ` : ''}acesso liberado até{' '}
               {new Date(usuario.acesso_ate!).toLocaleDateString('pt-BR')}.

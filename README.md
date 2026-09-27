@@ -218,6 +218,12 @@ supabase functions deploy asaas-sync-cliente --no-verify-jwt   # usa o módulo c
    - Eventos: todos de **cobranças** (`PAYMENT_*`) e de **assinaturas**
      (`SUBSCRIPTION_*`)
 
+Redirecionamento após o pagamento (opcional, recomendado): cadastre o
+domínio do app em Asaas → Configurações da conta → Informações (site) e
+crie a secret `APP_URL` (ex.: `https://app.seudominio.com.br`, sem barra
+no fim). A fatura passa a devolver o aluno para `/assinar?pagamento=ok`
+depois de pagar com Pix/cartão. Vale para assinaturas criadas depois disso.
+
 4. Cadastre um plano (SQL Editor):
 
 ```sql
