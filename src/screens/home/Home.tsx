@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { useAppData } from '../../contexts/AppDataContext';
 import Brand from '../../components/Brand';
 import ErrosFab from '../../components/ErrosFab';
-import { ErrorState, LoadingCards } from '../../components/Feedback';
+import { ErrorState, TrailLoading } from '../../components/Feedback';
 import PatternBackground from '../../components/PatternBackground';
 import TrilhaPath from './TrilhaPath';
 import TrilhasSheet from './TrilhasSheet';
@@ -72,7 +72,7 @@ export default function Home() {
       </header>
 
       <PatternBackground scrollClassName="compact-path-scroll">
-        {loading ? <LoadingCards /> : loadError ? <ErrorState message={loadError} retry={retry} /> : <TrilhaPath />}
+        {loading ? <TrailLoading /> : loadError ? <ErrorState message={loadError} retry={retry} /> : <TrilhaPath />}
       </PatternBackground>
 
       <ErrosFab count={errosCount} />

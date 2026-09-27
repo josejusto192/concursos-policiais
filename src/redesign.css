@@ -808,17 +808,11 @@ textarea:focus-visible {
   height: 12px;
   border-radius: 5px;
   background: #eaf0fb;
-  animation: skeleton 1.2s ease infinite alternate;
 }
 .skeleton-card span + span {
   width: 85%;
   height: 9px;
   margin-top: 14px;
-}
-@keyframes skeleton {
-  to {
-    opacity: 0.4;
-  }
 }
 .skip-link {
   position: fixed;
@@ -2447,9 +2441,20 @@ textarea:focus-visible {
     transform: rotate(360deg);
   }
 }
-@keyframes dot-bounce {
-  0%, 65%, 100% { transform: translateY(0); opacity: .45; }
-  32% { transform: translateY(-5px); opacity: 1; }
+@keyframes mascot-hop {
+  0%, 100% { transform: translateY(0) rotate(-3deg); }
+  50% { transform: translateY(-9px) rotate(3deg); }
+}
+@keyframes mascot-blink {
+  0%, 90%, 100% { transform: scaleY(1); }
+  94% { transform: scaleY(.12); }
+}
+@keyframes mascot-sparkle {
+  0%, 100% { opacity: .45; transform: scale(.8); }
+  50% { opacity: 1; transform: scale(1.12); }
+}
+@keyframes skeleton-sheen {
+  to { background-position-x: -200%; }
 }
 @keyframes current-glow {
   0%, 100% { box-shadow: 0 6px 0 #e0a800, 0 0 0 0 #ffcb2d55; }
@@ -2511,89 +2516,137 @@ textarea:focus-visible {
   animation: progress-orbit 850ms linear infinite;
 }
 .loading-experience {
+  position: relative;
+  isolation: isolate;
   flex: 1;
-  min-height: 220px;
+  min-height: 300px;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 30px 20px;
+  overflow: hidden;
+  padding: 36px 24px;
   text-align: center;
-  background: #f5f7fc;
+  background: #f5f7fc url('/assets/trilha-pattern.png') center / 460px auto repeat;
   animation: screen-arrive 260ms ease both;
+}
+.loading-experience::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: radial-gradient(circle at 50% 45%, #fff 0, #ffffffdf 100px, #f5f7fce8 70%);
 }
 .loading-experience.full-page {
   min-height: 100dvh;
 }
 .loading-experience > strong {
   font-family: 'Plus Jakarta Sans', sans-serif;
-  font-size: 17px;
-  margin-top: 20px;
+  font-size: clamp(18px, 5vw, 24px);
+  line-height: 1.25;
+  color: #0b1f4d;
+  margin-top: 9px;
+}
+.loading-eyebrow {
+  color: #1557e6;
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: .15em;
 }
 .loading-subtitle {
-  font-size: 11px;
-  color: #758198;
-  margin-top: 3px;
+  max-width: 240px;
+  font-size: 12px;
+  line-height: 1.5;
+  color: #66748e;
+  margin-top: 8px;
 }
-.loading-orbit {
+.loading-journey {
   position: relative;
-  width: 92px;
-  height: 92px;
+  width: 174px;
+  height: 172px;
   display: grid;
   place-items: center;
+  margin-bottom: 14px;
 }
-.loading-orbit > span {
+.journey-halo {
   position: absolute;
-  inset: 1px;
+  inset: 8px;
   border-radius: 50%;
-  border: 2px dashed #cfe0ff;
-  animation: progress-orbit 9s linear infinite;
+  background: radial-gradient(circle, #e6efff 0, #e6efff88 58%, #e6efff00 70%);
 }
-.loading-orbit > span:nth-child(2) {
-  inset: 10px;
-  border-color: #ffcb2d;
-  animation-direction: reverse;
-  animation-duration: 6s;
+.journey-mascot {
+  position: relative;
+  width: 144px;
+  height: 144px;
+  overflow: visible;
 }
-.loading-orbit > span:nth-child(3) {
-  inset: 19px;
-  border-color: #cfe0ff;
-  animation-duration: 5s;
+.mascot-body {
+  transform-origin: 72px 116px;
+  animation: mascot-hop 1.5s ease-in-out infinite;
 }
-.loading-core {
-  z-index: 1;
-  display: grid;
-  place-items: center;
-  width: 48px;
-  height: 48px;
-  border-radius: 16px;
-  background: #fff;
-  box-shadow: 0 5px 18px #1557e61a;
+.mascot-eyes {
+  transform-origin: 72px 59px;
+  animation: mascot-blink 3.6s infinite;
 }
-.loading-core .brand-name {
-  display: none;
+.mascot-spark {
+  transform-origin: 115px 37px;
+  animation: mascot-sparkle 2s ease-in-out infinite;
 }
-.loading-core .brand-mark {
-  width: 33px;
-  height: 34px;
-  font-size: 26px;
-  border-radius: 10px;
-}
-.loading-dots {
+.journey-ground {
+  position: absolute;
+  bottom: 4px;
   display: flex;
-  gap: 5px;
-  margin-top: 16px;
+  gap: 7px;
 }
-.loading-dots i {
-  display: block;
-  width: 5px;
+.journey-ground i {
+  width: 8px;
   height: 5px;
   border-radius: 50%;
-  background: #1557e6;
-  animation: dot-bounce 1s ease-in-out infinite;
+  background: #ffcb2d;
+  opacity: .72;
 }
-.loading-dots i:nth-child(2) { animation-delay: 150ms; }
-.loading-dots i:nth-child(3) { animation-delay: 300ms; }
+.trail-loading {
+  min-height: 520px;
+  width: 100%;
+}
+.trail-loading-title {
+  width: 150px;
+  height: 30px;
+  border-radius: 18px;
+  margin: 0 auto 24px;
+}
+.trail-loading-path {
+  position: relative;
+  width: min(100%, 320px);
+  height: 450px;
+  margin: auto;
+}
+.trail-loading-path svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+.trail-loading-stop {
+  position: absolute;
+  width: 64px;
+  height: 64px;
+  border: 5px solid #fff;
+  border-radius: 50%;
+  background: #e4ebf8;
+  box-shadow: 0 5px 0 #d9e1f1;
+  transform: translate(-50%, -50%);
+}
+.trail-loading-stop.stop-0 { left: 50%; top: 10%; }
+.trail-loading-stop.stop-1 { left: 70%; top: 45%; }
+.trail-loading-stop.stop-2 { left: 30%; top: 84%; }
+.skeleton-shape,
+.trail-loading-stop,
+.skeleton-card span {
+  background-image: linear-gradient(110deg, #e6edfa 8%, #f7f9ff 25%, #e6edfa 42%);
+  background-size: 200% 100%;
+  animation: skeleton-sheen 1.8s linear infinite;
+}
 .skeleton-card {
   animation: screen-arrive 300ms ease both;
 }
@@ -2610,8 +2663,12 @@ textarea:focus-visible {
   .bottom-nav a.active .tab-icon svg,
   .busy-icon,
   .loading-experience,
-  .loading-orbit > span,
-  .loading-dots i,
+  .mascot-body,
+  .mascot-eyes,
+  .mascot-spark,
+  .skeleton-shape,
+  .trail-loading-stop,
+  .skeleton-card span,
   .skeleton-card {
     animation: none;
   }

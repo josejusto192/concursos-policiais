@@ -6,6 +6,7 @@ import { fetchQuestoesErradas, atualizarRespostaErro } from '../lib/queries';
 import { sanitizeHtml } from '../lib/sanitizeHtml';
 import type { Questao } from '../data/types';
 import PatternBackground from '../components/PatternBackground';
+import { LoadingExperience } from '../components/Feedback';
 
 export default function CadernoErros() {
   const { usuario, activeTrilha, addXp, refreshDailyDone, refreshErrosCount } = useAppData();
@@ -38,11 +39,7 @@ export default function CadernoErros() {
   }
 
   if (!questoes) {
-    return (
-      <div className="flex flex-1 items-center justify-center">
-        <div className="h-11 w-11 animate-spin-fast rounded-full border-4 border-border" style={{ borderTopColor: '#1557E6' }} />
-      </div>
-    );
+    return <LoadingExperience message="Separando suas revisões" />;
   }
 
   const total = questoes.length;
