@@ -1,4 +1,4 @@
-import { ArrowRight, X } from '@phosphor-icons/react';
+import { ArrowRight, PlayCircle, X } from '@phosphor-icons/react';
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAppData } from '../contexts/AppDataContext';
@@ -7,6 +7,7 @@ import { sanitizeHtml } from '../lib/sanitizeHtml';
 import type { Questao } from '../data/types';
 import PatternBackground from '../components/PatternBackground';
 import { LoadingExperience } from '../components/Feedback';
+import VideoSheet from '../components/sheets/VideoSheet';
 
 export default function CadernoErros() {
   const { usuario, activeTrilha, addXp, refreshDailyDone, refreshErrosCount } = useAppData();
@@ -19,6 +20,7 @@ export default function CadernoErros() {
   const [acertosNestaSessao, setAcertosNestaSessao] = useState(0);
   const [loadError, setLoadError] = useState(false);
   const [finalizado, setFinalizado] = useState(false);
+  const [aulaAberta, setAulaAberta] = useState(false);
 
   useEffect(() => {
     if (!activeTrilha) return;
@@ -94,6 +96,7 @@ export default function CadernoErros() {
     setIndex((i) => i + 1);
     setSelected(null);
     setAnswered(false);
+    setAulaAberta(false);
   }
 
   return (
@@ -209,6 +212,19 @@ export default function CadernoErros() {
             ) : (
               <div className="mt-2 font-sans text-[13.5px] font-medium leading-[1.6] text-ink-soft">{q.comentario}</div>
             )}
+            {q.aula && (
+              <button
+                onClick={() => setAulaAberta(true)}
+                className="mt-3 flex w-full items-center gap-2.5 rounded-xl border-none bg-surface p-[10px_12px] text-left font-sans text-[13px] font-extrabold text-blue"
+                style={{ border: '1.5px solid #d6e0fb' }}
+              >
+                <PlayCircle weight="fill" size={22} className="flex-none" />
+                <span className="min-w-0 flex-1">
+                  Assistir aula sobre o assunto
+                  <span className="block truncate text-[11.5px] font-semibold text-text2">{q.aula.titulo}</span>
+                </span>
+              </button>
+            )}
           </div>
         )}
       </PatternBackground>
@@ -232,6 +248,10 @@ export default function CadernoErros() {
           </button>
         )}
       </div>
+
+      {aulaAberta && q.aula && (
+        <VideoSheet titulo={q.aula.titulo} videoUrl={q.aula.video_url} descricao="Aula de apoio · opcional" onClose={() => setAulaAberta(false)} />
+      )}
     </>
   );
 }

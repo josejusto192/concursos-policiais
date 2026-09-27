@@ -24,6 +24,7 @@ import AdminDashboardPage from './admin/AdminDashboardPage';
 import AdminTrilhasPage from './admin/AdminTrilhasPage';
 import AdminTrilhaDetailPage from './admin/AdminTrilhaDetailPage';
 import AdminModuloPage from './admin/AdminModuloPage';
+import AdminAulasPage from './admin/AdminAulasPage';
 import AdminQuestoesBancoPage from './admin/AdminQuestoesBancoPage';
 import AdminQuestaoReviewPage from './admin/AdminQuestaoReviewPage';
 import AdminUsuariosPage from './admin/AdminUsuariosPage';
@@ -182,6 +183,14 @@ function AdminRoutes() {
         element={
           <AdminGuard>
             <AdminModuloPage />
+          </AdminGuard>
+        }
+      />
+      <Route
+        path="aulas"
+        element={
+          <AdminGuard>
+            <AdminAulasPage />
           </AdminGuard>
         }
       />

@@ -28,7 +28,7 @@ export async function deleteTrilha(id: number) {
 
 export async function createModulo(
   trilhaId: number,
-  input: { titulo: string; ordem: number; tipo?: 'questoes' | 'aula'; video_url?: string | null }
+  input: { titulo: string; ordem: number; tipo?: 'questoes' | 'aula'; video_url?: string | null; aula_id?: number | null }
 ) {
   const { data, error } = await supabase.from('modulos').insert({ trilha_id: trilhaId, ...input }).select().single();
   if (error) throw error;
@@ -37,7 +37,7 @@ export async function createModulo(
 
 export async function updateModulo(
   id: number,
-  patch: Partial<{ titulo: string; ordem: number; tipo: 'questoes' | 'aula'; video_url: string | null }>
+  patch: Partial<{ titulo: string; ordem: number; tipo: 'questoes' | 'aula'; video_url: string | null; aula_id: number | null }>
 ) {
   const { error } = await supabase.from('modulos').update(patch).eq('id', id);
   if (error) throw error;
@@ -51,6 +51,60 @@ export async function fetchModulo(id: number): Promise<ModuloRow> {
 
 export async function deleteModulo(id: number) {
   const { error } = await supabase.from('modulos').delete().eq('id', id);
+  if (error) throw error;
+}
+
+// ---- Biblioteca de aulas ----
+
+export interface AulaRow {
+  id: number;
+  titulo: string;
+  descricao: string | null;
+  video_url: string;
+  criado_em: string;
+}
+
+export async function fetchAulas(): Promise<AulaRow[]> {
+  const { data, error } = await supabase.from('aulas').select('*').order('titulo');
+  if (error) throw error;
+  return data ?? [];
+}
+
+export async function createAula(input: { titulo: string; video_url: string; descricao?: string | null }) {
+  const { data, error } = await supabase.from('aulas').insert(input).select().single();
+  if (error) throw error;
+  return data as AulaRow;
+}
+
+export async function updateAula(id: number, patch: Partial<{ titulo: string; video_url: string; descricao: string | null }>) {
+  const { error } = await supabase.from('aulas').update(patch).eq('id', id);
+  if (error) throw error;
+}
+
+export async function deleteAula(id: number) {
+  const { error } = await supabase.from('aulas').delete().eq('id', id);
+  // FK restrict em modulos.aula_id (migration 019).
+  if (error?.code === '23503') throw new Error('Esta aula está em uso em uma trilha — remova-a dos módulos antes de excluir.');
+  if (error) throw error;
+}
+
+// Quantos módulos e questões usam cada aula (pra lista da biblioteca).
+export async function fetchUsoAulas(): Promise<Map<number, { modulos: number; questoes: number }>> {
+  const map = new Map<number, { modulos: number; questoes: number }>();
+  const [modulosResult, questoesResult] = await Promise.all([
+    supabase.from('modulos').select('aula_id').not('aula_id', 'is', null).limit(10000),
+    supabase.from('questoes').select('aula_id').not('aula_id', 'is', null).limit(10000),
+  ]);
+  if (modulosResult.error) throw modulosResult.error;
+  if (questoesResult.error) throw questoesResult.error;
+  const uso = (id: number) => map.get(id) ?? map.set(id, { modulos: 0, questoes: 0 }).get(id)!;
+  for (const row of modulosResult.data ?? []) if (row.aula_id != null) uso(row.aula_id).modulos++;
+  for (const row of questoesResult.data ?? []) if (row.aula_id != null) uso(row.aula_id).questoes++;
+  return map;
+}
+
+export async function setAulaDaQuestao(questaoId: string, aulaId: number | null) {
+  const { error } = await supabase.from('questoes').update({ aula_id: aulaId }).eq('id', questaoId);
   if (error) throw error;
 }
 

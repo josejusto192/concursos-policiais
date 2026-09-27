@@ -29,6 +29,8 @@ export interface Questao {
   anulada: boolean;
   desatualizada: boolean;
   alternativas: Alternativa[];
+  // Aula de apoio vinculada pelo admin — só preenchida no caderno de erros.
+  aula?: { titulo: string; video_url: string };
 }
 
 export type ModuloStatus = 'locked' | 'current' | 'done' | 'aula';

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import type { Icon } from '@phosphor-icons/react';
-import { ArrowUpRight, Bug, CaretRight, Eye, GearSix, House, List, Path, SignOut, Stack, Users, X } from '@phosphor-icons/react';
+import { ArrowUpRight, Bug, CaretRight, Eye, GearSix, House, List, Path, PlayCircle, SignOut, Stack, Users, X } from '@phosphor-icons/react';
 import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useUsuario } from '../hooks/useUsuario';
@@ -16,6 +16,7 @@ interface NavItem {
 const NAV_ITEMS: NavItem[] = [
   { to: '/admin', label: 'Visão geral', icon: House, end: true },
   { to: '/admin/trilhas', label: 'Trilhas de estudo', icon: Path },
+  { to: '/admin/aulas', label: 'Aulas', icon: PlayCircle },
   { to: '/admin/questoes', label: 'Banco de questões', icon: Stack },
   { to: '/admin/usuarios', label: 'Alunos e equipe', icon: Users, adminOnly: true },
   { to: '/admin/erros', label: 'Saúde do app', icon: Bug, adminOnly: true },

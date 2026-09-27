@@ -39,6 +39,8 @@ export type QuestaoRow = {
   revisado_em: string | null;
   revisado_metodo: 'ia' | 'manual' | null;
   revisado_por: string | null;
+  // Aula de apoio opcional (migration 019) — só aparece no caderno de erros.
+  aula_id: number | null;
 };
 
 // Shape explícita retornada por get_modulo_questoes() — só o que o app do
@@ -168,6 +170,7 @@ export type Database = {
           ordem: number;
           tipo: 'questoes' | 'aula';
           video_url: string | null;
+          aula_id: number | null;
         };
         Insert: {
           trilha_id: number;
@@ -175,12 +178,36 @@ export type Database = {
           ordem?: number;
           tipo?: 'questoes' | 'aula';
           video_url?: string | null;
+          aula_id?: number | null;
         };
         Update: {
           titulo?: string;
           ordem?: number;
           tipo?: 'questoes' | 'aula';
           video_url?: string | null;
+          aula_id?: number | null;
+        };
+        Relationships: [];
+      };
+      // Biblioteca de aulas (migration 019): cadastradas sem trilha, depois
+      // usadas em módulos tipo 'aula' ou como aula de apoio de uma questão.
+      aulas: {
+        Row: {
+          id: number;
+          titulo: string;
+          descricao: string | null;
+          video_url: string;
+          criado_em: string;
+        };
+        Insert: {
+          titulo: string;
+          descricao?: string | null;
+          video_url: string;
+        };
+        Update: {
+          titulo?: string;
+          descricao?: string | null;
+          video_url?: string;
         };
         Relationships: [];
       };
@@ -401,7 +428,7 @@ export type Database = {
       };
       get_minhas_questoes_erradas: {
         Args: { p_trilha_id: number };
-        Returns: ModuloQuestaoRow[];
+        Returns: (ModuloQuestaoRow & { aula_titulo: string | null; aula_video_url: string | null })[];
       };
     };
     Enums: Record<string, never>;

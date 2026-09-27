@@ -1,7 +1,16 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { fetchModulos, fetchTrilhas, type ModuloRow, type TrilhaRow } from '../lib/queries';
-import { createModulo, deleteModulo, deleteTrilha, fetchContagemQuestoesPorModulo, updateModulo, updateTrilha } from '../lib/adminQueries';
+import {
+  createModulo,
+  deleteModulo,
+  deleteTrilha,
+  fetchAulas,
+  fetchContagemQuestoesPorModulo,
+  updateModulo,
+  updateTrilha,
+  type AulaRow,
+} from '../lib/adminQueries';
 import AdminLayout from './AdminLayout';
 
 export default function AdminTrilhaDetailPage() {
@@ -14,7 +23,8 @@ export default function AdminTrilhaDetailPage() {
   const [contagens, setContagens] = useState<Map<number, number>>(new Map());
   const [novoTipo, setNovoTipo] = useState<'questoes' | 'aula'>('questoes');
   const [novoModulo, setNovoModulo] = useState('');
-  const [novoVideoUrl, setNovoVideoUrl] = useState('');
+  const [novaAulaId, setNovaAulaId] = useState('');
+  const [aulas, setAulas] = useState<AulaRow[]>([]);
   const [error, setError] = useState<string | null>(null);
 
   function refresh() {
@@ -26,6 +36,9 @@ export default function AdminTrilhaDetailPage() {
   }
 
   useEffect(refresh, [trilhaId]);
+  useEffect(() => {
+    fetchAulas().then(setAulas);
+  }, []);
 
   async function saveField(patch: Partial<TrilhaRow>) {
     if (!trilha) return;
@@ -35,29 +48,33 @@ export default function AdminTrilhaDetailPage() {
   }
 
   async function addModulo() {
-    if (!novoModulo.trim()) return;
-    if (novoTipo === 'aula' && !novoVideoUrl.trim()) {
-      setError('Informe a URL do vídeo do YouTube.');
+    const aula = aulas.find((a) => a.id === Number(novaAulaId));
+    if (novoTipo === 'aula' && !aula) {
+      setError('Escolha uma aula da biblioteca (cadastre na aba Aulas).');
       return;
     }
+    // Aula sem título próprio usa o título da aula da biblioteca.
+    const titulo = novoModulo.trim() || (novoTipo === 'aula' ? aula!.titulo : '');
+    if (!titulo) return;
     setError(null);
     try {
       await createModulo(trilhaId, {
-        titulo: novoModulo.trim(),
+        titulo,
         ordem: modulos?.length ?? 0,
         tipo: novoTipo,
-        video_url: novoTipo === 'aula' ? novoVideoUrl.trim() : null,
+        aula_id: novoTipo === 'aula' ? aula!.id : null,
       });
       setNovoModulo('');
-      setNovoVideoUrl('');
+      setNovaAulaId('');
       refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Erro ao criar módulo.');
     }
   }
 
-  async function saveVideoUrl(m: ModuloRow, videoUrl: string) {
-    await updateModulo(m.id, { video_url: videoUrl.trim() || null });
+  async function saveAula(m: ModuloRow, aulaId: string) {
+    if (!aulaId) return;
+    await updateModulo(m.id, { aula_id: Number(aulaId) });
     refresh();
   }
 
@@ -165,18 +182,23 @@ export default function AdminTrilhaDetailPage() {
         <input
           value={novoModulo}
           onChange={(e) => setNovoModulo(e.target.value)}
-          placeholder={novoTipo === 'aula' ? 'Título da aula' : 'Título do novo módulo'}
+          placeholder={novoTipo === 'aula' ? 'Título no caminho (opcional)' : 'Título do novo módulo'}
           onKeyDown={(e) => e.key === 'Enter' && addModulo()}
           className="flex-1 rounded-lg border border-gray-300 px-3 py-2 text-sm"
         />
         {novoTipo === 'aula' && (
-          <input
-            value={novoVideoUrl}
-            onChange={(e) => setNovoVideoUrl(e.target.value)}
-            placeholder="URL do vídeo do YouTube"
-            onKeyDown={(e) => e.key === 'Enter' && addModulo()}
-            className="w-64 rounded-lg border border-gray-300 px-3 py-2 text-sm"
-          />
+          <select
+            value={novaAulaId}
+            onChange={(e) => setNovaAulaId(e.target.value)}
+            className="w-64 rounded-lg border border-gray-300 px-2 py-2 text-sm"
+          >
+            <option value="">Escolha uma aula…</option>
+            {aulas.map((a) => (
+              <option key={a.id} value={a.id}>
+                {a.titulo}
+              </option>
+            ))}
+          </select>
         )}
         <button onClick={addModulo} className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-bold text-white hover:bg-blue-700">
           Adicionar
@@ -184,7 +206,8 @@ export default function AdminTrilhaDetailPage() {
       </div>
       {error && <div className="mt-2 text-sm font-semibold text-red-600">{error}</div>}
       <p className="mt-2 text-xs text-gray-400">
-        Aulas são sempre opcionais: aparecem no caminho da trilha, mas não bloqueiam nem exigem conclusão para o aluno avançar.
+        Aulas são sempre opcionais: aparecem no caminho da trilha, mas não bloqueiam nem exigem conclusão para o aluno avançar. Cadastre
+        novas aulas na aba <Link to="/admin/aulas" className="font-bold text-blue-600 hover:underline">Aulas</Link>.
       </p>
 
       <div className="mt-4 overflow-hidden rounded-xl border border-gray-200 bg-white">
@@ -216,12 +239,20 @@ export default function AdminTrilhaDetailPage() {
                 )}
               </div>
               {m.tipo === 'aula' && (
-                <input
-                  defaultValue={m.video_url ?? ''}
-                  onBlur={(e) => saveVideoUrl(m, e.target.value)}
-                  placeholder="URL do vídeo do YouTube"
+                <select
+                  value={m.aula_id ?? ''}
+                  onChange={(e) => saveAula(m, e.target.value)}
                   className="mt-1 w-full max-w-md rounded-lg border border-gray-300 px-2 py-1 text-xs"
-                />
+                >
+                  <option value="" disabled>
+                    {m.video_url ? 'Vídeo antigo (sem aula da biblioteca) — escolha uma aula' : 'Escolha uma aula…'}
+                  </option>
+                  {aulas.map((a) => (
+                    <option key={a.id} value={a.id}>
+                      {a.titulo}
+                    </option>
+                  ))}
+                </select>
               )}
             </div>
             {m.tipo === 'questoes' && (

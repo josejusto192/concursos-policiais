@@ -3,11 +3,14 @@ import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import type { QuestaoRow } from '../lib/database.types';
 import {
   addQuestaoToModulo,
+  fetchAulas,
   fetchProximaNaoRevisada,
   fetchQuestaoAdmin,
   reviewWithAI,
   saveManualReview,
+  setAulaDaQuestao,
   unmarkRevisado,
+  type AulaRow,
 } from '../lib/adminQueries';
 import { sanitizeHtml } from '../lib/sanitizeHtml';
 import { useAuth } from '../contexts/AuthContext';
@@ -27,6 +30,7 @@ export default function AdminQuestaoReviewPage() {
   const [error, setError] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
   const [addedToModulo, setAddedToModulo] = useState(false);
+  const [aulas, setAulas] = useState<AulaRow[]>([]);
 
   function load() {
     if (!id) return;
@@ -37,6 +41,22 @@ export default function AdminQuestaoReviewPage() {
   }
 
   useEffect(load, [id]);
+  useEffect(() => {
+    fetchAulas().then(setAulas);
+  }, []);
+
+  async function handleAulaChange(value: string) {
+    if (!id || !questao) return;
+    const aulaId = value ? Number(value) : null;
+    setError(null);
+    setQuestao({ ...questao, aula_id: aulaId });
+    try {
+      await setAulaDaQuestao(id, aulaId);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Erro ao vincular aula.');
+      load();
+    }
+  }
 
   async function handleReviewWithAI() {
     if (!id) return;
@@ -183,6 +203,30 @@ export default function AdminQuestaoReviewPage() {
           <div className="rich-content h-[calc(100%-24px)] overflow-y-auto rounded-lg border border-gray-200 bg-gray-50 p-3 text-sm text-gray-800">
             <div dangerouslySetInnerHTML={{ __html: sanitizeHtml(draft) }} />
           </div>
+        </div>
+      </div>
+
+      <div className="mt-4 rounded-xl border border-gray-200 bg-white p-4">
+        <div className="text-xs font-bold uppercase tracking-wide text-gray-400">Aula de apoio (opcional)</div>
+        <p className="mt-1 text-xs text-gray-500">
+          Se o aluno errar esta questão, a aula fica disponível para ele assistir no caderno de erros (não aparece na trilha).
+        </p>
+        <div className="mt-2 flex items-center gap-3">
+          <select
+            value={questao.aula_id ?? ''}
+            onChange={(e) => handleAulaChange(e.target.value)}
+            className="w-full max-w-md rounded-lg border border-gray-300 px-2 py-2 text-sm"
+          >
+            <option value="">Nenhuma aula</option>
+            {aulas.map((a) => (
+              <option key={a.id} value={a.id}>
+                {a.titulo}
+              </option>
+            ))}
+          </select>
+          <Link to="/admin/aulas" className="flex-none text-xs font-bold text-blue-600 hover:underline">
+            Gerenciar aulas ›
+          </Link>
         </div>
       </div>
 

@@ -1,11 +1,21 @@
 import { youtubeEmbedUrl } from '../../lib/youtube';
 import Dialog from '../Dialog';
 
-export default function VideoSheet({ titulo, videoUrl, onClose }: { titulo: string; videoUrl: string; onClose: () => void }) {
+export default function VideoSheet({
+  titulo,
+  videoUrl,
+  descricao = 'Aula extra · opcional',
+  onClose,
+}: {
+  titulo: string;
+  videoUrl: string;
+  descricao?: string;
+  onClose: () => void;
+}) {
   const embedUrl = youtubeEmbedUrl(videoUrl);
   return (
     <Dialog title={titulo} onClose={onClose}>
-      <p className="dialog-description">Aula extra · opcional</p>
+      <p className="dialog-description">{descricao}</p>
       <div className="overflow-hidden rounded-2xl bg-black aspect-video">
         {embedUrl ? (
           <iframe

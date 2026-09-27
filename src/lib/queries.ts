@@ -26,12 +26,21 @@ export interface ModuloRow {
   ordem: number;
   tipo: 'questoes' | 'aula';
   video_url: string | null;
+  aula_id: number | null;
 }
 
+// Módulos tipo 'aula' apontam para a biblioteca de aulas (aula_id): o vídeo
+// vem da aula, e modulos.video_url fica só como fallback legado.
 export async function fetchModulos(trilhaId: number): Promise<ModuloRow[]> {
   const { data, error } = await supabase.from('modulos').select('*').eq('trilha_id', trilhaId).order('ordem');
   if (error) throw error;
-  return data ?? [];
+  const modulos = data ?? [];
+  const aulaIds = [...new Set(modulos.map((m) => m.aula_id).filter((id): id is number => id != null))];
+  if (!aulaIds.length) return modulos;
+  const { data: aulas, error: aulasError } = await supabase.from('aulas').select('id, video_url').in('id', aulaIds);
+  if (aulasError) throw aulasError;
+  const videoPorAula = new Map((aulas ?? []).map((a) => [a.id, a.video_url]));
+  return modulos.map((m) => (m.aula_id != null ? { ...m, video_url: videoPorAula.get(m.aula_id) ?? m.video_url } : m));
 }
 
 export interface ModuloProgresso {
@@ -138,7 +147,10 @@ export async function fetchContagemErros(trilhaId: number): Promise<number> {
 export async function fetchQuestoesErradas(trilhaId: number): Promise<Questao[]> {
   const { data, error } = await supabase.rpc('get_minhas_questoes_erradas', { p_trilha_id: trilhaId });
   if (error) throw error;
-  return (data ?? []).map(mapQuestaoRow);
+  return (data ?? []).map((row) => ({
+    ...mapQuestaoRow(row),
+    aula: row.aula_video_url ? { titulo: row.aula_titulo ?? 'Aula', video_url: row.aula_video_url } : undefined,
+  }));
 }
 
 // "Responder de novo": atualiza a mesma linha (upsert, não insert — já existe
