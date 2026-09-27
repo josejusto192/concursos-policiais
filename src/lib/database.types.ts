@@ -97,6 +97,11 @@ export type Database = {
           is_admin: boolean;
           is_editor: boolean;
           termos_aceitos_em: string | null;
+          // Asaas (migration 020) — asaas_* só o servidor escreve.
+          cpf: string | null;
+          asaas_customer_id: string | null;
+          asaas_sincronizado_em: string | null;
+          asaas_sync_erro: string | null;
         };
         Insert: {
           id: string;
@@ -114,6 +119,7 @@ export type Database = {
           xp?: number;
           trilha_ativa_id?: number | null;
           termos_aceitos_em?: string | null;
+          cpf?: string | null;
         };
         Update: {
           nome?: string | null;
@@ -131,6 +137,7 @@ export type Database = {
           is_admin?: boolean;
           is_editor?: boolean;
           termos_aceitos_em?: string | null;
+          cpf?: string | null;
         };
         Relationships: [];
       };

@@ -146,3 +146,35 @@ Acesso restrito a contas com `usuarios.is_admin = true` (ver acima).
 - `supabase/functions/revisar-comentario/` — Edge Function que chama o
   Gemini para reescrever o comentário de uma questão, preservando as imagens
   originais.
+
+## Integração com o Asaas (clientes)
+
+Migration `020_asaas_clientes.sql` + Edge Function `asaas-sync-cliente`.
+Cada usuário com CPF vira um cliente no Asaas; o id (`cus_…`) fica em
+`usuarios.asaas_customer_id`. Qualquer mudança em nome, e-mail, WhatsApp ou
+CPF é enviada ao Asaas automaticamente (trigger no banco → pg_net → Edge
+Function). O Asaas exige CPF para criar o cliente, então quem ainda não
+tem CPF só é criado lá quando informar.
+
+Configuração (uma vez):
+
+```bash
+# 1. Secrets da Edge Function
+supabase secrets set ASAAS_API_KEY='$aact_...' \
+  ASAAS_BASE_URL='https://api-sandbox.asaas.com/v3' \
+  ASAAS_SYNC_SECRET='<um-segredo-aleatorio-longo>'
+# produção: ASAAS_BASE_URL='https://api.asaas.com/v3'
+
+# 2. Deploy — sem JWT: quem chama é o banco, autenticado pelo x-sync-secret
+supabase functions deploy asaas-sync-cliente --no-verify-jwt
+```
+
+```sql
+-- 3. No SQL Editor: onde o trigger deve chamar, e o MESMO segredo do passo 1
+select vault.create_secret('https://<projeto>.supabase.co/functions/v1/asaas-sync-cliente', 'asaas_sync_url');
+select vault.create_secret('<um-segredo-aleatorio-longo>', 'asaas_sync_secret');
+```
+
+Sem os segredos do passo 3 o trigger não faz nada (o app segue normal).
+Falhas ficam em `usuarios.asaas_sync_erro` e em "Saúde do app". Para
+reenviar um usuário manualmente: `select asaas_enfileirar_sync('<uuid>');`.
