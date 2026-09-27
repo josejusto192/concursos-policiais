@@ -36,3 +36,4 @@ jobs:
       - run: supabase functions deploy asaas-sync-cliente --no-verify-jwt --project-ref "$PROJECT_REF"
       - run: supabase functions deploy asaas-webhook --no-verify-jwt --project-ref "$PROJECT_REF"
       - run: supabase functions deploy asaas-assinar --project-ref "$PROJECT_REF"
+      - run: supabase functions deploy asaas-cancelar --project-ref "$PROJECT_REF"

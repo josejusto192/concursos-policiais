@@ -2,11 +2,12 @@ import { ArrowSquareOut, Check, CheckCircle, CircleNotch, Crown, X } from '@phos
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAppData } from '../contexts/AppDataContext';
-import { assinarPlano, fetchMinhaAssinatura, fetchPlanos, type MinhaAssinatura, type PlanoRow } from '../lib/queries';
+import { assinarPlano, cancelarAssinatura, fetchMinhaAssinatura, fetchPlanos, type MinhaAssinatura, type PlanoRow } from '../lib/queries';
 import { EdgeFunctionError } from '../lib/edgeFunctions';
 import PatternBackground from '../components/PatternBackground';
 import PrimaryButton from '../components/PrimaryButton';
 import { LoadingExperience } from '../components/Feedback';
+import Dialog from '../components/Dialog';
 
 const BRL = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
 const MESES_POR_CICLO: Record<string, number> = { MONTHLY: 1, BIMONTHLY: 2, QUARTERLY: 3, SEMIANNUALLY: 6, YEARLY: 12 };
@@ -38,6 +39,12 @@ export default function Assinar() {
   const [verificando, setVerificando] = useState(false);
   const [erro, setErro] = useState('');
   const [loadError, setLoadError] = useState(false);
+  const [confirmarCancelamento, setConfirmarCancelamento] = useState(false);
+  const [cancelando, setCancelando] = useState(false);
+  const [erroCancelamento, setErroCancelamento] = useState('');
+  // Cancelou mas ainda tem acesso: mostra os planos só se pedir pra reativar.
+  const [reativando, setReativando] = useState(false);
+  const [aviso, setAviso] = useState('');
 
   const acessoAte = usuario?.acesso_ate;
   const pago = useMemo(() => !!acessoAte && new Date(acessoAte) > new Date(), [acessoAte]);
@@ -97,8 +104,19 @@ export default function Assinar() {
     setErro('');
     setEnviando(true);
     try {
-      const url = await assinarPlano(planoId, cpf);
-      window.location.assign(url);
+      const resultado = await assinarPlano(planoId, cpf);
+      if (resultado.invoice_url) {
+        window.location.assign(resultado.invoice_url);
+        return;
+      }
+      await carregar();
+      setReativando(false);
+      setEnviando(false);
+      setAviso(
+        resultado.proximo_vencimento
+          ? `Assinatura reativada! A próxima cobrança vence em ${new Date(`${resultado.proximo_vencimento}T12:00:00`).toLocaleDateString('pt-BR')}.`
+          : 'Assinatura reativada!',
+      );
     } catch (err) {
       setErro(
         err instanceof EdgeFunctionError && err.status && err.status < 500
@@ -106,6 +124,25 @@ export default function Assinar() {
           : 'Não foi possível iniciar sua assinatura agora. Tente de novo em instantes.',
       );
       setEnviando(false);
+    }
+  }
+
+  async function cancelar() {
+    setCancelando(true);
+    setErroCancelamento('');
+    try {
+      await cancelarAssinatura();
+      await Promise.all([carregar(), refreshUsuario()]);
+      setConfirmarCancelamento(false);
+      setAviso('Assinatura cancelada. Nenhuma nova cobrança será feita.');
+    } catch (err) {
+      setErroCancelamento(
+        err instanceof EdgeFunctionError && err.status && err.status < 500
+          ? err.message
+          : 'Não foi possível cancelar agora. Tente de novo em instantes.',
+      );
+    } finally {
+      setCancelando(false);
     }
   }
 
@@ -165,8 +202,11 @@ export default function Assinar() {
     );
   }
 
-  // Assinatura paga em dia.
-  if (pago) {
+  // Período pago em vigor. Assinatura ativa no Asaas → pode cancelar;
+  // cancelada → acesso segue até o fim do período e pode reativar.
+  const assinaturaAtiva = assinatura?.status === 'ACTIVE';
+  if (pago && !reativando) {
+    const ate = new Date(usuario.acesso_ate!).toLocaleDateString('pt-BR');
     return (
       <>
         {cabecalho}
@@ -176,17 +216,57 @@ export default function Assinar() {
               <CheckCircle size={36} weight="fill" />
             </div>
             <div className="font-display text-[20px] font-extrabold text-ink">
-              {voltouDoPagamento ? 'Pagamento confirmado! 🎉' : 'Sua assinatura está ativa'}
+              {!assinaturaAtiva ? 'Assinatura cancelada' : voltouDoPagamento ? 'Pagamento confirmado! 🎉' : 'Sua assinatura está ativa'}
             </div>
-            <div className="font-sans text-[13.5px] font-semibold text-text2">
-              {assinatura?.planoNome ? `${assinatura.planoNome} · ` : ''}acesso liberado até{' '}
-              {new Date(usuario.acesso_ate!).toLocaleDateString('pt-BR')}.
+            <div className="font-sans text-[13.5px] font-semibold leading-[1.5] text-text2">
+              {assinaturaAtiva
+                ? `${assinatura?.planoNome ? `${assinatura.planoNome} · ` : ''}renova automaticamente · acesso liberado até ${ate}.`
+                : `Você continua com acesso completo até ${ate}. Depois disso, só o primeiro módulo de cada trilha fica liberado.`}
             </div>
+            {aviso && (
+              <div role="status" className="font-sans text-[12.5px] font-bold text-success">
+                {aviso}
+              </div>
+            )}
             <PrimaryButton className="mt-3" onClick={fechar}>
               Ir para a trilha
             </PrimaryButton>
+            {assinaturaAtiva ? (
+              <button onClick={() => setConfirmarCancelamento(true)} className="mt-2 font-sans text-[13px] font-bold text-text3 underline">
+                Cancelar assinatura
+              </button>
+            ) : (
+              <button onClick={() => setReativando(true)} className="mt-2 font-sans text-[13px] font-extrabold text-blue">
+                Reativar assinatura
+              </button>
+            )}
           </div>
         </PatternBackground>
+
+        {confirmarCancelamento && (
+          <Dialog title="Cancelar assinatura?" onClose={() => !cancelando && setConfirmarCancelamento(false)}>
+            <p className="dialog-description">
+              Você mantém o acesso completo até {ate}. Nenhuma nova cobrança será feita e você pode reativar quando quiser.
+            </p>
+            {erroCancelamento && (
+              <p role="alert" className="mb-3 font-sans text-[12.5px] font-bold text-error">
+                {erroCancelamento}
+              </p>
+            )}
+            <div className="flex flex-col gap-2">
+              <PrimaryButton onClick={() => setConfirmarCancelamento(false)} disabled={cancelando} icon={null}>
+                Manter assinatura
+              </PrimaryButton>
+              <button
+                onClick={cancelar}
+                disabled={cancelando}
+                className="h-[48px] rounded-2xl border-[1.5px] border-border bg-surface font-sans text-[14px] font-extrabold text-error disabled:opacity-50"
+              >
+                {cancelando ? 'Cancelando…' : 'Sim, cancelar'}
+              </button>
+            </div>
+          </Dialog>
+        )}
       </>
     );
   }

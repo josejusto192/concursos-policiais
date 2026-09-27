@@ -128,13 +128,22 @@ Deno.serve(async (req: Request) => {
       .eq('id', usuarioId);
     if (upErr) throw upErr;
 
-    const hoje = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' });
+    const dataBrasilia = (d: Date) => d.toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' });
+    const hoje = dataBrasilia(new Date());
+    // Cancelou e voltou antes do acesso acabar: a 1ª cobrança da nova
+    // assinatura vence quando termina o período já pago (acesso_ate tem 3
+    // dias de tolerância somados — ver asaas_recalcular_acesso), pra não
+    // cobrar duas vezes o mesmo período.
+    const fimPeriodoPago = usuario.acesso_ate
+      ? dataBrasilia(new Date(new Date(usuario.acesso_ate).getTime() - 3 * 86400000))
+      : null;
+    const primeiroVencimento = fimPeriodoPago && fimPeriodoPago > hoje ? fimPeriodoPago : hoje;
     type AsaasSubscription = { id: string; status: string; billingType: string; value: number; cycle: string; nextDueDate: string };
     const dadosAssinatura = {
       customer: customerId,
       billingType: 'UNDEFINED',
       value: Number(plano.valor),
-      nextDueDate: hoje,
+      nextDueDate: primeiroVencimento,
       cycle: plano.ciclo,
       description: plano.nome,
       externalReference: usuarioId,
@@ -176,6 +185,9 @@ Deno.serve(async (req: Request) => {
     // A 1ª cobrança é gerada na criação (vencimento hoje).
     const cobrancas = await asaas<{ data: AsaasPayment[] }>('GET', `/subscriptions/${assinatura.id}/payments`);
     const primeira = cobrancas.data?.[0];
+    // Reativação com vencimento futuro: nada a pagar agora (a cobrança pode
+    // nem ter sido gerada ainda — o Asaas gera até 40 dias antes).
+    if (primeiroVencimento > hoje) return json({ reativada: true, proximo_vencimento: primeiroVencimento });
     if (!primeira) return json({ error: 'Assinatura criada, mas a cobrança ainda não está disponível. Tente de novo em instantes.' }, 202);
 
     await admin.from('pagamentos').upsert(

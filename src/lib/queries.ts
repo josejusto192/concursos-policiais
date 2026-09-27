@@ -137,9 +137,18 @@ export async function fetchPlanos(): Promise<PlanoRow[]> {
 
 // CPF só é pedido aqui. Devolve o link da fatura (Pix/boleto/cartão) da 1ª
 // cobrança; o acesso só é liberado quando o webhook confirmar o pagamento.
-export async function assinarPlano(planoId: number, cpf: string): Promise<string> {
-  const data = await invokeEdgeFunction<{ invoice_url: string }>('asaas-assinar', { plano_id: planoId, cpf });
-  return data.invoice_url;
+// Reativação (cancelou e voltou com acesso ainda válido): nada a pagar
+// agora — devolve reativada + proximo_vencimento em vez do link da fatura.
+export async function assinarPlano(
+  planoId: number,
+  cpf: string,
+): Promise<{ invoice_url?: string; reativada?: boolean; proximo_vencimento?: string }> {
+  return invokeEdgeFunction('asaas-assinar', { plano_id: planoId, cpf });
+}
+
+// Para as próximas cobranças; o acesso continua até o fim do período pago.
+export async function cancelarAssinatura(): Promise<{ acesso_ate: string | null }> {
+  return invokeEdgeFunction('asaas-cancelar', {});
 }
 
 export interface MinhaAssinatura {
