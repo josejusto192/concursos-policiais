@@ -16,7 +16,7 @@ import { LoadingExperience } from '../../components/Feedback';
 
 export default function Question() {
   const { state, dispatch } = useAppState();
-  const { usuario, activeTrilha, modules, loading: loadingModules, addXp, refreshModules, refreshDailyDone } = useAppData();
+  const { usuario, activeTrilha, modules, loading: loadingModules, addXp, refreshModules, refreshDailyDone, refreshErrosCount } = useAppData();
   const navigate = useNavigate();
   const [reportOpen, setReportOpen] = useState(false);
   const [reportReason, setReportReason] = useState<string | null>(null);
@@ -121,7 +121,7 @@ export default function Question() {
         }
       }
       dispatch({ type: 'MARK_ANSWERED', correct, gained });
-      await refreshDailyDone();
+      await Promise.all([refreshDailyDone(), refreshErrosCount()]);
     } catch (err) {
       logClientError(err, 'recordResposta');
       setSaveError('Sua resposta ainda não foi salva. Confira a conexão e toque em confirmar para tentar novamente.');

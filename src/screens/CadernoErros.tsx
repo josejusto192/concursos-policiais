@@ -81,7 +81,7 @@ export default function CadernoErros() {
     }
     try {
       await atualizarRespostaErro(usuario.id, q.id, correct);
-      await refreshDailyDone();
+      await Promise.all([refreshDailyDone(), refreshErrosCount()]);
     } catch {
       // não deve travar a revisão se a gravação falhar — o aluno já viu o feedback
     }
@@ -89,7 +89,6 @@ export default function CadernoErros() {
 
   function next() {
     if (isLast) {
-      refreshErrosCount();
       setFinalizado(true);
       return;
     }

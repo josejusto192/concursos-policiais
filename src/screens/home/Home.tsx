@@ -1,5 +1,5 @@
 import { ArrowsLeftRight, Check, Fire, Lightning, Play, Trophy } from '@phosphor-icons/react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useAppData } from '../../contexts/AppDataContext';
 import Brand from '../../components/Brand';
 import ErrosFab from '../../components/ErrosFab';
@@ -27,8 +27,13 @@ export function PathIllustration() {
 }
 
 export default function Home() {
-  const { usuario, activeTrilha, dailyDone, errosCount, loading, loadError, retry } = useAppData();
+  const { usuario, activeTrilha, dailyDone, errosCount, refreshErrosCount, loading, loadError, retry } = useAppData();
   const [sheetOpen, setSheetOpen] = useState(false);
+  // Os dados do app sobrevivem à troca de tela — recarrega a contagem ao
+  // voltar pra trilha (ex.: saiu do caderno de erros no meio da revisão).
+  useEffect(() => {
+    refreshErrosCount();
+  }, [refreshErrosCount]);
   const dailyGoal = Math.max(1, usuario?.meta_diaria ?? 20);
   const dailyRatio = Math.min(1, dailyDone / dailyGoal);
 
