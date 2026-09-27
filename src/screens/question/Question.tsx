@@ -231,7 +231,7 @@ export default function Question() {
     navigate('/resultado', { state: { moduloTitulo: currentModulo?.titulo, trilhaNome: activeTrilha?.nome } });
   }
 
-  // Vira ticket no admin (Suporte). Erro sobe pro ReportSheet mostrar.
+  // Vira ticket em Admin → Reportes. Erro sobe pro ReportSheet mostrar.
   async function submitReport(reason: string, mensagem: string) {
     if (!usuario) return;
     try {

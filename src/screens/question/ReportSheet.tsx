@@ -5,7 +5,7 @@ import ModalFrame from '../../components/ModalFrame';
 
 interface ReportSheetProps {
   onClose: () => void;
-  // Vira ticket no admin (Suporte). Rejeita se não conseguir salvar.
+  // Vira ticket em Admin → Reportes. Rejeita se não conseguir salvar.
   onSubmit: (reason: string, mensagem: string) => Promise<void>;
 }
 

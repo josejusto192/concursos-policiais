@@ -109,7 +109,7 @@ export async function setAulaDaQuestao(questaoId: string, aulaId: number | null)
   if (error) throw error;
 }
 
-// ---- Tickets (suporte + reportes de questão) ----
+// ---- Tickets (reportes de questão; suporte fica para depois do MVP) ----
 // RLS: admin vê tudo; editor vê só os de questão (migration 025).
 
 export type TicketAdminRow = Database['public']['Tables']['tickets']['Row'];
@@ -125,7 +125,7 @@ export async function fetchTickets(filtro: { status: 'abertos' | 'resolvidos' | 
   return data ?? [];
 }
 
-export async function atualizarTicket(id: number, patch: { status?: TicketStatus; resposta?: string | null }) {
+export async function atualizarTicket(id: number, patch: { status?: TicketStatus }) {
   const { error } = await supabase.from('tickets').update(patch).eq('id', id);
   if (error) throw error;
 }
