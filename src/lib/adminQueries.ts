@@ -1,6 +1,6 @@
 import { supabase } from './supabase';
 import { invokeEdgeFunction } from './edgeFunctions';
-import type { QuestaoRow } from './database.types';
+import type { Database, QuestaoRow } from './database.types';
 import type { ModuloRow, TrilhaRow } from './queries';
 import type { Usuario } from '../hooks/useUsuario';
 
@@ -107,6 +107,48 @@ export async function fetchUsoAulas(): Promise<Map<number, { modulos: number; qu
 export async function setAulaDaQuestao(questaoId: string, aulaId: number | null) {
   const { error } = await supabase.from('questoes').update({ aula_id: aulaId }).eq('id', questaoId);
   if (error) throw error;
+}
+
+// ---- Planos de assinatura (só admin — RLS de planos, migration 021) ----
+
+export type PlanoAdminRow = Database['public']['Tables']['planos']['Row'];
+export type PlanoInput = { nome: string; descricao: string | null; valor: number; ciclo: string; ativo: boolean; ordem: number };
+
+export async function fetchPlanosAdmin(): Promise<PlanoAdminRow[]> {
+  const { data, error } = await supabase.from('planos').select('*').order('ordem').order('id');
+  if (error) throw error;
+  return data ?? [];
+}
+
+export async function createPlano(input: PlanoInput) {
+  const { error } = await supabase.from('planos').insert(input);
+  if (error) throw error;
+}
+
+export async function updatePlano(id: number, patch: Partial<PlanoInput>) {
+  const { error } = await supabase.from('planos').update(patch).eq('id', id);
+  if (error) throw error;
+}
+
+export async function deletePlano(id: number) {
+  const { error } = await supabase.from('planos').delete().eq('id', id);
+  if (error) throw error;
+}
+
+// Assinaturas (qualquer status) e ativas por plano — plano com assinatura
+// não é excluído, só desativado.
+export async function fetchUsoPlanos(): Promise<Map<number, { total: number; ativas: number }>> {
+  const map = new Map<number, { total: number; ativas: number }>();
+  const { data, error } = await supabase.from('assinaturas').select('plano_id, status').not('plano_id', 'is', null).limit(10000);
+  if (error) throw error;
+  for (const row of data ?? []) {
+    if (row.plano_id == null) continue;
+    const uso = map.get(row.plano_id) ?? { total: 0, ativas: 0 };
+    uso.total += 1;
+    if (row.status === 'ACTIVE') uso.ativas += 1;
+    map.set(row.plano_id, uso);
+  }
+  return map;
 }
 
 // ---- Curadoria de questões por módulo ----
