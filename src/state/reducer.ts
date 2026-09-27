@@ -36,6 +36,19 @@ export function reducer(state: AppState, action: Action): AppState {
         aiMessages: [],
         aiTyping: false,
       };
+    case 'RESUME_SESSION':
+      return {
+        ...state,
+        session: {
+          qIndex: action.qIndex,
+          selected: null,
+          answered: false,
+          sessionAnswered: action.answered,
+          sessionCorrect: action.correct,
+          // XP já ganho nas questões respondidas antes (10 por acerto).
+          gained: action.correct * 10,
+        },
+      };
     case 'RESET_SESSION':
       return {
         ...state,

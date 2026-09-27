@@ -1,8 +1,8 @@
-import { ArrowRight, CircleNotch, X } from '@phosphor-icons/react';
+import { ArrowClockwise, ArrowRight, CircleNotch, X } from '@phosphor-icons/react';
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAppData } from '../../contexts/AppDataContext';
-import { fetchQuestoesDoModulo, recordResposta, upsertProgressoModulo } from '../../lib/queries';
+import { fetchQuestoesDoModulo, fetchRespostas, recordResposta, upsertProgressoModulo } from '../../lib/queries';
 import { formatTimer } from '../../lib/format';
 import { sanitizeHtml } from '../../lib/sanitizeHtml';
 import { useAppState } from '../../state/AppStateContext';
@@ -28,6 +28,11 @@ export default function Question() {
   const [saveError, setSaveError] = useState('');
   const [quitOpen, setQuitOpen] = useState(false);
   const savingRef = useRef(false);
+  // Retomada: módulo não concluído continua da 1ª questão sem resposta.
+  // Só na entrada (sessão zerada) — nunca no meio de uma sessão em curso.
+  const sessaoNovaRef = useRef(state.session.qIndex === 0 && state.session.sessionAnswered === 0);
+  const [retomadaDe, setRetomadaDe] = useState<number | null>(null);
+  const [todasRespondidas, setTodasRespondidas] = useState<{ answered: number; correct: number } | null>(null);
   const contentRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -38,6 +43,7 @@ export default function Question() {
   const currentModulo = modules.find((m) => m.status === 'current') ?? null;
   const currentModuloId = currentModulo?.id;
   const precisaAssinar = !!currentModulo?.premium;
+  const usuarioId = usuario?.id;
 
   useEffect(() => {
     if (precisaAssinar) navigate('/assinar', { replace: true });
@@ -48,7 +54,33 @@ export default function Question() {
     setQuestoes(null);
     setLoadError(false);
     fetchQuestoesDoModulo(currentModuloId)
-      .then(setQuestoes)
+      .then(async (qs) => {
+        if (sessaoNovaRef.current && usuarioId && qs.length) {
+          sessaoNovaRef.current = false;
+          try {
+            // As respostas ficam gravadas a cada questão; o módulo só é
+            // marcado como concluído no fim. Então, se o aluno saiu no meio,
+            // as questões do começo já têm resposta: pula elas e soma os
+            // acertos no resultado.
+            const respostas = await fetchRespostas(usuarioId, qs.map((q) => q.id));
+            let feitas = 0;
+            let corretas = 0;
+            while (feitas < qs.length && respostas.has(qs[feitas].id)) {
+              if (respostas.get(qs[feitas].id)) corretas += 1;
+              feitas += 1;
+            }
+            if (feitas === qs.length) setTodasRespondidas({ answered: feitas, correct: corretas });
+            else if (feitas > 0) {
+              dispatch({ type: 'RESUME_SESSION', qIndex: feitas, answered: feitas, correct: corretas });
+              setRetomadaDe(feitas);
+            }
+          } catch (err) {
+            // sem as respostas anteriores, começa do início (como antes)
+            logClientError(err, 'fetchRespostas');
+          }
+        }
+        setQuestoes(qs);
+      })
       .catch((err) => {
         // O banco também barra módulo pago sem assinatura (migration 022).
         if (err?.message?.includes('ASSINATURA_NECESSARIA')) {
@@ -58,7 +90,7 @@ export default function Question() {
         logClientError(err, 'fetchQuestoesDoModulo');
         setLoadError(true);
       });
-  }, [currentModuloId, precisaAssinar, navigate]);
+  }, [currentModuloId, precisaAssinar, navigate, usuarioId, dispatch]);
 
   if (!currentModulo) {
     return (
@@ -95,6 +127,35 @@ export default function Question() {
         <button onClick={() => navigate('/trilha')} className="font-sans text-[13px] font-extrabold text-blue">
           Voltar para a trilha
         </button>
+      </div>
+    );
+  }
+
+  if (todasRespondidas) {
+    return (
+      <div className="flex flex-1 flex-col items-center justify-center gap-4 p-6 text-center">
+        <div className="font-display text-[18px] font-extrabold text-ink">Você já respondeu todas as questões</div>
+        <div className="font-sans text-[13.5px] font-semibold text-text2">
+          Falta só concluir o módulo: {todasRespondidas.correct} de {todasRespondidas.answered} acertos.
+        </div>
+        {saveError && <div className="font-sans text-[12.5px] font-bold text-error">{saveError}</div>}
+        <div className="w-full max-w-[360px]">
+          <button
+            disabled={finalizing}
+            onClick={() => {
+              dispatch({
+                type: 'RESUME_SESSION',
+                qIndex: todasRespondidas.answered - 1,
+                answered: todasRespondidas.answered,
+                correct: todasRespondidas.correct,
+              });
+              concluirModulo(todasRespondidas.correct, todasRespondidas.answered);
+            }}
+            className="button button-primary w-full"
+          >
+            {finalizing ? 'Concluindo…' : 'Concluir módulo'}
+          </button>
+        </div>
       </div>
     );
   }
@@ -149,11 +210,15 @@ export default function Question() {
       setAiOpen(false);
       return;
     }
+    await concluirModulo(state.session.sessionCorrect, state.session.sessionAnswered);
+  }
+
+  async function concluirModulo(acertos: number, respondidas: number) {
     if (usuario && currentModuloId && !finalizing) {
       savingRef.current = true;
       setFinalizing(true);
       try {
-        await upsertProgressoModulo(usuario.id, currentModuloId, state.session.sessionCorrect, state.session.sessionAnswered);
+        await upsertProgressoModulo(usuario.id, currentModuloId, acertos, respondidas);
         await refreshModules();
       } catch (err) {
         logClientError(err, 'upsertProgressoModulo');
@@ -239,6 +304,12 @@ export default function Question() {
           <span className="rounded-lg bg-app-bg px-2.5 py-1 font-sans text-[11px] font-bold text-text2">
             Questão {state.session.qIndex + 1} / {total}
           </span>
+          {retomadaDe !== null && state.session.qIndex === retomadaDe && !answered && (
+            <span className="flex items-center gap-1 rounded-lg bg-success-tint px-2.5 py-1 font-sans text-[11px] font-bold text-success" role="status">
+              <ArrowClockwise size={12} weight="bold" />
+              Continuando de onde você parou
+            </span>
+          )}
         </div>
 
         {warn && (

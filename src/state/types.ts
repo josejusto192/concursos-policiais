@@ -82,6 +82,8 @@ export type Action =
   | { type: 'MARK_ANSWERED'; correct: boolean; gained: number }
   | { type: 'NEXT_QUESTION' }
   | { type: 'RESET_SESSION' }
+  // Retoma um módulo não concluído a partir da 1ª questão ainda não respondida.
+  | { type: 'RESUME_SESSION'; qIndex: number; answered: number; correct: number }
   | { type: 'TOGGLE_TIMER' }
   | { type: 'TICK_TIMER' }
   | { type: 'SET_MENTOR_OPEN'; open: boolean }

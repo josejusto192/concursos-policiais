@@ -199,6 +199,21 @@ export async function recordResposta(usuarioId: string, questaoId: string, acert
   return true;
 }
 
+// Respostas já gravadas do aluno para estas questões (pra retomar um módulo
+// não concluído de onde parou). questao_id → acertou.
+export async function fetchRespostas(usuarioId: string, questaoIds: string[]): Promise<Map<string, boolean>> {
+  const map = new Map<string, boolean>();
+  if (!questaoIds.length) return map;
+  const { data, error } = await supabase
+    .from('progresso_questoes')
+    .select('questao_id, acertou')
+    .eq('usuario_id', usuarioId)
+    .in('questao_id', questaoIds);
+  if (error) throw error;
+  for (const row of data ?? []) map.set(row.questao_id, row.acertou);
+  return map;
+}
+
 // ---- Caderno de erros (por trilha, com "responder de novo") ----
 
 export async function fetchContagemErros(trilhaId: number): Promise<number> {
