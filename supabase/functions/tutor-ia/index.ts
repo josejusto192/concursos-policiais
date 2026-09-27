@@ -10,6 +10,7 @@
 // A api_key nunca é enviada ao navegador do aluno: só esta função (rodando
 // com service_role) a lê.
 import { createClient } from 'npm:@supabase/supabase-js@2';
+import { encodeBase64 } from 'jsr:@std/encoding@1/base64';
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -29,6 +30,54 @@ function stripHtml(html: string | null | undefined): string {
     .replace(/<[^>]+>/g, ' ')
     .replace(/\s+/g, ' ')
     .trim();
+}
+
+// ---- Imagens da questão (gráficos, tabelas, mapas) ----
+// O texto da questão vai sem HTML; sem isto o <img> sumia e o tutor pedia
+// ao aluno pra "mandar o gráfico". Cada imagem vira um marcador [Imagem N]
+// no texto e é anexada à chamada do Gemini (inline_data), na mesma ordem.
+const MAX_IMAGENS = 6;
+const MAX_BYTES_IMAGEM = 4 * 1024 * 1024;
+// Formatos de imagem aceitos pelo Gemini.
+const MIME_ACEITOS = ['image/png', 'image/jpeg', 'image/webp', 'image/heic', 'image/heif'];
+
+class ColetorImagens {
+  srcs: string[] = [];
+
+  // HTML → texto, trocando cada <img> por [Imagem N].
+  texto(html: string | null | undefined): string {
+    return (html ?? '')
+      .replace(/<img\b[^>]*?\bsrc\s*=\s*["']([^"']+)["'][^>]*>/gi, (_m, src: string) => {
+        let n = this.srcs.indexOf(src) + 1;
+        if (!n) {
+          this.srcs.push(src);
+          n = this.srcs.length;
+        }
+        return ` [Imagem ${n}] `;
+      })
+      .replace(/<[^>]+>/g, ' ')
+      .replace(/&nbsp;/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+  }
+}
+
+type ParteGemini = { text: string } | { inline_data: { mime_type: string; data: string } };
+
+async function baixarImagem(src: string): Promise<{ mime_type: string; data: string } | null> {
+  try {
+    const dataUri = src.match(/^data:([^;]+);base64,(.+)$/);
+    if (dataUri) return MIME_ACEITOS.includes(dataUri[1]) ? { mime_type: dataUri[1], data: dataUri[2] } : null;
+    const res = await fetch(src, { headers: { 'User-Agent': 'Mozilla/5.0 (FocoApp tutor)' }, signal: AbortSignal.timeout(8000) });
+    if (!res.ok) return null;
+    const mime = (res.headers.get('content-type') ?? '').split(';')[0].trim().toLowerCase();
+    if (!MIME_ACEITOS.includes(mime)) return null;
+    const bytes = new Uint8Array(await res.arrayBuffer());
+    if (bytes.byteLength > MAX_BYTES_IMAGEM) return null;
+    return { mime_type: mime, data: encodeBase64(bytes) };
+  } catch {
+    return null;
+  }
 }
 
 interface HistoricoMsg {
@@ -67,7 +116,7 @@ Deno.serve(async (req: Request) => {
 
   const { data: questao, error: qErr } = await admin
     .from('questoes')
-    .select('enunciado, alternativas, gabarito_letra, comentario, comentario_revisado, disciplina')
+    .select('enunciado, enunciado_html, alternativas, gabarito_letra, comentario, comentario_html, comentario_revisado, comentario_revisado_html, disciplina')
     .eq('id', questaoId)
     .single();
   if (qErr || !questao) return json({ error: 'Questão não encontrada' }, 404);
@@ -82,7 +131,9 @@ Deno.serve(async (req: Request) => {
   // Créditos diários (proteção de custo do Gemini): 1 mensagem respondida =
   // 1 crédito, limite diferente pra assinante e não assinante (migration
   // 023, configurável pelo admin). Erro de rede/IA não consome crédito.
-  const { data: creditos, error: cErr } = await admin.rpc('tutor_creditos', { p_usuario_id: userData.user.id }).single();
+  const { data: creditos, error: cErr } = await admin
+    .rpc('tutor_creditos', { p_usuario_id: userData.user.id })
+    .single<{ limite: number; usados: number; restantes: number; assinante: boolean }>();
   if (cErr || !creditos) return json({ error: 'Não foi possível verificar seus créditos.' }, 500);
   if (creditos.restantes <= 0) {
     return json(
@@ -97,21 +148,42 @@ Deno.serve(async (req: Request) => {
     );
   }
 
+  // Mesma ordem de leitura do aluno: enunciado, alternativas, comentário.
+  const coletor = new ColetorImagens();
+  const enunciadoTexto = questao.enunciado_html ? coletor.texto(questao.enunciado_html) : stripHtml(questao.enunciado);
   const alternativasTexto = (questao.alternativas ?? [])
-    .map((a: { letra: string; texto: string }) => `${a.letra}) ${a.texto}${a.letra === questao.gabarito_letra ? '  ← correta' : ''}`)
+    .map((a: { letra: string; texto: string; html?: string | null }) => {
+      const texto = a.html ? coletor.texto(a.html) : a.texto;
+      return `${a.letra}) ${texto}${a.letra === questao.gabarito_letra ? '  ← correta' : ''}`;
+    })
     .join('\n');
+  // Comentário revisado (nunca o original raspado quando há revisão).
+  const comentarioHtml = questao.comentario_revisado_html ?? (questao.comentario_revisado ? null : questao.comentario_html);
+  const comentario = comentarioHtml ? coletor.texto(comentarioHtml) : stripHtml(questao.comentario_revisado || questao.comentario);
 
-  const comentario = stripHtml(questao.comentario_revisado || questao.comentario);
+  const srcs = coletor.srcs.slice(0, MAX_IMAGENS);
+  const imagens = await Promise.all(srcs.map(baixarImagem));
+  const faltando = srcs.map((_, i) => i + 1).filter((n) => !imagens[n - 1]);
+  const partesImagem: ParteGemini[] = imagens.flatMap((img, i) =>
+    img ? [{ text: `[Imagem ${i + 1}]` }, { inline_data: img }] : [],
+  );
+  const avisoImagens = coletor.srcs.length
+    ? `\n\nA questão tem ${coletor.srcs.length} imagem(ns) (gráficos, tabelas ou figuras), marcadas no texto como [Imagem N] e anexadas logo após estas instruções, na mesma numeração. Analise-as como parte da questão.${
+        faltando.length || coletor.srcs.length > MAX_IMAGENS
+          ? ` Algumas não puderam ser carregadas (${[...faltando, ...coletor.srcs.slice(MAX_IMAGENS).map((_, i) => MAX_IMAGENS + i + 1)].map((n) => `Imagem ${n}`).join(', ')}): explique usando o enunciado e o comentário, sem pedir a imagem ao aluno.`
+          : ''
+      }`
+    : '';
   const historicoTexto = (historico ?? [])
     .map((m) => `${m.role === 'user' ? 'Aluno' : 'Tutor'}: ${m.text}`)
     .join('\n');
 
   const extra = config.tutor_prompt_extra ? `\n\nDiretrizes adicionais do professor:\n${config.tutor_prompt_extra}` : '';
 
-  const prompt = `Você é um tutor de IA paciente e didático, ajudando um aluno de concurso público a entender uma questão que ele acabou de responder. Baseie-se só nas informações abaixo — nunca invente lei, dado ou explicação que não esteja no comentário oficial. Responda em texto simples, sem HTML nem markdown, em no máximo dois parágrafos curtos.${extra}
+  const prompt = `Você é um tutor de IA paciente e didático, ajudando um aluno de concurso público a entender uma questão que ele acabou de responder. Baseie-se só nas informações abaixo — nunca invente lei, dado ou explicação que não esteja no comentário oficial. Responda em texto simples, sem HTML nem markdown, em no máximo dois parágrafos curtos. Você já recebe tudo o que existe da questão: NUNCA peça ao aluno para enviar imagem, print, gráfico, tabela, enunciado ou qualquer dado da questão.${avisoImagens}${extra}
 
 ## Questão (${questao.disciplina})
-${stripHtml(questao.enunciado)}
+${enunciadoTexto}
 
 Alternativas:
 ${alternativasTexto}
@@ -138,7 +210,7 @@ Responda à última mensagem do aluno.`;
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }),
+        body: JSON.stringify({ contents: [{ parts: [{ text: prompt }, ...partesImagem] }] }),
       }
     );
   } catch (err) {
