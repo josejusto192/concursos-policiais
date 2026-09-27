@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { useUsuario, type Usuario } from '../hooks/useUsuario';
 import {
   fetchContagemErros,
@@ -15,7 +15,7 @@ import { logClientError } from '../lib/errorLog';
 
 type UsuarioUpdate = Database['public']['Tables']['usuarios']['Update'];
 
-function computeModules(modulos: ModuloRow[], progresso: Map<number, { acertos: number; total: number }>): Modulo[] {
+function computeModules(modulos: ModuloRow[], progresso: Map<number, { acertos: number; total: number }>): Omit<Modulo, 'premium'>[] {
   let foundCurrent = false;
   return modulos.map((m) => {
     if (m.tipo === 'aula') {
@@ -66,6 +66,9 @@ interface AppDataContextValue {
   setActiveTrilha: (id: number) => Promise<void>;
   modules: Modulo[];
   refreshModules: () => Promise<void>;
+  // Assinatura ativa (cortesia ou paga) ou equipe — libera todos os módulos.
+  temAcesso: boolean;
+  refreshUsuario: () => Promise<void>;
   dailyDone: number;
   refreshDailyDone: () => Promise<void>;
   errosCount: number;
@@ -77,9 +80,9 @@ const AppDataContext = createContext<AppDataContextValue | null>(null);
 const LOAD_ERROR_MESSAGE = 'Não conseguimos carregar seus dados agora. Verifique sua conexão e tente de novo.';
 
 export function AppDataProvider({ children }: { children: ReactNode }) {
-  const { usuario, loading: loadingUsuario, updateUsuario, addXp } = useUsuario();
+  const { usuario, loading: loadingUsuario, updateUsuario, addXp, recarregarUsuario } = useUsuario();
   const [trilhas, setTrilhas] = useState<TrilhaRow[]>([]);
-  const [modules, setModules] = useState<Modulo[]>([]);
+  const [baseModules, setModules] = useState<Omit<Modulo, 'premium'>[]>([]);
   const [dailyDone, setDailyDone] = useState(0);
   const [errosCount, setErrosCount] = useState(0);
   const [loadingTrilhas, setLoadingTrilhas] = useState(true);
@@ -166,6 +169,32 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
 
   const retry = useCallback(() => setRetryTick((t) => t + 1), []);
 
+  // Mesma regra de modulo_liberado() no banco (migration 022): sem
+  // assinatura, só o 1º módulo de questões da trilha é grátis.
+  const temAcesso = useMemo(
+    () =>
+      !!usuario &&
+      (usuario.assinatura_cortesia ||
+        (!!usuario.acesso_ate && new Date(usuario.acesso_ate) > new Date()) ||
+        usuario.is_admin ||
+        usuario.is_editor),
+    [usuario],
+  );
+  const modules = useMemo<Modulo[]>(() => {
+    const gratisId = baseModules.find((m) => m.tipo === 'questoes')?.id;
+    return baseModules.map((m) => ({ ...m, premium: !temAcesso && m.id !== gratisId }));
+  }, [baseModules, temAcesso]);
+
+  // Volta pro app (ex.: depois de pagar a fatura no Asaas): relê o usuário
+  // pra liberar o acesso assim que o webhook confirmar o pagamento.
+  useEffect(() => {
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') recarregarUsuario();
+    };
+    document.addEventListener('visibilitychange', onVisible);
+    return () => document.removeEventListener('visibilitychange', onVisible);
+  }, [recarregarUsuario]);
+
   return (
     <AppDataContext.Provider
       value={{
@@ -181,6 +210,8 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
         setActiveTrilha,
         modules,
         refreshModules,
+        temAcesso,
+        refreshUsuario: recarregarUsuario,
         dailyDone,
         refreshDailyDone,
         errosCount,

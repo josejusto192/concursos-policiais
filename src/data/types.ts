@@ -51,6 +51,8 @@ export interface Modulo {
   status: ModuloStatus;
   acertos: number;
   total: number;
+  // Exige assinatura e o aluno não tem (só o 1º módulo de questões é grátis).
+  premium: boolean;
 }
 
 export type ConquistaCategoria = 'consistencia' | 'volume' | 'desempenho' | 'trilha' | 'indicacoes';

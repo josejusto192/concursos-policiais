@@ -1,3 +1,4 @@
+import { Crown } from '@phosphor-icons/react';
 import { useNavigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { CATEGORY_COLOR, CONQUISTAS } from '../../data/mock';
@@ -13,6 +14,7 @@ export default function Profile() {
   const navigate = useNavigate();
   const { signOut } = useAuth();
   const { usuario, activeTrilha, modules } = useAppData();
+  const assinaturaPaga = !!usuario?.acesso_ate && new Date(usuario.acesso_ate) > new Date();
   const [referralOpen, setReferralOpen] = useState(false);
   const [legalDoc, setLegalDoc] = useState<LegalDoc | null>(null);
   const [totalRespondidas, setTotalRespondidas] = useState(0);
@@ -92,6 +94,32 @@ export default function Profile() {
               </div>
             ))}
           </div>
+
+          <button
+            onClick={() => navigate('/assinar')}
+            className="mt-3.5 flex w-full items-center gap-3.5 rounded-2xl border-[1.5px] p-4 text-left"
+            style={{ borderColor: assinaturaPaga ? '#b6e6cd' : '#f3dd8e', background: assinaturaPaga ? '#E9F7F0' : '#FFF9E6' }}
+          >
+            <span
+              className="flex h-[42px] w-[42px] flex-none items-center justify-center rounded-xl"
+              style={{ background: assinaturaPaga ? '#22A06B' : '#FFCB2D', color: assinaturaPaga ? '#fff' : '#0B1F4D' }}
+            >
+              <Crown size={22} weight="fill" />
+            </span>
+            <span className="min-w-0 flex-1">
+              <div className="font-sans text-[14.5px] font-extrabold text-ink">
+                {assinaturaPaga ? 'Sua assinatura' : usuario?.assinatura_cortesia ? 'Acesso cortesia' : 'Assine e desbloqueie tudo'}
+              </div>
+              <div className="mt-0.5 font-sans text-[12px] font-semibold text-text2">
+                {assinaturaPaga
+                  ? `Ativa até ${new Date(usuario!.acesso_ate!).toLocaleDateString('pt-BR')}`
+                  : usuario?.assinatura_cortesia
+                    ? 'Todos os módulos liberados · veja os planos'
+                    : 'Todos os módulos, caderno de erros e tutor de IA'}
+              </div>
+            </span>
+            <span className="text-[18px] text-blue">›</span>
+          </button>
 
           <button
             onClick={() => setReferralOpen(true)}

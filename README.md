@@ -224,6 +224,12 @@ supabase functions deploy asaas-sync-cliente --no-verify-jwt   # usa o módulo c
 insert into planos (nome, descricao, valor, ciclo) values ('Foco Mensal', 'Acesso completo', 29.90, 'MONTHLY');
 ```
 
+**Bloqueio (migration `022_bloqueio_por_assinatura.sql`)**: sem assinatura,
+só o 1º módulo de questões de cada trilha é liberado. O banco barra o resto
+(`get_modulo_questoes` devolve `ASSINATURA_NECESSARIA`) e o caderno de erros
+só mostra questões de módulos liberados. No app, os módulos pagos aparecem
+com cadeado e levam para `/assinar` (escolha do plano + CPF → fatura).
+
 Eventos recebidos ficam em `asaas_webhook_eventos` (status `PROCESSADO` /
 `ERRO`). Erros também aparecem em "Saúde do app". Para reprocessar um
 evento: `select asaas_processar_evento(<id>);`.

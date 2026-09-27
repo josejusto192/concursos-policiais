@@ -37,18 +37,28 @@ export default function Question() {
 
   const currentModulo = modules.find((m) => m.status === 'current') ?? null;
   const currentModuloId = currentModulo?.id;
+  const precisaAssinar = !!currentModulo?.premium;
 
   useEffect(() => {
-    if (!currentModuloId) return;
+    if (precisaAssinar) navigate('/assinar', { replace: true });
+  }, [precisaAssinar, navigate]);
+
+  useEffect(() => {
+    if (!currentModuloId || precisaAssinar) return;
     setQuestoes(null);
     setLoadError(false);
     fetchQuestoesDoModulo(currentModuloId)
       .then(setQuestoes)
       .catch((err) => {
+        // O banco também barra módulo pago sem assinatura (migration 022).
+        if (err?.message?.includes('ASSINATURA_NECESSARIA')) {
+          navigate('/assinar', { replace: true });
+          return;
+        }
         logClientError(err, 'fetchQuestoesDoModulo');
         setLoadError(true);
       });
-  }, [currentModuloId]);
+  }, [currentModuloId, precisaAssinar, navigate]);
 
   if (!currentModulo) {
     return (

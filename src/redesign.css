@@ -2160,6 +2160,15 @@ textarea:focus-visible {
 .map-stop.aula .map-caption p {
   color: #865bbe;
 }
+/* Módulo exclusivo para assinantes: cadeado dourado, clicável (abre os planos). */
+.map-stop.premium .map-node {
+  background: #fff7dc;
+  color: #b88400;
+  box-shadow: 0 5px 0 #f0dc9c;
+}
+.map-stop.premium .map-caption p {
+  color: #a37500;
+}
 .map-current-label {
   position: absolute;
   top: -21px;

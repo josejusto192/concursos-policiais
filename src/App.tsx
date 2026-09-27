@@ -15,6 +15,7 @@ import PoliticaPrivacidadeScreen from './screens/legal/Privacidade';
 import Home from './screens/home/Home';
 import Question from './screens/question/Question';
 import CadernoErros from './screens/CadernoErros';
+import Assinar from './screens/Assinar';
 import Result from './screens/Result';
 import Stats from './screens/Stats';
 import Ranking from './screens/Ranking';
@@ -105,6 +106,14 @@ function StudentRoutes() {
         element={
           <PrivateRoute>
             <CadernoErros />
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/assinar"
+        element={
+          <PrivateRoute>
+            <Assinar />
           </PrivateRoute>
         }
       />

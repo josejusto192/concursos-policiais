@@ -33,7 +33,8 @@ export interface ModuloRow {
 // Módulos tipo 'aula' apontam para a biblioteca de aulas (aula_id): o vídeo
 // vem da aula, e modulos.video_url fica só como fallback legado.
 export async function fetchModulos(trilhaId: number): Promise<ModuloRow[]> {
-  const { data, error } = await supabase.from('modulos').select('*').eq('trilha_id', trilhaId).order('ordem');
+  // Desempate por id: mesma ordenação de modulo_liberado() (migration 022).
+  const { data, error } = await supabase.from('modulos').select('*').eq('trilha_id', trilhaId).order('ordem').order('id');
   if (error) throw error;
   const modulos = data ?? [];
   const aulaIds = [...new Set(modulos.map((m) => m.aula_id).filter((id): id is number => id != null))];
@@ -139,6 +140,50 @@ export async function fetchPlanos(): Promise<PlanoRow[]> {
 export async function assinarPlano(planoId: number, cpf: string): Promise<string> {
   const data = await invokeEdgeFunction<{ invoice_url: string }>('asaas-assinar', { plano_id: planoId, cpf });
   return data.invoice_url;
+}
+
+export interface MinhaAssinatura {
+  status: string;
+  planoNome: string | null;
+  valor: number | null;
+  ciclo: string | null;
+  proximoVencimento: string | null;
+  // Fatura em aberto (1ª cobrança ainda não paga, ou mensalidade vencida).
+  faturaPendente: string | null;
+}
+
+// Assinatura mais recente do aluno (RLS: só lê a própria) + fatura em aberto.
+export async function fetchMinhaAssinatura(usuarioId: string): Promise<MinhaAssinatura | null> {
+  const { data: assinatura, error } = await supabase
+    .from('assinaturas')
+    .select('*')
+    .eq('usuario_id', usuarioId)
+    .order('criado_em', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (error) throw error;
+  if (!assinatura) return null;
+  const [plano, pendente] = await Promise.all([
+    assinatura.plano_id
+      ? supabase.from('planos').select('nome').eq('id', assinatura.plano_id).maybeSingle()
+      : Promise.resolve({ data: null }),
+    supabase
+      .from('pagamentos')
+      .select('invoice_url')
+      .eq('asaas_subscription_id', assinatura.asaas_subscription_id)
+      .in('status', ['PENDING', 'OVERDUE'])
+      .order('vencimento')
+      .limit(1)
+      .maybeSingle(),
+  ]);
+  return {
+    status: assinatura.status,
+    planoNome: plano.data?.nome ?? null,
+    valor: assinatura.valor,
+    ciclo: assinatura.ciclo,
+    proximoVencimento: assinatura.proximo_vencimento,
+    faturaPendente: pendente.data?.invoice_url ?? null,
+  };
 }
 
 export async function recordResposta(usuarioId: string, questaoId: string, acertou: boolean) {

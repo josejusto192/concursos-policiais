@@ -96,5 +96,13 @@ export function useUsuario() {
     [usuario, updateUsuario]
   )
 
-  return { usuario, loading, updateUsuario, addXp }
+  // Relê a linha sem mexer em streak/último acesso — usado quando o app volta
+  // a ficar visível (ex.: depois de pagar a fatura da assinatura).
+  const recarregarUsuario = useCallback(async () => {
+    if (!user) return
+    const { data } = await supabase.from('usuarios').select('*').eq('id', user.id).single()
+    if (data) setUsuario(data)
+  }, [user])
+
+  return { usuario, loading, updateUsuario, addXp, recarregarUsuario }
 }

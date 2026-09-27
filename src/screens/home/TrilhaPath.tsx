@@ -43,17 +43,22 @@ export default function TrilhaPath() {
           const current = m.status === 'current';
           const done = m.status === 'done';
           const video = m.tipo === 'aula';
-          const title = current
-            ? 'Continuar estudando'
-            : video
-              ? 'Assistir aula'
-              : done
-                ? 'Concluído'
-                : 'Conclua a etapa anterior';
+          // Módulo pago sem assinatura: toca e vai pra tela de planos (já
+          // concluído num período de assinatura continua só como concluído).
+          const premium = m.premium && !done;
+          const title = premium
+            ? 'Assine para desbloquear'
+            : current
+              ? 'Continuar estudando'
+              : video
+                ? 'Assistir aula'
+                : done
+                  ? 'Concluído'
+                  : 'Conclua a etapa anterior';
           return (
             <div
               key={m.id}
-              className={`map-stop ${m.status}`}
+              className={`map-stop ${m.status}${premium ? ' premium' : ''}`}
               style={{ top: index * STEP_HEIGHT, left: `${(centerX(index) / 320) * 100}%` }}
             >
               {current && (
@@ -64,11 +69,12 @@ export default function TrilhaPath() {
               )}
               <button
                 className="map-node"
-                disabled={!current && !(video && m.video_url)}
+                disabled={!premium && !current && !(video && m.video_url)}
                 aria-label={`${m.titulo}. ${title}`}
                 title={title}
                 onClick={() => {
-                  if (video) setAula(m);
+                  if (premium) navigate('/assinar');
+                  else if (video) setAula(m);
                   else {
                     dispatch({ type: 'RESET_SESSION' });
                     navigate('/questao');
@@ -77,6 +83,8 @@ export default function TrilhaPath() {
               >
                 {done ? (
                   <Check size={29} weight="bold" />
+                ) : premium ? (
+                  <LockSimple size={26} weight="fill" />
                 ) : current || video ? (
                   <Play size={26} weight="fill" />
                 ) : (
@@ -88,7 +96,9 @@ export default function TrilhaPath() {
                 <p>
                   {done
                     ? `${m.acertos}/${m.total} acertos · concluído`
-                    : video
+                    : premium
+                      ? 'EXCLUSIVO PARA ASSINANTES'
+                      : video
                       ? 'AULA EXTRA · OPCIONAL'
                       : current
                         ? 'Toque para continuar'
