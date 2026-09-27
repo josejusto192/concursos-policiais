@@ -57,11 +57,13 @@ export async function sincronizarCliente(usuario: UsuarioAsaas): Promise<string 
   if (!customerId) {
     // O Asaas aceita cliente duplicado: antes de criar, procura um já
     // criado pra este usuário (ex.: dois disparos seguidos do trigger).
-    const existentes = await asaas<{ data: { id: string }[] }>(
+    // Cliente removido no painel do Asaas não serve (PUT falharia): nesse
+    // caso cria outro.
+    const existentes = await asaas<{ data: { id: string; deleted?: boolean }[] }>(
       'GET',
       `/customers?externalReference=${encodeURIComponent(usuario.id)}`,
     );
-    customerId = existentes.data?.[0]?.id ?? null;
+    customerId = existentes.data?.find((c) => !c.deleted)?.id ?? null;
   }
 
   if (customerId) {
