@@ -2470,8 +2470,13 @@ textarea:focus-visible {
     grid-template-columns: repeat(6, minmax(0, 1fr));
   }
 }
+/* O PatternBackground da tela já desenha o pattern — o mapa não repete o
+   fundo nem vira um cartão com borda por cima dele. */
 .compact-path-scroll .game-map {
   max-width: none;
+  border: 0;
+  border-radius: 0;
+  background: none;
 }
 @media (max-width: 760px) {
   .compact-home-header {
