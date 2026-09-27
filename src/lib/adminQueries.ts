@@ -1,4 +1,5 @@
 import { supabase } from './supabase';
+import { invokeEdgeFunction } from './edgeFunctions';
 import type { QuestaoRow } from './database.types';
 import type { ModuloRow, TrilhaRow } from './queries';
 import type { Usuario } from '../hooks/useUsuario';
@@ -243,10 +244,8 @@ export async function fetchQuestaoAdmin(id: string): Promise<QuestaoRow> {
 // ---- Revisão de comentário ----
 
 export async function reviewWithAI(questaoId: string): Promise<{ comentario_revisado_html: string; comentario_revisado: string }> {
-  const { data, error } = await supabase.functions.invoke('revisar-comentario', { body: { questao_id: questaoId } });
-  if (error) throw error;
-  if (data?.error) throw new Error(data.error);
-  return data;
+  // Admin vê a mensagem real da função (ex.: chave do Gemini inválida).
+  return invokeEdgeFunction('revisar-comentario', { questao_id: questaoId });
 }
 
 export async function saveManualReview(questaoId: string, usuarioId: string, comentarioRevisadoHtml: string) {

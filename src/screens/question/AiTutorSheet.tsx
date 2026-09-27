@@ -2,6 +2,8 @@ import { PaperPlaneRight, X } from '@phosphor-icons/react';
 import { useState } from 'react';
 import { useAppState } from '../../state/AppStateContext';
 import { askTutorIA } from '../../lib/queries';
+import { EdgeFunctionError } from '../../lib/edgeFunctions';
+import { logClientError } from '../../lib/errorLog';
 import type { Questao } from '../../data/types';
 import ModalFrame from '../../components/ModalFrame';
 
@@ -26,9 +28,18 @@ export default function AiTutorSheet({ q, selected, acertou, onClose }: AiTutorS
       const reply = await askTutorIA({ questaoId: q.id, duvida: text, historico, alternativaSelecionada: selected, acertou });
       dispatch({ type: 'AI_REPLY', text: reply });
     } catch (err) {
+      // Limite diário é o único erro cuja mensagem o aluno deve ver; o resto
+      // (chave do Gemini, rede, IA fora do ar) vira texto amigável e vai pro
+      // log de erros do admin com o motivo real.
+      const limiteDiario = err instanceof EdgeFunctionError && err.status === 429;
+      if (!limiteDiario) {
+        logClientError(err, `tutor-ia${err instanceof EdgeFunctionError ? ` (HTTP ${err.status ?? 'rede'})` : ''} · questão ${q.id}`);
+      }
       dispatch({
         type: 'AI_REPLY',
-        text: err instanceof Error ? err.message : 'Não consegui responder agora. Tenta de novo em instantes.',
+        text: limiteDiario
+          ? (err as Error).message
+          : 'Ops, o tutor está indisponível no momento. Já avisamos a equipe — tente de novo mais tarde.',
       });
     }
   }

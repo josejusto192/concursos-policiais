@@ -1,4 +1,5 @@
 import { supabase } from './supabase';
+import { invokeEdgeFunction } from './edgeFunctions';
 import type { Alternativa, ModuloQuestaoRow } from './database.types';
 import type { Questao } from '../data/types';
 import type { AiMessage } from '../state/types';
@@ -113,18 +114,14 @@ export async function askTutorIA(input: {
   alternativaSelecionada: string | null;
   acertou: boolean;
 }): Promise<string> {
-  const { data, error } = await supabase.functions.invoke('tutor-ia', {
-    body: {
-      questao_id: input.questaoId,
-      duvida: input.duvida,
-      historico: input.historico,
-      alternativa_selecionada: input.alternativaSelecionada,
-      acertou: input.acertou,
-    },
+  const data = await invokeEdgeFunction<{ reply: string }>('tutor-ia', {
+    questao_id: input.questaoId,
+    duvida: input.duvida,
+    historico: input.historico,
+    alternativa_selecionada: input.alternativaSelecionada,
+    acertou: input.acertou,
   });
-  if (error) throw error;
-  if (data?.error) throw new Error(data.error);
-  return data.reply as string;
+  return data.reply;
 }
 
 export async function recordResposta(usuarioId: string, questaoId: string, acertou: boolean) {
