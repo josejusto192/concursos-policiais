@@ -39,7 +39,7 @@ export default function ResetPasswordScreen() {
     <div className="scr relative flex flex-1 flex-col overflow-y-auto bg-app-bg p-[0_26px_32px]">
       <div
         className="absolute inset-x-0 top-0 z-0"
-        style={{ height: '42%', backgroundImage: "url('/assets/bg-blue-texture.png')", backgroundSize: 'cover', backgroundPosition: 'center top' }}
+        style={{ height: '42%', backgroundImage: "url('/assets/bg-blue-texture.jpg')", backgroundSize: 'cover', backgroundPosition: 'center top' }}
       />
       <div className="relative z-10 animate-slide-up pt-16 text-center">
         <div

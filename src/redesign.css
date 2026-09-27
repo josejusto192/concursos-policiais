@@ -2036,7 +2036,7 @@ textarea:focus-visible {
 
 /* The learning path stays playful: a winding map over the original pattern. */
 .pattern-layer {
-  background: url('/assets/trilha-pattern.png') top center / 480px auto repeat;
+  background: url('/assets/trilha-pattern.webp') top center / 480px auto repeat;
   opacity: 0.7;
   pointer-events: none;
 }
@@ -2046,7 +2046,7 @@ textarea:focus-visible {
   border: 1px solid #e6eaf5;
   border-radius: 22px;
   padding: 28px 18px;
-  background: #fbfcff url('/assets/trilha-pattern.png') top center / 460px auto repeat;
+  background: #fbfcff url('/assets/trilha-pattern.webp') top center / 460px auto repeat;
 }
 .map-section-label {
   text-align: center;
@@ -2615,7 +2615,7 @@ textarea:focus-visible {
   overflow: hidden;
   padding: 36px 24px;
   text-align: center;
-  background: #f5f7fc url('/assets/trilha-pattern.png') center / 460px auto repeat;
+  background: #f5f7fc url('/assets/trilha-pattern.webp') center / 460px auto repeat;
   animation: screen-arrive 260ms ease both;
 }
 .loading-experience::before {

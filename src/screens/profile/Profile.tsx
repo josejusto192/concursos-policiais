@@ -73,7 +73,7 @@ export default function Profile() {
       <PatternBackground scrollClassName="profile-scroll">
         <div
           className="p-[34px_20px_26px] text-center"
-          style={{ backgroundImage: "url('/assets/bg-blue-texture.png')", backgroundSize: 'cover', backgroundPosition: 'center top' }}
+          style={{ backgroundImage: "url('/assets/bg-blue-texture.jpg')", backgroundSize: 'cover', backgroundPosition: 'center top' }}
         >
           <div className="mx-auto flex h-[82px] w-[82px] items-center justify-center rounded-full bg-yellow" style={{ border: '4px solid rgba(255,255,255,.3)' }}>
             <span className="font-display text-[32px] font-extrabold text-ink">{iniciais}</span>
