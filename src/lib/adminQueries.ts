@@ -289,7 +289,7 @@ export async function searchUsuarios(texto: string | undefined, page: number): P
   return { rows: data ?? [], total: count ?? 0 };
 }
 
-export async function updateUsuarioAdmin(id: string, patch: Partial<Pick<Usuario, 'assinatura_ativa' | 'is_admin' | 'is_editor'>>) {
+export async function updateUsuarioAdmin(id: string, patch: Partial<Pick<Usuario, 'assinatura_cortesia' | 'is_admin' | 'is_editor'>>) {
   const { error } = await supabase.from('usuarios').update(patch).eq('id', id);
   if (error) throw error;
 }

@@ -1,6 +1,6 @@
 import { supabase } from './supabase';
 import { invokeEdgeFunction } from './edgeFunctions';
-import type { Alternativa, ModuloQuestaoRow } from './database.types';
+import type { Alternativa, Database, ModuloQuestaoRow } from './database.types';
 import type { Questao } from '../data/types';
 import type { AiMessage } from '../state/types';
 
@@ -122,6 +122,23 @@ export async function askTutorIA(input: {
     acertou: input.acertou,
   });
   return data.reply;
+}
+
+// ---- Assinatura (Asaas) ----
+
+export type PlanoRow = Database['public']['Tables']['planos']['Row'];
+
+export async function fetchPlanos(): Promise<PlanoRow[]> {
+  const { data, error } = await supabase.from('planos').select('*').eq('ativo', true).order('ordem');
+  if (error) throw error;
+  return data ?? [];
+}
+
+// CPF só é pedido aqui. Devolve o link da fatura (Pix/boleto/cartão) da 1ª
+// cobrança; o acesso só é liberado quando o webhook confirmar o pagamento.
+export async function assinarPlano(planoId: number, cpf: string): Promise<string> {
+  const data = await invokeEdgeFunction<{ invoice_url: string }>('asaas-assinar', { plano_id: planoId, cpf });
+  return data.invoice_url;
 }
 
 export async function recordResposta(usuarioId: string, questaoId: string, acertou: boolean) {

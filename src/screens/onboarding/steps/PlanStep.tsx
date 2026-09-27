@@ -76,7 +76,6 @@ export default function PlanStep({ planConcurso, planMeta, planWeeks, refCode }:
       trilha_ativa_id: ob.concurso,
       streak: 1,
       ultimo_acesso: today,
-      assinatura_ativa: true,
       termos_aceitos_em: new Date().toISOString(),
     });
 

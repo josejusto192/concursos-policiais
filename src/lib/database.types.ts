@@ -102,12 +102,15 @@ export type Database = {
           asaas_customer_id: string | null;
           asaas_sincronizado_em: string | null;
           asaas_sync_erro: string | null;
+          // Acesso (migration 021): assinatura_ativa = cortesia OU acesso_ate
+          // no futuro — calculado pelo banco, nunca gravado pelo app.
+          assinatura_cortesia: boolean;
+          acesso_ate: string | null;
         };
         Insert: {
           id: string;
           nome?: string | null;
           email: string;
-          assinatura_ativa?: boolean;
           streak?: number;
           ultimo_acesso?: string | null;
           whatsapp?: string | null;
@@ -123,7 +126,7 @@ export type Database = {
         };
         Update: {
           nome?: string | null;
-          assinatura_ativa?: boolean;
+          assinatura_cortesia?: boolean;
           streak?: number;
           ultimo_acesso?: string | null;
           whatsapp?: string | null;
@@ -194,6 +197,76 @@ export type Database = {
           video_url?: string | null;
           aula_id?: number | null;
         };
+        Relationships: [];
+      };
+      // Assinaturas via Asaas (migration 021). Só o servidor escreve em
+      // assinaturas/pagamentos; o aluno lê os próprios.
+      planos: {
+        Row: {
+          id: number;
+          nome: string;
+          descricao: string | null;
+          valor: number;
+          ciclo: string;
+          ativo: boolean;
+          ordem: number;
+          criado_em: string;
+        };
+        Insert: {
+          nome: string;
+          descricao?: string | null;
+          valor: number;
+          ciclo?: string;
+          ativo?: boolean;
+          ordem?: number;
+        };
+        Update: {
+          nome?: string;
+          descricao?: string | null;
+          valor?: number;
+          ciclo?: string;
+          ativo?: boolean;
+          ordem?: number;
+        };
+        Relationships: [];
+      };
+      assinaturas: {
+        Row: {
+          id: number;
+          asaas_subscription_id: string;
+          usuario_id: string | null;
+          plano_id: number | null;
+          status: string;
+          billing_type: string | null;
+          valor: number | null;
+          ciclo: string | null;
+          proximo_vencimento: string | null;
+          evento_em: string | null;
+          criado_em: string;
+          atualizado_em: string;
+        };
+        Insert: never;
+        Update: never;
+        Relationships: [];
+      };
+      pagamentos: {
+        Row: {
+          id: number;
+          asaas_payment_id: string;
+          asaas_subscription_id: string | null;
+          usuario_id: string | null;
+          status: string;
+          billing_type: string | null;
+          valor: number | null;
+          vencimento: string | null;
+          pago_em: string | null;
+          invoice_url: string | null;
+          evento_em: string | null;
+          criado_em: string;
+          atualizado_em: string;
+        };
+        Insert: never;
+        Update: never;
         Relationships: [];
       };
       // Biblioteca de aulas (migration 019): cadastradas sem trilha, depois

@@ -24,11 +24,13 @@ export default function AdminUsuariosPage() {
 
   useEffect(refresh, [texto, page]);
 
-  async function toggleAssinatura(usuario: Usuario) {
+  // Assinatura paga vem só do Asaas (webhooks); o admin controla a cortesia
+  // (acesso liberado sem pagamento).
+  async function toggleCortesia(usuario: Usuario) {
     setBusyId(usuario.id);
     setError(null);
     try {
-      await updateUsuarioAdmin(usuario.id, { assinatura_ativa: !usuario.assinatura_ativa });
+      await updateUsuarioAdmin(usuario.id, { assinatura_cortesia: !usuario.assinatura_cortesia });
       refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Erro ao atualizar usuário.');
@@ -93,15 +95,26 @@ export default function AdminUsuariosPage() {
                   <td className="px-4 py-3 text-gray-500">{u.streak}</td>
                   <td className="px-4 py-3 text-gray-500">{u.xp}</td>
                   <td className="px-4 py-3">
-                    <button
-                      disabled={busy}
-                      onClick={() => toggleAssinatura(u)}
-                      className={`rounded-full px-2 py-0.5 text-xs font-bold disabled:opacity-40 ${
-                        u.assinatura_ativa ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'
-                      }`}
-                    >
-                      {u.assinatura_ativa ? 'Ativa' : 'Inativa'}
-                    </button>
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      <span
+                        className={`rounded-full px-2 py-0.5 text-xs font-bold ${
+                          u.assinatura_ativa ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'
+                        }`}
+                        title={u.acesso_ate ? `Pago até ${new Date(u.acesso_ate).toLocaleDateString('pt-BR')}` : undefined}
+                      >
+                        {u.acesso_ate && new Date(u.acesso_ate) > new Date() ? 'Assinante' : u.assinatura_ativa ? 'Ativa' : 'Inativa'}
+                      </span>
+                      <button
+                        disabled={busy}
+                        onClick={() => toggleCortesia(u)}
+                        title="Cortesia libera o acesso sem pagamento"
+                        className={`rounded-full border px-2 py-0.5 text-xs font-bold disabled:opacity-40 ${
+                          u.assinatura_cortesia ? 'border-purple-300 bg-purple-50 text-purple-700' : 'border-gray-200 text-gray-400'
+                        }`}
+                      >
+                        {u.assinatura_cortesia ? 'Cortesia ✓' : 'Dar cortesia'}
+                      </button>
+                    </div>
                   </td>
                   <td className="px-4 py-3">
                     <select

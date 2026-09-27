@@ -62,7 +62,6 @@ export function useUsuario() {
             nome: user.user_metadata?.full_name ?? null,
             streak: 1,
             ultimo_acesso: today,
-            assinatura_ativa: true,
           })
           .select()
           .single()

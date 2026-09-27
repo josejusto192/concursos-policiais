@@ -178,3 +178,52 @@ select vault.create_secret('<um-segredo-aleatorio-longo>', 'asaas_sync_secret');
 Sem os segredos do passo 3 o trigger não faz nada (o app segue normal).
 Falhas ficam em `usuarios.asaas_sync_erro` e em "Saúde do app". Para
 reenviar um usuário manualmente: `select asaas_enfileirar_sync('<uuid>');`.
+
+## Integração com o Asaas (assinaturas)
+
+Migration `021_asaas_assinaturas.sql` + Edge Functions `asaas-assinar` e
+`asaas-webhook` (e o módulo `_shared/asaas.ts`, usado também pelo
+`asaas-sync-cliente`).
+
+- **Planos**: tabela `planos` (nome, valor, ciclo `MONTHLY`/`YEARLY`/…).
+- **Assinar**: o app chama `asaas-assinar` com `plano_id` + CPF (o CPF só é
+  pedido aqui). A função cria o cliente e a assinatura no Asaas (forma de
+  pagamento escolhida pelo aluno na fatura: Pix, boleto ou cartão) e
+  devolve o `invoice_url` da 1ª cobrança.
+- **Acesso**: só os webhooks liberam. `usuarios.acesso_ate` = vencimento
+  da última cobrança paga + 1 ciclo + 3 dias; `assinatura_ativa` =
+  cortesia OU `acesso_ate` no futuro, calculado pelo banco (o navegador não
+  consegue alterar). Estorno/chargeback recalculam e cortam o acesso. Um
+  job pg_cron de hora em hora desliga quem venceu.
+- **Cortesia**: o admin dá/tira em "Alunos e equipe". A migration deu
+  cortesia a todo mundo que já tinha acesso — para cortar todos:
+  `update usuarios set assinatura_cortesia = false;`
+
+Configuração (uma vez):
+
+```bash
+# 1. Token do webhook (NÃO use a API key) — mesmo valor no passo 3
+supabase secrets set ASAAS_WEBHOOK_TOKEN='<token-aleatorio-com-mais-de-32-caracteres>'
+
+# 2. Deploy
+supabase functions deploy asaas-assinar
+supabase functions deploy asaas-webhook --no-verify-jwt
+supabase functions deploy asaas-sync-cliente --no-verify-jwt   # usa o módulo compartilhado
+```
+
+3. No Asaas (Integrações → Webhooks), crie um webhook:
+   - URL: `https://<projeto>.supabase.co/functions/v1/asaas-webhook`
+   - Token de autenticação: o mesmo `ASAAS_WEBHOOK_TOKEN`
+   - Tipo de envio: **sequencial**
+   - Eventos: todos de **cobranças** (`PAYMENT_*`) e de **assinaturas**
+     (`SUBSCRIPTION_*`)
+
+4. Cadastre um plano (SQL Editor):
+
+```sql
+insert into planos (nome, descricao, valor, ciclo) values ('Foco Mensal', 'Acesso completo', 29.90, 'MONTHLY');
+```
+
+Eventos recebidos ficam em `asaas_webhook_eventos` (status `PROCESSADO` /
+`ERRO`). Erros também aparecem em "Saúde do app". Para reprocessar um
+evento: `select asaas_processar_evento(<id>);`.
