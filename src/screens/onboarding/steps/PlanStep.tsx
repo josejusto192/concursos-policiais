@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import PrimaryButton from '../../../components/PrimaryButton';
+import LegalSheet, { type LegalDoc } from '../../../components/sheets/LegalSheet';
 import { useAppState } from '../../../state/AppStateContext';
 import { supabase } from '../../../lib/supabase';
 import { fetchModulos, registerReferral, resolveReferralCode } from '../../../lib/queries';
@@ -18,6 +19,7 @@ export default function PlanStep({ planConcurso, planMeta, planWeeks, refCode }:
   const navigate = useNavigate();
   const [password, setPassword] = useState('');
   const [aceitouTermos, setAceitouTermos] = useState(false);
+  const [legalDoc, setLegalDoc] = useState<LegalDoc | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [awaitingConfirmation, setAwaitingConfirmation] = useState(false);
   const [modulos, setModulos] = useState<number | null>(null);
@@ -178,13 +180,17 @@ export default function PlanStep({ planConcurso, planMeta, planWeeks, refCode }:
         />
         <span className="font-sans text-[12.5px] font-semibold leading-[1.45] text-text2">
           Li e aceito os{' '}
-          <a href="/termos" target="_blank" rel="noreferrer" className="font-extrabold text-blue underline">
+          <button type="button" onClick={() => setLegalDoc('termos')} className="border-none bg-transparent p-0 font-extrabold text-blue underline">
             Termos de Uso
-          </a>{' '}
+          </button>{' '}
           e a{' '}
-          <a href="/privacidade" target="_blank" rel="noreferrer" className="font-extrabold text-blue underline">
+          <button
+            type="button"
+            onClick={() => setLegalDoc('privacidade')}
+            className="border-none bg-transparent p-0 font-extrabold text-blue underline"
+          >
             Política de Privacidade
-          </a>
+          </button>
           .
         </span>
       </label>
@@ -197,6 +203,8 @@ export default function PlanStep({ planConcurso, planMeta, planWeeks, refCode }:
         </PrimaryButton>
       </div>
       <div className="mt-3 text-center font-sans text-[12px] font-semibold text-text3">Grátis para começar · sem cartão</div>
+
+      {legalDoc && <LegalSheet doc={legalDoc} onClose={() => setLegalDoc(null)} />}
     </div>
   );
 }

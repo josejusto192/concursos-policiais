@@ -7,12 +7,14 @@ import { useAuth } from '../../contexts/AuthContext';
 import { fetchReferrals, fetchStats } from '../../lib/queries';
 import PatternBackground from '../../components/PatternBackground';
 import ReferralSheet from './ReferralSheet';
+import LegalSheet, { type LegalDoc } from '../../components/sheets/LegalSheet';
 
 export default function Profile() {
   const navigate = useNavigate();
   const { signOut } = useAuth();
   const { usuario, activeTrilha, modules } = useAppData();
   const [referralOpen, setReferralOpen] = useState(false);
+  const [legalDoc, setLegalDoc] = useState<LegalDoc | null>(null);
   const [totalRespondidas, setTotalRespondidas] = useState(0);
   const [taxaAcerto, setTaxaAcerto] = useState(0);
   const [bestAccuracy, setBestAccuracy] = useState(0);
@@ -136,12 +138,12 @@ export default function Profile() {
           </div>
 
           <div className="mt-5.5 flex justify-center gap-4 font-sans text-[12px] font-bold text-text3">
-            <a href="/termos" target="_blank" rel="noreferrer" className="underline">
+            <button onClick={() => setLegalDoc('termos')} className="border-none bg-transparent p-0 underline">
               Termos de Uso
-            </a>
-            <a href="/privacidade" target="_blank" rel="noreferrer" className="underline">
+            </button>
+            <button onClick={() => setLegalDoc('privacidade')} className="border-none bg-transparent p-0 underline">
               Política de Privacidade
-            </a>
+            </button>
           </div>
 
           <button
@@ -154,6 +156,7 @@ export default function Profile() {
       </PatternBackground>
 
       {referralOpen && <ReferralSheet onClose={() => setReferralOpen(false)} />}
+      {legalDoc && <LegalSheet doc={legalDoc} onClose={() => setLegalDoc(null)} />}
     </>
   );
 }
