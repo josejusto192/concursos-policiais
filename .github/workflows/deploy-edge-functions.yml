@@ -12,6 +12,7 @@ on:
     paths:
       - 'supabase/functions/_shared/**'
       - 'supabase/functions/asaas-*/**'
+      - '.github/workflows/deploy-edge-functions.yml'
 
 jobs:
   deploy:
