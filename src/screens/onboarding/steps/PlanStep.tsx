@@ -42,7 +42,7 @@ export default function PlanStep({ planConcurso, planMeta, planWeeks, refCode }:
     dispatch({ type: 'OB_SET_FIELD', key: 'submitting', value: true });
 
     const { data, error: signUpError } = await supabase.auth.signUp({
-      email: ob.email.trim(),
+      email: ob.email.trim().toLowerCase(),
       password,
       options: { data: { full_name: ob.nome } },
     });
@@ -65,7 +65,7 @@ export default function PlanStep({ planConcurso, planMeta, planWeeks, refCode }:
     const today = new Date().toISOString().split('T')[0];
     await supabase.from('usuarios').upsert({
       id: data.user.id,
-      email: ob.email.trim(),
+      email: ob.email.trim().toLowerCase(),
       nome: ob.nome.trim(),
       whatsapp: ob.whats.trim(),
       faixa_etaria: ob.faixa,
