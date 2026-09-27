@@ -160,6 +160,7 @@ export interface QuestaoSearchFilters {
   imagem?: 'com' | 'sem';
   situacao?: 'regulares' | 'anuladas' | 'desatualizadas';
   apenas?: 'todas' | 'revisadas' | 'nao_revisadas';
+  aula?: 'com' | 'sem';
 }
 
 const PAGE_SIZE = 20;
@@ -183,6 +184,8 @@ export async function searchQuestoes(filters: QuestaoSearchFilters, page: number
   if (filters.situacao === 'desatualizadas') query = query.eq('desatualizada', true);
   if (filters.apenas === 'revisadas') query = query.eq('revisado', true);
   if (filters.apenas === 'nao_revisadas') query = query.eq('revisado', false);
+  if (filters.aula === 'com') query = query.not('aula_id', 'is', null);
+  if (filters.aula === 'sem') query = query.is('aula_id', null);
 
   const { data, error, count } = await query.range(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE - 1);
   if (error) throw error;

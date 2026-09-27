@@ -15,7 +15,10 @@ import { ErrorState, LoadingCards } from '../components/Feedback';
 import AdminLayout from './AdminLayout';
 
 const EMPTY: FiltrosQuestoes = { bancas: [], disciplinas: [], cargos: [], niveis: [], orgaos: [] };
-const FILTER_KEYS = ['disciplina', 'banca', 'cargo', 'nivel_escolaridade', 'orgao', 'assunto'] as const;
+// Filtros de lista (dropdown) e de texto livre (debounced) — todos vivem na URL.
+const SELECT_KEYS = ['disciplina', 'banca', 'orgao', 'cargo', 'nivel_escolaridade', 'imagem', 'situacao', 'aula'] as const;
+const TEXT_KEYS = ['assunto', 'tipo', 'area', 'ano'] as const;
+const FILTER_KEYS = [...SELECT_KEYS, ...TEXT_KEYS];
 const STATUS = [
   { value: 'todas', label: 'Todas as questões' },
   { value: 'nao_revisadas', label: 'Aguardando revisão' },
@@ -32,11 +35,11 @@ export default function AdminQuestoesBancoPage() {
   const [params, setParams] = useSearchParams();
   const texto = params.get('q') || '';
   const textoDeb = useDebouncedValue(texto);
-  const assuntoDeb = useDebouncedValue(params.get('assunto') || '');
+  const textosDeb = useDebouncedValue(TEXT_KEYS.map((k) => params.get(k) || '').join('\u0000'));
   const status = STATUS.find((s) => s.value === params.get('status'))?.value || 'todas';
   const pageValue = Number(params.get('page'));
   const page = Number.isSafeInteger(pageValue) ? Math.max(0, pageValue) : 0;
-  const [showFilters, setShowFilters] = useState(false);
+  const [showFilters, setShowFilters] = useState(() => FILTER_KEYS.some((k) => params.get(k)));
   const [opcoes, setOpcoes] = useState<FiltrosQuestoes>(EMPTY);
   const [results, setResults] = useState<QuestaoRow[]>([]);
   const [nomes, setNomes] = useState<Map<string, string>>(new Map());
@@ -48,22 +51,27 @@ export default function AdminQuestoesBancoPage() {
   const [selecionadas, setSelecionadas] = useState<Set<string>>(new Set());
   const [batch, setBatch] = useState<BatchState | null>(null);
   const cancelRef = useRef(false);
-  const filtersKey = FILTER_KEYS.filter((k) => k !== 'assunto')
-    .map((k) => params.get(k) || '')
-    .join('\u0000');
+  const filtersKey = SELECT_KEYS.map((k) => params.get(k) || '').join('\u0000');
   const filters = useMemo<QuestaoSearchFilters>(() => {
-    const values = filtersKey.split('\u0000');
+    const [disciplina, banca, orgao, cargo, nivel_escolaridade, imagem, situacao, aula] = filtersKey.split('\u0000');
+    const [assunto, tipo, area, ano] = textosDeb.split('\u0000').map((v) => v.trim());
     return {
-      disciplina: values[0] || undefined,
-      banca: values[1] || undefined,
-      cargo: values[2] || undefined,
-      nivel_escolaridade: values[3] || undefined,
-      orgao: values[4] || undefined,
+      disciplina: disciplina || undefined,
+      banca: banca || undefined,
+      orgao: orgao || undefined,
+      cargo: cargo || undefined,
+      nivel_escolaridade: nivel_escolaridade || undefined,
+      imagem: imagem === 'com' || imagem === 'sem' ? imagem : undefined,
+      situacao: situacao === 'regulares' || situacao === 'anuladas' || situacao === 'desatualizadas' ? situacao : undefined,
+      aula: aula === 'com' || aula === 'sem' ? aula : undefined,
       apenas: status,
       texto: textoDeb.trim() || undefined,
-      assunto: assuntoDeb.trim() || undefined,
+      assunto: assunto || undefined,
+      tipo: tipo || undefined,
+      area: area || undefined,
+      ano: /^\d{4}$/.test(ano) ? Number(ano) : undefined,
     };
-  }, [filtersKey, status, textoDeb, assuntoDeb]);
+  }, [filtersKey, status, textoDeb, textosDeb]);
   const activeFilters = FILTER_KEYS.filter((k) => params.get(k)).length;
 
   useEffect(() => {
@@ -122,7 +130,7 @@ export default function AdminQuestoesBancoPage() {
         if (key !== 'page') next.delete('page');
         return next;
       },
-      { replace: key === 'q' || key === 'assunto' },
+      { replace: key === 'q' || (TEXT_KEYS as readonly string[]).includes(key) },
     );
   }
   function toggle(id: string) {
@@ -156,12 +164,44 @@ export default function AdminQuestoesBancoPage() {
     setSelecionadas(new Set());
     setTick((t) => t + 1);
   }
+  const opcao = (values: string[]) => values.map((v) => ({ value: v, label: v }));
   const filterOptions = [
-    { key: 'disciplina', label: 'Disciplina', values: opcoes.disciplinas },
-    { key: 'banca', label: 'Banca', values: opcoes.bancas },
-    { key: 'cargo', label: 'Cargo', values: opcoes.cargos },
-    { key: 'nivel_escolaridade', label: 'Escolaridade', values: opcoes.niveis },
-    { key: 'orgao', label: 'Órgão', values: opcoes.orgaos },
+    { key: 'disciplina', label: 'Disciplina', options: opcao(opcoes.disciplinas) },
+    { key: 'banca', label: 'Banca', options: opcao(opcoes.bancas) },
+    { key: 'orgao', label: 'Órgão', options: opcao(opcoes.orgaos) },
+    { key: 'cargo', label: 'Cargo', options: opcao(opcoes.cargos) },
+    { key: 'nivel_escolaridade', label: 'Escolaridade', options: opcao(opcoes.niveis) },
+    {
+      key: 'situacao',
+      label: 'Situação',
+      options: [
+        { value: 'regulares', label: 'Regulares' },
+        { value: 'anuladas', label: 'Anuladas' },
+        { value: 'desatualizadas', label: 'Desatualizadas' },
+      ],
+    },
+    {
+      key: 'imagem',
+      label: 'Imagens',
+      options: [
+        { value: 'com', label: 'Com imagem' },
+        { value: 'sem', label: 'Sem imagem' },
+      ],
+    },
+    {
+      key: 'aula',
+      label: 'Aula de apoio',
+      options: [
+        { value: 'com', label: 'Com aula vinculada' },
+        { value: 'sem', label: 'Sem aula vinculada' },
+      ],
+    },
+  ];
+  const textFilters = [
+    { key: 'ano', label: 'Ano', placeholder: 'Ex.: 2024', inputMode: 'numeric' as const },
+    { key: 'assunto', label: 'Assunto', placeholder: 'Buscar assunto…' },
+    { key: 'tipo', label: 'Tipo de questão', placeholder: 'Ex.: múltipla escolha' },
+    { key: 'area', label: 'Área', placeholder: 'Buscar área…' },
   ];
   return (
     <AdminLayout>
@@ -210,23 +250,26 @@ export default function AdminQuestoesBancoPage() {
                 {f.label}
                 <select value={params.get(f.key) || ''} disabled={batch?.running} onChange={(e) => change(f.key, e.target.value)}>
                   <option value="">Todas as opções</option>
-                  {f.values.map((v) => (
-                    <option key={v} value={v}>
-                      {v}
+                  {f.options.map((o) => (
+                    <option key={o.value} value={o.value}>
+                      {o.label}
                     </option>
                   ))}
                 </select>
               </label>
             ))}
-            <label>
-              Assunto
-              <input
-                placeholder="Buscar assunto…"
-                value={params.get('assunto') || ''}
-                disabled={batch?.running}
-                onChange={(e) => change('assunto', e.target.value)}
-              />
-            </label>
+            {textFilters.map((f) => (
+              <label key={f.key}>
+                {f.label}
+                <input
+                  placeholder={f.placeholder}
+                  inputMode={f.inputMode}
+                  value={params.get(f.key) || ''}
+                  disabled={batch?.running}
+                  onChange={(e) => change(f.key, e.target.value)}
+                />
+              </label>
+            ))}
           </div>
         )}
         {(activeFilters > 0 || texto || status !== 'todas') && (
