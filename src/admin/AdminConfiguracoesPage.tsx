@@ -27,6 +27,7 @@ export default function AdminConfiguracoesPage() {
         prompt_extra: config.prompt_extra,
         tutor_prompt_extra: config.tutor_prompt_extra,
         tutor_limite_diario: config.tutor_limite_diario,
+        tutor_limite_diario_gratis: config.tutor_limite_diario_gratis,
         ...(novaApiKey.trim() ? { api_key: novaApiKey.trim() } : {}),
       });
       setNovaApiKey('');
@@ -123,16 +124,35 @@ export default function AdminConfiguracoesPage() {
         </div>
 
         <div className="mt-4">
-          <label className="text-xs font-bold text-gray-500">LIMITE DE PERGUNTAS AO TUTOR POR ALUNO/DIA</label>
-          <input
-            type="number"
-            min={1}
-            value={config.tutor_limite_diario}
-            onChange={(e) => setConfig({ ...config, tutor_limite_diario: Math.max(1, Number(e.target.value) || 1) })}
-            className="mt-1 w-32 rounded-lg border border-gray-300 px-3 py-2 text-sm"
-          />
+          <div className="text-xs font-bold text-gray-500">CRÉDITOS DO TUTOR POR ALUNO/DIA</div>
+          <div className="mt-1 flex flex-wrap gap-4">
+            <label className="text-xs font-semibold text-gray-600">
+              Assinantes
+              <input
+                type="number"
+                min={1}
+                value={config.tutor_limite_diario}
+                onChange={(e) => setConfig({ ...config, tutor_limite_diario: Math.max(1, Number(e.target.value) || 1) })}
+                className="mt-1 block w-32 rounded-lg border border-gray-300 px-3 py-2 text-sm"
+              />
+            </label>
+            <label className="text-xs font-semibold text-gray-600">
+              Não assinantes
+              <input
+                type="number"
+                min={0}
+                value={config.tutor_limite_diario_gratis}
+                onChange={(e) =>
+                  setConfig({ ...config, tutor_limite_diario_gratis: Math.max(0, Math.floor(Number(e.target.value)) || 0) })
+                }
+                className="mt-1 block w-32 rounded-lg border border-gray-300 px-3 py-2 text-sm"
+              />
+            </label>
+          </div>
           <div className="mt-1 text-xs text-gray-400">
-            Protege seu custo no Gemini — quem estourar recebe um aviso pra voltar amanhã. Só respostas bem-sucedidas contam.
+            1 mensagem respondida = 1 crédito, somando todas as questões do dia (vira à meia-noite de Brasília). Protege seu custo
+            no Gemini — só respostas bem-sucedidas contam. Não assinantes que esgotarem veem um convite para assinar; 0 desliga o
+            tutor para eles.
           </div>
         </div>
 

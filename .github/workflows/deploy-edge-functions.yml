@@ -1,4 +1,4 @@
-# Publica as Edge Functions do Asaas no Supabase.
+# Publica as Edge Functions do Asaas e do tutor de IA no Supabase.
 # Roda sozinho quando uma função muda na main, ou manualmente em
 # Actions → "Publicar Edge Functions" → Run workflow.
 # Precisa do secret SUPABASE_ACCESS_TOKEN no repositório (Settings →
@@ -12,6 +12,7 @@ on:
     paths:
       - 'supabase/functions/_shared/**'
       - 'supabase/functions/asaas-*/**'
+      - 'supabase/functions/tutor-ia/**'
       - '.github/workflows/deploy-edge-functions.yml'
 
 jobs:
@@ -37,3 +38,4 @@ jobs:
       - run: supabase functions deploy asaas-webhook --no-verify-jwt --project-ref "$PROJECT_REF"
       - run: supabase functions deploy asaas-assinar --project-ref "$PROJECT_REF"
       - run: supabase functions deploy asaas-cancelar --project-ref "$PROJECT_REF"
+      - run: supabase functions deploy tutor-ia --project-ref "$PROJECT_REF"

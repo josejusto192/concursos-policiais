@@ -114,15 +114,30 @@ export async function askTutorIA(input: {
   historico: AiMessage[];
   alternativaSelecionada: string | null;
   acertou: boolean;
-}): Promise<string> {
-  const data = await invokeEdgeFunction<{ reply: string }>('tutor-ia', {
+}): Promise<{ reply: string; creditos_restantes: number | null }> {
+  const data = await invokeEdgeFunction<{ reply: string; creditos_restantes?: number }>('tutor-ia', {
     questao_id: input.questaoId,
     duvida: input.duvida,
     historico: input.historico,
     alternativa_selecionada: input.alternativaSelecionada,
     acertou: input.acertou,
   });
-  return data.reply;
+  return { reply: data.reply, creditos_restantes: data.creditos_restantes ?? null };
+}
+
+export interface CreditosTutor {
+  limite: number;
+  usados: number;
+  restantes: number;
+  assinante: boolean;
+}
+
+// Créditos do dia no tutor (1 mensagem = 1 crédito; limite menor pra quem
+// não assina — migration 023).
+export async function fetchMeusCreditosTutor(): Promise<CreditosTutor | null> {
+  const { data, error } = await supabase.rpc('meus_creditos_tutor').maybeSingle();
+  if (error) throw error;
+  return data;
 }
 
 // ---- Assinatura (Asaas) ----

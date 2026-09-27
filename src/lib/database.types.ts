@@ -411,6 +411,7 @@ export type Database = {
           prompt_extra: string | null;
           tutor_prompt_extra: string | null;
           tutor_limite_diario: number;
+          tutor_limite_diario_gratis: number;
           atualizado_em: string;
         };
         Insert: {
@@ -420,6 +421,7 @@ export type Database = {
           prompt_extra?: string | null;
           tutor_prompt_extra?: string | null;
           tutor_limite_diario?: number;
+          tutor_limite_diario_gratis?: number;
           atualizado_em?: string;
         };
         Update: {
@@ -428,6 +430,7 @@ export type Database = {
           prompt_extra?: string | null;
           tutor_prompt_extra?: string | null;
           tutor_limite_diario?: number;
+          tutor_limite_diario_gratis?: number;
           atualizado_em?: string;
         };
         Relationships: [];
@@ -462,6 +465,7 @@ export type Database = {
           prompt_extra: string | null;
           tutor_prompt_extra: string | null;
           tutor_limite_diario: number;
+          tutor_limite_diario_gratis: number;
           api_key_configurada: boolean;
           atualizado_em: string;
         }[];
@@ -475,6 +479,10 @@ export type Database = {
           niveis: string[] | null;
           orgaos: string[] | null;
         }[];
+      };
+      meus_creditos_tutor: {
+        Args: Record<string, never>;
+        Returns: { limite: number; usados: number; restantes: number; assinante: boolean }[];
       };
       contar_minhas_questoes_erradas: {
         Args: { p_trilha_id: number };

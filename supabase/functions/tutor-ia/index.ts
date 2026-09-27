@@ -74,23 +74,27 @@ Deno.serve(async (req: Request) => {
 
   const { data: config } = await admin
     .from('configuracoes_ia')
-    .select('modelo, api_key, tutor_prompt_extra, tutor_limite_diario')
+    .select('modelo, api_key, tutor_prompt_extra')
     .eq('id', 1)
     .single();
   if (!config?.api_key) return json({ error: 'Tutor de IA ainda não configurado. Peça para o admin configurar em Configurações.' }, 400);
 
-  // Rate limit diário por aluno (proteção de custo do Gemini). Conta só
-  // respostas bem-sucedidas — erro de rede/IA não consome a cota.
-  const limiteDiario = config.tutor_limite_diario ?? 20;
-  const inicioDoDia = new Date();
-  inicioDoDia.setUTCHours(0, 0, 0, 0);
-  const { count: usosHoje } = await admin
-    .from('tutor_ia_usos')
-    .select('id', { count: 'exact', head: true })
-    .eq('usuario_id', userData.user.id)
-    .gte('usado_em', inicioDoDia.toISOString());
-  if ((usosHoje ?? 0) >= limiteDiario) {
-    return json({ error: `Você atingiu o limite de ${limiteDiario} perguntas ao tutor por dia. Volte amanhã!` }, 429);
+  // Créditos diários (proteção de custo do Gemini): 1 mensagem respondida =
+  // 1 crédito, limite diferente pra assinante e não assinante (migration
+  // 023, configurável pelo admin). Erro de rede/IA não consome crédito.
+  const { data: creditos, error: cErr } = await admin.rpc('tutor_creditos', { p_usuario_id: userData.user.id }).single();
+  if (cErr || !creditos) return json({ error: 'Não foi possível verificar seus créditos.' }, 500);
+  if (creditos.restantes <= 0) {
+    return json(
+      {
+        error: creditos.assinante
+          ? `Você usou as ${creditos.limite} mensagens do tutor de hoje. Volte amanhã!`
+          : `Você usou suas ${creditos.limite} mensagens grátis do tutor hoje. Assine para conversar mais — ou volte amanhã!`,
+        assinante: creditos.assinante,
+        creditos_restantes: 0,
+      },
+      429,
+    );
   }
 
   const alternativasTexto = (questao.alternativas ?? [])
@@ -152,5 +156,5 @@ Responda à última mensagem do aluno.`;
 
   await admin.from('tutor_ia_usos').insert({ usuario_id: userData.user.id });
 
-  return json({ reply: reply.trim() });
+  return json({ reply: reply.trim(), creditos_restantes: creditos.restantes - 1 });
 });

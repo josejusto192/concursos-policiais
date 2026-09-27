@@ -306,6 +306,7 @@ export interface ConfiguracoesIA {
   prompt_extra: string | null;
   tutor_prompt_extra: string | null;
   tutor_limite_diario: number;
+  tutor_limite_diario_gratis: number;
   api_key_configurada: boolean;
   atualizado_em: string;
 }
@@ -316,6 +317,7 @@ export interface ConfiguracoesIAPatch {
   prompt_extra?: string | null;
   tutor_prompt_extra?: string | null;
   tutor_limite_diario?: number;
+  tutor_limite_diario_gratis?: number;
 }
 
 export async function fetchConfiguracoesIA(): Promise<ConfiguracoesIA> {

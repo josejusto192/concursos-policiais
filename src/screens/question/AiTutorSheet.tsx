@@ -1,7 +1,8 @@
 import { PaperPlaneRight, X } from '@phosphor-icons/react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAppState } from '../../state/AppStateContext';
-import { askTutorIA } from '../../lib/queries';
+import { askTutorIA, fetchMeusCreditosTutor, type CreditosTutor } from '../../lib/queries';
 import { EdgeFunctionError } from '../../lib/edgeFunctions';
 import { logClientError } from '../../lib/errorLog';
 import type { Questao } from '../../data/types';
@@ -17,21 +18,32 @@ interface AiTutorSheetProps {
 export default function AiTutorSheet({ q, selected, acertou, onClose }: AiTutorSheetProps) {
   const { state, dispatch } = useAppState();
   const [input, setInput] = useState('');
+  const navigate = useNavigate();
+  const [creditos, setCreditos] = useState<CreditosTutor | null>(null);
+  const semCreditos = creditos !== null && creditos.restantes <= 0;
+
+  useEffect(() => {
+    fetchMeusCreditosTutor()
+      .then(setCreditos)
+      .catch((err) => logClientError(err, 'fetchMeusCreditosTutor'));
+  }, []);
 
   async function send() {
     const text = input.trim();
-    if (!text) return;
+    if (!text || semCreditos || state.aiTyping) return;
     const historico = state.aiMessages;
     dispatch({ type: 'AI_SEND_USER', text });
     setInput('');
     try {
-      const reply = await askTutorIA({ questaoId: q.id, duvida: text, historico, alternativaSelecionada: selected, acertou });
+      const { reply, creditos_restantes } = await askTutorIA({ questaoId: q.id, duvida: text, historico, alternativaSelecionada: selected, acertou });
       dispatch({ type: 'AI_REPLY', text: reply });
+      if (creditos_restantes !== null) setCreditos((c) => (c ? { ...c, restantes: creditos_restantes } : c));
     } catch (err) {
       // Limite diário é o único erro cuja mensagem o aluno deve ver; o resto
       // (chave do Gemini, rede, IA fora do ar) vira texto amigável e vai pro
       // log de erros do admin com o motivo real.
       const limiteDiario = err instanceof EdgeFunctionError && err.status === 429;
+      if (limiteDiario) setCreditos((c) => (c ? { ...c, restantes: 0 } : c));
       if (!limiteDiario) {
         logClientError(err, `tutor-ia${err instanceof EdgeFunctionError ? ` (HTTP ${err.status ?? 'rede'})` : ''} · questão ${q.id}`);
       }
@@ -55,7 +67,9 @@ export default function AiTutorSheet({ q, selected, acertou, onClose }: AiTutorS
             <div className="min-w-0 flex-1">
               <div className="font-sans text-[15px] font-extrabold text-ink">Tutor IA</div>
               <div className="font-sans text-[11.5px] font-semibold text-text2">
-                Sabe a questão, as alternativas e o comentário
+                {creditos
+                  ? `${creditos.restantes} de ${creditos.limite} mensagens restantes hoje`
+                  : 'Sabe a questão, as alternativas e o comentário'}
               </div>
             </div>
             <button
@@ -89,21 +103,36 @@ export default function AiTutorSheet({ q, selected, acertou, onClose }: AiTutorS
               </div>
             )}
           </div>
-          <div className="flex flex-none items-center gap-2.5 border-t border-border2 p-[12px_16px_18px]">
-            <input
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && send()}
-              placeholder="Digite sua dúvida..."
-              className="h-[46px] flex-1 rounded-2xl border-[1.5px] border-border bg-[#F8FAFF] px-3.5 font-sans text-[14px] font-semibold text-ink outline-none"
-            />
-            <button
-              onClick={send}
-              className="flex h-[46px] w-[46px] flex-none items-center justify-center rounded-2xl border-none bg-blue text-white"
-            >
-              <PaperPlaneRight weight="fill" size={19} />
-            </button>
-          </div>
+          {semCreditos ? (
+            <div className="flex flex-none flex-col gap-2 border-t border-border2 p-[12px_16px_18px] text-center">
+              <div className="font-sans text-[12.5px] font-bold text-text2">
+                {creditos?.assinante
+                  ? 'Seus créditos do tutor acabaram por hoje. Eles renovam à meia-noite.'
+                  : 'Suas mensagens grátis de hoje acabaram. Assinantes conversam muito mais com o tutor.'}
+              </div>
+              {!creditos?.assinante && (
+                <button onClick={() => navigate('/assinar')} className="button button-primary w-full">
+                  Ver planos
+                </button>
+              )}
+            </div>
+          ) : (
+            <div className="flex flex-none items-center gap-2.5 border-t border-border2 p-[12px_16px_18px]">
+              <input
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && send()}
+                placeholder="Digite sua dúvida..."
+                className="h-[46px] flex-1 rounded-2xl border-[1.5px] border-border bg-[#F8FAFF] px-3.5 font-sans text-[14px] font-semibold text-ink outline-none"
+              />
+              <button
+                onClick={send}
+                className="flex h-[46px] w-[46px] flex-none items-center justify-center rounded-2xl border-none bg-blue text-white"
+              >
+                <PaperPlaneRight weight="fill" size={19} />
+              </button>
+            </div>
+          )}
         </div>
       )}
     </ModalFrame>
