@@ -238,6 +238,38 @@ export async function fetchRespostas(usuarioId: string, questaoIds: string[]): P
   return map;
 }
 
+// ---- Tickets (reportar questão + suporte) ----
+
+export type TicketRow = Database['public']['Tables']['tickets']['Row'];
+
+export async function criarTicket(input: {
+  usuarioId: string;
+  tipo: 'questao' | 'suporte';
+  motivo: string;
+  mensagem?: string | null;
+  questaoId?: string | null;
+}) {
+  const { error } = await supabase.from('tickets').insert({
+    usuario_id: input.usuarioId,
+    tipo: input.tipo,
+    motivo: input.motivo,
+    mensagem: input.mensagem?.trim() || null,
+    questao_id: input.questaoId ?? null,
+  });
+  if (error) throw error;
+}
+
+export async function fetchMeusTickets(usuarioId: string): Promise<TicketRow[]> {
+  const { data, error } = await supabase
+    .from('tickets')
+    .select('*')
+    .eq('usuario_id', usuarioId)
+    .order('criado_em', { ascending: false })
+    .limit(50);
+  if (error) throw error;
+  return data ?? [];
+}
+
 // ---- Caderno de erros (por trilha, com "responder de novo") ----
 
 export async function fetchContagemErros(trilhaId: number): Promise<number> {

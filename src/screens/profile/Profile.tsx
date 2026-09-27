@@ -1,4 +1,4 @@
-import { Crown } from '@phosphor-icons/react';
+import { Crown, Lifebuoy } from '@phosphor-icons/react';
 import { useNavigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { CATEGORY_COLOR, CONQUISTAS } from '../../data/mock';
@@ -8,6 +8,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { fetchReferrals, fetchStats } from '../../lib/queries';
 import PatternBackground from '../../components/PatternBackground';
 import ReferralSheet from './ReferralSheet';
+import SuporteSheet from './SuporteSheet';
 import LegalSheet, { type LegalDoc } from '../../components/sheets/LegalSheet';
 
 export default function Profile() {
@@ -16,6 +17,7 @@ export default function Profile() {
   const { usuario, activeTrilha, modules } = useAppData();
   const assinaturaPaga = !!usuario?.acesso_ate && new Date(usuario.acesso_ate) > new Date();
   const [referralOpen, setReferralOpen] = useState(false);
+  const [suporteOpen, setSuporteOpen] = useState(false);
   const [legalDoc, setLegalDoc] = useState<LegalDoc | null>(null);
   const [totalRespondidas, setTotalRespondidas] = useState(0);
   const [taxaAcerto, setTaxaAcerto] = useState(0);
@@ -165,6 +167,20 @@ export default function Profile() {
             ))}
           </div>
 
+          <button
+            onClick={() => setSuporteOpen(true)}
+            className="mt-3.5 flex w-full items-center gap-3.5 rounded-2xl border-[1.5px] border-border bg-surface p-4 text-left"
+          >
+            <span className="flex h-[42px] w-[42px] flex-none items-center justify-center rounded-xl bg-app-bg text-blue">
+              <Lifebuoy size={22} weight="duotone" />
+            </span>
+            <span className="min-w-0 flex-1">
+              <div className="font-sans text-[14.5px] font-extrabold text-ink">Ajuda e suporte</div>
+              <div className="mt-0.5 font-sans text-[12px] font-semibold text-text2">Fale com a equipe e acompanhe seus chamados</div>
+            </span>
+            <span className="text-[18px] text-blue">›</span>
+          </button>
+
           <div className="mt-5.5 flex justify-center gap-4 font-sans text-[12px] font-bold text-text3">
             <button onClick={() => setLegalDoc('termos')} className="border-none bg-transparent p-0 underline">
               Termos de Uso
@@ -184,6 +200,7 @@ export default function Profile() {
       </PatternBackground>
 
       {referralOpen && <ReferralSheet onClose={() => setReferralOpen(false)} />}
+      {suporteOpen && usuario && <SuporteSheet usuarioId={usuario.id} onClose={() => setSuporteOpen(false)} />}
       {legalDoc && <LegalSheet doc={legalDoc} onClose={() => setLegalDoc(null)} />}
     </>
   );

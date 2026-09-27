@@ -109,6 +109,37 @@ export async function setAulaDaQuestao(questaoId: string, aulaId: number | null)
   if (error) throw error;
 }
 
+// ---- Tickets (suporte + reportes de questão) ----
+// RLS: admin vê tudo; editor vê só os de questão (migration 025).
+
+export type TicketAdminRow = Database['public']['Tables']['tickets']['Row'];
+export type TicketStatus = TicketAdminRow['status'];
+
+export async function fetchTickets(filtro: { status: 'abertos' | 'resolvidos' | 'todos'; tipo?: 'questao' | 'suporte' }): Promise<TicketAdminRow[]> {
+  let query = supabase.from('tickets').select('*').order('criado_em', { ascending: false }).limit(200);
+  if (filtro.status === 'abertos') query = query.in('status', ['aberto', 'em_andamento']);
+  if (filtro.status === 'resolvidos') query = query.in('status', ['resolvido', 'fechado']);
+  if (filtro.tipo) query = query.eq('tipo', filtro.tipo);
+  const { data, error } = await query;
+  if (error) throw error;
+  return data ?? [];
+}
+
+export async function atualizarTicket(id: number, patch: { status?: TicketStatus; resposta?: string | null }) {
+  const { error } = await supabase.from('tickets').update(patch).eq('id', id);
+  if (error) throw error;
+}
+
+// E-mails de quem abriu (só admin lê usuarios; editor fica só com o nome).
+export async function fetchEmailsUsuarios(ids: string[]): Promise<Map<string, string>> {
+  const map = new Map<string, string>();
+  const unicos = [...new Set(ids)];
+  if (!unicos.length) return map;
+  const { data } = await supabase.from('usuarios').select('id, email').in('id', unicos);
+  for (const row of data ?? []) map.set(row.id, row.email);
+  return map;
+}
+
 // ---- Planos de assinatura (só admin — RLS de planos, migration 021) ----
 
 export type PlanoAdminRow = Database['public']['Tables']['planos']['Row'];

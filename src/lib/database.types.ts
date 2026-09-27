@@ -269,6 +269,36 @@ export type Database = {
         Update: never;
         Relationships: [];
       };
+      // Tickets de reporte de questão e suporte (migration 025). O aluno só
+      // cria e lê os próprios; status/resposta só a equipe muda.
+      tickets: {
+        Row: {
+          id: number;
+          usuario_id: string | null;
+          tipo: 'questao' | 'suporte';
+          questao_id: string | null;
+          motivo: string;
+          mensagem: string | null;
+          status: 'aberto' | 'em_andamento' | 'resolvido' | 'fechado';
+          resposta: string | null;
+          atendido_por: string | null;
+          criado_em: string;
+          atualizado_em: string;
+          resolvido_em: string | null;
+        };
+        Insert: {
+          usuario_id: string;
+          tipo: 'questao' | 'suporte';
+          questao_id?: string | null;
+          motivo: string;
+          mensagem?: string | null;
+        };
+        Update: {
+          status?: 'aberto' | 'em_andamento' | 'resolvido' | 'fechado';
+          resposta?: string | null;
+        };
+        Relationships: [];
+      };
       // Biblioteca de aulas (migration 019): cadastradas sem trilha, depois
       // usadas em módulos tipo 'aula' ou como aula de apoio de uma questão.
       aulas: {

@@ -2,7 +2,7 @@ import { ArrowClockwise, ArrowRight, CircleNotch, X } from '@phosphor-icons/reac
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAppData } from '../../contexts/AppDataContext';
-import { fetchQuestoesDoModulo, fetchRespostas, recordResposta, upsertProgressoModulo } from '../../lib/queries';
+import { criarTicket, fetchQuestoesDoModulo, fetchRespostas, recordResposta, upsertProgressoModulo } from '../../lib/queries';
 import { formatTimer } from '../../lib/format';
 import { sanitizeHtml } from '../../lib/sanitizeHtml';
 import { useAppState } from '../../state/AppStateContext';
@@ -231,7 +231,15 @@ export default function Question() {
     navigate('/resultado', { state: { moduloTitulo: currentModulo?.titulo, trilhaNome: activeTrilha?.nome } });
   }
 
-  function submitReport(reason: string) {
+  // Vira ticket no admin (Suporte). Erro sobe pro ReportSheet mostrar.
+  async function submitReport(reason: string, mensagem: string) {
+    if (!usuario) return;
+    try {
+      await criarTicket({ usuarioId: usuario.id, tipo: 'questao', motivo: reason, mensagem, questaoId: q.id });
+    } catch (err) {
+      logClientError(err, 'criarTicket questao');
+      throw err;
+    }
     setReportOpen(false);
     setReportReason(reason);
     setTimeout(() => setReportReason(null), 2800);
