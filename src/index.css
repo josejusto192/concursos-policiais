@@ -122,14 +122,6 @@ body {
     transform: translateX(-50%) translateY(-6px);
   }
 }
-@keyframes sheetUp {
-  0% {
-    transform: translateY(100%);
-  }
-  100% {
-    transform: translateY(0);
-  }
-}
 @keyframes spin {
   to {
     transform: rotate(360deg);
@@ -158,9 +150,6 @@ body {
 }
 .animate-float-y-center {
   animation: floatYCenter 2s ease-in-out infinite;
-}
-.animate-sheet-up {
-  animation: sheetUp 0.32s cubic-bezier(0.2, 0.8, 0.2, 1) both;
 }
 .animate-spin-fast {
   animation: spin 0.6s linear infinite;

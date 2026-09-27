@@ -829,17 +829,81 @@ textarea:focus-visible {
 }
 .foco-dialog {
   width: min(550px, calc(100% - 32px));
+  max-width: none;
   max-height: 85dvh;
   border: 0;
   border-radius: 22px;
   margin: auto;
   padding: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
   box-shadow: 0 24px 90px #0b1f4d35;
   color: #0b1f4d;
+}
+.foco-dialog[open] {
+  animation: dialog-enter 260ms cubic-bezier(.2, .8, .2, 1) both;
+}
+.foco-dialog[open][data-closing] {
+  animation: dialog-exit 220ms ease-in both;
 }
 .foco-dialog::backdrop {
   background: #0b1f4d75;
   backdrop-filter: blur(4px);
+  animation: dialog-backdrop-in 260ms ease both;
+}
+.foco-dialog[data-closing]::backdrop {
+  animation: dialog-backdrop-out 220ms ease both;
+}
+.foco-sheet {
+  position: fixed;
+  inset: auto 0 0;
+  width: min(600px, 100vw);
+  max-height: 88dvh;
+  margin: 0 auto;
+  border-radius: 26px 26px 0 0;
+  padding-bottom: env(safe-area-inset-bottom);
+}
+.foco-sheet.tutor-sheet {
+  height: min(760px, calc(100dvh - 70px));
+  max-height: calc(100dvh - 70px);
+  overflow: hidden;
+}
+.foco-sheet.tutor-sheet[open] {
+  display: flex;
+  flex-direction: column;
+}
+.tutor-sheet-content {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+}
+@keyframes dialog-enter {
+  from { opacity: 0; transform: translateY(12px) scale(.97); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+@keyframes dialog-exit {
+  to { opacity: 0; transform: translateY(10px) scale(.98); }
+}
+@keyframes dialog-sheet-enter {
+  from { opacity: .65; transform: translateY(100%); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes dialog-sheet-exit {
+  to { opacity: .65; transform: translateY(100%); }
+}
+@keyframes dialog-backdrop-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes dialog-backdrop-out {
+  to { opacity: 0; }
+}
+.foco-sheet[open] {
+  animation-name: dialog-sheet-enter;
+}
+.foco-sheet[open][data-closing] {
+  animation-name: dialog-sheet-exit;
 }
 .dialog-inner {
   padding: 25px;
@@ -1452,13 +1516,18 @@ textarea:focus-visible {
 }
 @media (max-width: 760px) {
   .foco-dialog {
-    width: 100%;
+    position: fixed;
+    inset: auto 0 0;
+    width: 100vw;
+    max-width: none;
     max-height: 88dvh;
-    margin: auto 0 0;
+    margin: 0;
     border-radius: 22px 22px 0 0;
   }
+  .foco-dialog[open] { animation-name: dialog-sheet-enter; }
+  .foco-dialog[open][data-closing] { animation-name: dialog-sheet-exit; }
   .dialog-inner {
-    padding: 23px 20px max(25px, env(safe-area-inset-bottom));
+    padding: 23px 20px calc(25px + env(safe-area-inset-bottom));
   }
   .form-field input {
     font-size: 16px;
