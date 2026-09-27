@@ -248,8 +248,7 @@ textarea:focus-visible {
   padding: 36px 40px 48px;
 }
 .workspace-content {
-  max-width: 1200px;
-  margin: 0 auto;
+  width: 100%;
 }
 .page-heading {
   display: flex;
@@ -1225,9 +1224,8 @@ textarea:focus-visible {
   gap: 14px;
 }
 .admin-main {
-  max-width: 1370px;
+  width: 100%;
   padding: 34px 38px 50px;
-  margin: auto;
 }
 .admin-main h1 {
   font-family: 'Plus Jakarta Sans', sans-serif;
@@ -1541,13 +1539,6 @@ textarea:focus-visible {
   .bottom-nav a,
   .filter-tabs button {
     min-height: 44px;
-  }
-}
-@media (min-width: 1000px) {
-  .student-main > .relative > .pattern-scroll {
-    max-width: 850px;
-    width: 100%;
-    margin-inline: auto;
   }
 }
 @media (max-width: 1190px) {
@@ -2469,9 +2460,18 @@ textarea:focus-visible {
   max-width: none;
   padding: 0 0 30px;
 }
+@media (min-width: 1000px) {
+  .profile-achievements-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+@media (min-width: 1500px) {
+  .profile-achievements-grid {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+  }
+}
 .compact-path-scroll .game-map {
-  max-width: 720px;
-  margin: auto;
+  max-width: none;
 }
 @media (max-width: 760px) {
   .compact-home-header {

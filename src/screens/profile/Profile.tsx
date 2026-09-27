@@ -111,7 +111,7 @@ export default function Profile() {
               {earnedCount}/{badges.length}
             </div>
           </div>
-          <div className="mt-3 grid grid-cols-3 gap-2.5">
+          <div className="profile-achievements-grid mt-3 grid grid-cols-3 gap-2.5">
             {badges.map((b) => (
               <div
                 key={b.id}
