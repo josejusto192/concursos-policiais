@@ -126,9 +126,13 @@ export async function askTutorIA(input: {
 
 export async function recordResposta(usuarioId: string, questaoId: string, acertou: boolean) {
   const { error } = await supabase.from('progresso_questoes').insert({ usuario_id: usuarioId, questao_id: questaoId, acertou });
-  // A retomada de um módulo pode repetir uma questão já registrada. Não
-  // duplicar a resposta nem conceder XP novamente nesse caso.
-  if (error?.code === '23505') return false;
+  // A retomada de um módulo pode repetir uma questão já registrada: vale a
+  // resposta mais recente (acertou no chute e depois errou → vai pro caderno
+  // de erros), mas sem conceder XP de novo (retorna false).
+  if (error?.code === '23505') {
+    await atualizarRespostaErro(usuarioId, questaoId, acertou);
+    return false;
+  }
   if (error) throw error;
   return true;
 }
