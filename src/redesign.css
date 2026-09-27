@@ -2464,6 +2464,11 @@ textarea:focus-visible {
 .student-main > .relative > .compact-path-scroll {
   padding: 20px 24px 120px;
 }
+.student-main > .relative > .profile-scroll {
+  width: 100%;
+  max-width: none;
+  padding: 0 0 30px;
+}
 .compact-path-scroll .game-map {
   max-width: 720px;
   margin: auto;

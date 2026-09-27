@@ -66,7 +66,7 @@ export default function Profile() {
 
   return (
     <>
-      <PatternBackground scrollClassName="p-[0_0_30px]">
+      <PatternBackground scrollClassName="profile-scroll">
         <div
           className="p-[34px_20px_26px] text-center"
           style={{ backgroundImage: "url('/assets/bg-blue-texture.png')", backgroundSize: 'cover', backgroundPosition: 'center top' }}
