@@ -167,7 +167,7 @@ No `FocoReel`, use `<Series>` (ou `<TransitionSeries>` com transições de 8–1
 
 **Escala dos tempos internos:** os frames da seção 8 são para a duração de referência (`duracaoRoteiro`). Em cada cena, `const k = framesReais / (duracaoRoteiro[id] * FPS)` e multiplique os marcos por `k`, **exceto** as micro-animações (pops, chacoalhar, carimbo), que ficam com a duração fixa. Os momentos-chave (toque na alternativa, "+10 XP", "pegou fogo", 4→5) devem cair **na palavra** correspondente: use os tempos por palavra do Whisper (abaixo) para ancorá-los, por exemplo "fogo" dispara o confete.
 
-**Legendas e âncoras por palavra:** rode `@remotion/install-whisper-cpp` + `transcribe()` (modelo `medium`, `language: 'pt'`, `tokenLevelTimestamps: true`) em cada `cena-N.mp3` e salve `public/legendas/cena-N.json`. Use em `createTikTokStyleCaptions()` (`@remotion/captions`) para as legendas e numa função `momento('fogo')` para ancorar animações. O texto das legendas deve ser o do roteiro ("IBGE", "XP"), não a grafia fonética usada no ElevenLabs: corrija no JSON.
+**Legendas e âncoras por palavra:** rode `@remotion/install-whisper-cpp` + `transcribe()` (modelo `medium`, `language: 'pt'`, `tokenLevelTimestamps: true`) em cada `cena-N.mp3` e salve `public/legendas/cena-N.json`. Use em `createTikTokStyleCaptions()` (`@remotion/captions`) para as legendas e numa função `momento('fogo')` para ancorar animações. O texto das legendas deve ser o do roteiro ("XP"), não a grafia fonética usada no ElevenLabs: corrija no JSON.
 
 **Batidas:** com música a 120 BPM, uma batida = 15 frames. Quando possível, alinhe cortes de cena e "pops" em múltiplos de 15 depois do primeiro tempo forte.
 
@@ -290,7 +290,7 @@ Tempos em frames relativos ao início da cena (30 fps). O `<Phone>` tem **760 ×
 Referências: `referencias/02-trilha.png`, `11-trilha-comemora-modulo.png`.
 - **Fundo:** `#F4F6FC` + `trilha-pattern.webp` (repetição 480 px, opacidade 0,7), deslizando para cima devagar (parallax, 0,6 px/frame).
 - **0–20:** `<Phone>` sobe de y = 1920 → 250 (spring damping 16).
-- **Conteúdo do celular (recriar a tela, não usar print):** cabeçalho com logo (Foco na caixinha), pill de fogo "🔥 4" (fundo `#FFF1E0`, borda `#FFC27A`) e pill "⚡ 340 XP" (fundo `#EEF3FF`); cartão azul "TRILHA ATUAL · IBGE Recenseador"; barra "Meta 3/20".
+- **Conteúdo do celular (recriar a tela, não usar print):** cabeçalho com logo (Foco na caixinha), pill de fogo "🔥 4" (fundo `#FFF1E0`, borda `#FFC27A`) e pill "⚡ 340 XP" (fundo `#EEF3FF`); cartão azul "TRILHA ATUAL · Concursos · Nível Médio" (não citar órgão/banca específico); barra "Meta 3/20".
 - **Trilha:** caminho pontilhado (traço `#D8E2F5`, 5 px, `dasharray 3 12`, curva em S — mesma fórmula do app: `x = 160 + sin(i·π/2)·66`, passo vertical 170 pt) com 5 nós de 72 pt (borda branca 5 pt):
   - nós 1–2 **concluídos** (azul `#1557E6`, sombra `0 5px 0 #0E3DAE`, ✓ branco) + legenda "Estatística básica · 5/6 acertos", "Porcentagem · 6/6";
   - nó 3 **atual** (amarelo `#FFCB2D`, sombra `#E0A800`, ▶ azul-escuro) com balão "SEU PRÓXIMO PASSO" e anel pulsando (`box-shadow 0 0 0 0 → 11px`, 2,3 s em loop);
@@ -371,7 +371,8 @@ Referências: `02-trilha.png` (botão vermelho flutuante com o número).
 - [ ] Todas as trocas de cena caem numa batida da música
 - [ ] Legenda legível no celular com brilho baixo (teste exportando e vendo no telefone)
 - [ ] O Foco aparece nos primeiros 3,5 s e a boca dele acompanha a voz em todas as cenas
-- [ ] Legendas mostram "IBGE" e "XP" (não a grafia fonética do ElevenLabs)
+- [ ] Legendas mostram "XP" (não a grafia fonética do ElevenLabs)
+- [ ] Nenhuma menção a órgão específico (IBGE etc.): falar sempre "concurso". As capturas em `referencias/` mostram "IBGE Recenseador" só porque são do ambiente de teste — no vídeo, troque.
 - [ ] Os primeiros 2 s já têm movimento e texto (as pessoas decidem ficar nesse tempo)
 - [ ] Final de 1,5 s parado (vira capa e dá tempo de ler "Link na bio")
 - [ ] Áudio: voz sempre acima da música; picos abaixo de −1 dBFS
