@@ -210,17 +210,22 @@ export async function fetchMinhaAssinatura(usuarioId: string): Promise<MinhaAssi
   };
 }
 
-export async function recordResposta(usuarioId: string, questaoId: string, acertou: boolean) {
-  const { error } = await supabase.from('progresso_questoes').insert({ usuario_id: usuarioId, questao_id: questaoId, acertou });
-  // A retomada de um módulo pode repetir uma questão já registrada: vale a
-  // resposta mais recente (acertou no chute e depois errou → vai pro caderno
-  // de erros), mas sem conceder XP de novo (retorna false).
-  if (error?.code === '23505') {
-    await atualizarRespostaErro(usuarioId, questaoId, acertou);
-    return false;
-  }
+// Resposta do aluno (trilha e caderno de erros). O servidor confere o
+// gabarito, grava, dá o XP (10 por questão, uma vez) e atualiza a ofensiva
+// (migration 027) — o navegador não escolhe mais esses valores.
+export interface RespostaServidor {
+  acertou: boolean;
+  xp_ganho: number;
+  xp: number;
+  streak: number;
+  ultimo_estudo: string;
+  ofensiva_nova: number | null;
+}
+
+export async function responderQuestao(questaoId: string, letra: string): Promise<RespostaServidor> {
+  const { data, error } = await supabase.rpc('responder_questao', { p_questao_id: questaoId, p_letra: letra }).single<RespostaServidor>();
   if (error) throw error;
-  return true;
+  return data;
 }
 
 // Respostas já gravadas do aluno para estas questões (pra retomar um módulo
@@ -274,18 +279,6 @@ export async function fetchQuestoesErradas(trilhaId: number): Promise<Questao[]>
     ...mapQuestaoRow(row),
     aula: row.aula_video_url ? { titulo: row.aula_titulo ?? 'Aula', video_url: row.aula_video_url } : undefined,
   }));
-}
-
-// "Responder de novo": atualiza a mesma linha (upsert, não insert — já existe
-// desde a primeira resposta), então se acertar desta vez ela some do caderno.
-export async function atualizarRespostaErro(usuarioId: string, questaoId: string, acertou: boolean) {
-  const { error } = await supabase
-    .from('progresso_questoes')
-    .upsert(
-      { usuario_id: usuarioId, questao_id: questaoId, acertou, respondido_em: new Date().toISOString() },
-      { onConflict: 'usuario_id,questao_id' },
-    );
-  if (error) throw error;
 }
 
 // Dias (no fuso do aparelho) em que o aluno respondeu questão, nos últimos

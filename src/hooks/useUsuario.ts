@@ -33,7 +33,7 @@ export function useUsuario() {
 
       if (existing) {
         // Só registra o acesso. A ofensiva (streak) NÃO muda ao abrir o app:
-        // ela cresce ao estudar (registrarEstudo em AppDataContext).
+        // ela cresce ao estudar (responder_questao no servidor, migration 027).
         if (existing.ultimo_acesso === today) {
           if (!cancelled) setUsuario(existing)
         } else {
@@ -81,13 +81,11 @@ export function useUsuario() {
     [user]
   )
 
-  const addXp = useCallback(
-    async (amount: number) => {
-      if (!usuario) return
-      await updateUsuario({ xp: usuario.xp + amount })
-    },
-    [usuario, updateUsuario]
-  )
+  // Pontos e ofensiva são calculados no servidor (responder_questao); aqui
+  // só refletimos na tela o que ele devolveu.
+  const aplicarDoServidor = useCallback((patch: Partial<Pick<Usuario, 'xp' | 'streak' | 'ultimo_estudo'>>) => {
+    setUsuario((u) => (u ? { ...u, ...patch } : u))
+  }, [])
 
   // Relê a linha sem mexer em streak/último acesso — usado quando o app volta
   // a ficar visível (ex.: depois de pagar a fatura da assinatura).
@@ -97,5 +95,5 @@ export function useUsuario() {
     if (data) setUsuario(data)
   }, [user])
 
-  return { usuario, loading, updateUsuario, addXp, recarregarUsuario }
+  return { usuario, loading, updateUsuario, aplicarDoServidor, recarregarUsuario }
 }

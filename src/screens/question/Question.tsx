@@ -2,7 +2,7 @@ import { ArrowClockwise, ArrowRight, CircleNotch, Fire, X } from '@phosphor-icon
 import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAppData } from '../../contexts/AppDataContext';
-import { criarTicket, fetchQuestoesDoModulo, fetchRespostas, recordResposta, upsertProgressoModulo } from '../../lib/queries';
+import { criarTicket, fetchQuestoesDoModulo, fetchRespostas, responderQuestao, upsertProgressoModulo } from '../../lib/queries';
 import { formatTimer } from '../../lib/format';
 import { sanitizeHtml } from '../../lib/sanitizeHtml';
 import { useAppState } from '../../state/AppStateContext';
@@ -26,7 +26,7 @@ const ehMarcoDeCombo = (combo: number) => combo === 3 || (combo >= 5 && combo % 
 
 export default function Question() {
   const { state, dispatch } = useAppState();
-  const { usuario, activeTrilha, modules, loading: loadingModules, addXp, refreshModules, refreshDailyDone, refreshErrosCount, registrarEstudo } =
+  const { usuario, activeTrilha, modules, loading: loadingModules, aplicarResposta, refreshModules, refreshDailyDone, refreshErrosCount } =
     useAppData();
   const navigate = useNavigate();
   const [reportOpen, setReportOpen] = useState(false);
@@ -208,19 +208,12 @@ export default function Question() {
     savingRef.current = true;
     setSaving(true);
     setSaveError('');
-    const correct = selected === q.gabarito_letra;
     try {
-      const isNew = await recordResposta(usuario.id, q.id, correct);
-      let gained = 0;
-      if (correct && isNew) {
-        try {
-          await addXp(10);
-          gained = 10;
-        } catch (err) {
-          logClientError(err, 'addXp');
-          setSaveError('Resposta salva. Não foi possível atualizar seus pontos agora.');
-        }
-      }
+      // o servidor confere o gabarito e decide XP e ofensiva
+      const r = await responderQuestao(q.id, selected ?? '');
+      aplicarResposta(r);
+      const correct = r.acertou;
+      const gained = r.xp_ganho;
       dispatch({ type: 'MARK_ANSWERED', correct, gained });
       setUltimoGanho(gained);
       if (correct) {
@@ -229,10 +222,14 @@ export default function Question() {
       } else {
         som.erro();
       }
-      const [ofensivaNova] = await Promise.all([registrarEstudo(), refreshDailyDone(), refreshErrosCount()]);
-      if (ofensivaNova) dispatch({ type: 'OFENSIVA_ESTENDIDA', valor: ofensivaNova });
+      if (r.ofensiva_nova) dispatch({ type: 'OFENSIVA_ESTENDIDA', valor: r.ofensiva_nova });
+      await Promise.all([refreshDailyDone(), refreshErrosCount()]);
     } catch (err) {
-      logClientError(err, 'recordResposta');
+      if ((err as { message?: string })?.message?.includes('ASSINATURA_NECESSARIA')) {
+        navigate('/assinar', { replace: true });
+        return;
+      }
+      logClientError(err, 'responderQuestao');
       setSaveError('Sua resposta ainda não foi salva. Confira a conexão e toque em confirmar para tentar novamente.');
     } finally {
       setSaving(false);

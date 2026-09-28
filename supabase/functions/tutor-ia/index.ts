@@ -117,6 +117,12 @@ Deno.serve(async (req: Request) => {
   const { questao_id: questaoId, duvida, historico, alternativa_selecionada: alternativaSelecionada, acertou } = body;
   if (!questaoId || !duvida?.trim()) return json({ error: 'questao_id e duvida são obrigatórios' }, 400);
 
+  // Só explica questão de módulo que o aluno pode abrir (1º grátis ou
+  // assinante) — senão o chat viraria um jeito de ler conteúdo pago.
+  // (erro = migration 027 ainda não rodou: não bloqueia)
+  const { data: liberada, error: erroLiberada } = await userClient.rpc('questao_liberada', { p_questao_id: questaoId });
+  if (!erroLiberada && !liberada) return json({ error: 'ASSINATURA_NECESSARIA' }, 403);
+
   const { data: questao, error: qErr } = await admin
     .from('questoes')
     .select('enunciado, enunciado_html, alternativas, gabarito_letra, comentario, comentario_html, comentario_revisado, comentario_revisado_html, disciplina')

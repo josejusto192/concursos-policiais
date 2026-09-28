@@ -7,6 +7,7 @@ import {
   fetchProgressoModulos,
   fetchTrilhas,
   type ModuloRow,
+  type RespostaServidor,
   type TrilhaRow,
 } from '../lib/queries';
 import type { Database } from '../lib/database.types';
@@ -61,7 +62,8 @@ interface AppDataContextValue {
   retry: () => void;
   usuario: Usuario | null;
   updateUsuario: (patch: UsuarioUpdate) => Promise<void>;
-  addXp: (amount: number) => Promise<void>;
+  // Reflete na tela o XP/ofensiva que o servidor devolveu ao responder.
+  aplicarResposta: (r: RespostaServidor) => void;
   trilhas: TrilhaRow[];
   activeTrilha: TrilhaRow | null;
   setActiveTrilha: (id: number) => Promise<void>;
@@ -71,11 +73,9 @@ interface AppDataContextValue {
   temAcesso: boolean;
   refreshUsuario: () => Promise<void>;
   // Ofensiva (dias seguidos estudando): a efetiva já vem zerada se o aluno
-  // pulou um dia. registrarEstudo() é chamado a cada resposta; na 1ª do dia
-  // estende (ou recomeça) a ofensiva e devolve o novo valor.
+  // pulou um dia. Quem estende é o servidor, ao responder (responder_questao).
   ofensiva: number;
   estudouHoje: boolean;
-  registrarEstudo: () => Promise<number | null>;
   dailyDone: number;
   refreshDailyDone: () => Promise<void>;
   errosCount: number;
@@ -87,7 +87,7 @@ const AppDataContext = createContext<AppDataContextValue | null>(null);
 const LOAD_ERROR_MESSAGE = 'Não conseguimos carregar seus dados agora. Verifique sua conexão e tente de novo.';
 
 export function AppDataProvider({ children }: { children: ReactNode }) {
-  const { usuario, loading: loadingUsuario, updateUsuario, addXp, recarregarUsuario } = useUsuario();
+  const { usuario, loading: loadingUsuario, updateUsuario, aplicarDoServidor, recarregarUsuario } = useUsuario();
   const [trilhas, setTrilhas] = useState<TrilhaRow[]>([]);
   const [baseModules, setModules] = useState<Omit<Modulo, 'premium'>[]>([]);
   const [dailyDone, setDailyDone] = useState(0);
@@ -181,19 +181,10 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
   const estudouHoje = usuario?.ultimo_estudo === hoje;
   const ofensiva = usuario && (estudouHoje || usuario.ultimo_estudo === ontem) ? usuario.streak : 0;
 
-  const registrarEstudo = useCallback(async (): Promise<number | null> => {
-    if (!usuario) return null;
-    const dia = diaLocal();
-    if (usuario.ultimo_estudo === dia) return null;
-    const nova = usuario.ultimo_estudo === diaLocalDeslocado(-1) ? usuario.streak + 1 : 1;
-    try {
-      await updateUsuario({ streak: nova, ultimo_estudo: dia });
-      return nova;
-    } catch (err) {
-      logClientError(err, 'registrarEstudo');
-      return null;
-    }
-  }, [usuario, updateUsuario]);
+  const aplicarResposta = useCallback(
+    (r: RespostaServidor) => aplicarDoServidor({ xp: r.xp, streak: r.streak, ultimo_estudo: r.ultimo_estudo }),
+    [aplicarDoServidor],
+  );
 
   // Mesma regra de modulo_liberado() no banco (migration 022): sem
   // assinatura, só o 1º módulo de questões da trilha é grátis.
@@ -230,7 +221,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
         retry,
         usuario,
         updateUsuario,
-        addXp,
+        aplicarResposta,
         trilhas,
         activeTrilha,
         setActiveTrilha,
@@ -240,7 +231,6 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
         refreshUsuario: recarregarUsuario,
         ofensiva,
         estudouHoje,
-        registrarEstudo,
         dailyDone,
         refreshDailyDone,
         errosCount,

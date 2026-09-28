@@ -2,7 +2,7 @@ import { ArrowRight, Fire, PlayCircle, X } from '@phosphor-icons/react';
 import { useEffect, useState, type CSSProperties } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAppData } from '../contexts/AppDataContext';
-import { fetchQuestoesErradas, atualizarRespostaErro } from '../lib/queries';
+import { fetchQuestoesErradas, responderQuestao } from '../lib/queries';
 import { sanitizeHtml } from '../lib/sanitizeHtml';
 import type { Questao } from '../data/types';
 import PatternBackground from '../components/PatternBackground';
@@ -11,9 +11,10 @@ import VideoSheet from '../components/sheets/VideoSheet';
 import Mascot from '../components/Mascot';
 import Confetti from '../components/Confetti';
 import { som } from '../lib/efeitos';
+import { logClientError } from '../lib/errorLog';
 
 export default function CadernoErros() {
-  const { usuario, activeTrilha, addXp, refreshDailyDone, refreshErrosCount, registrarEstudo } = useAppData();
+  const { usuario, activeTrilha, aplicarResposta, refreshDailyDone, refreshErrosCount } = useAppData();
   const navigate = useNavigate();
 
   const [questoes, setQuestoes] = useState<Questao[] | null>(null);
@@ -25,6 +26,7 @@ export default function CadernoErros() {
   const [finalizado, setFinalizado] = useState(false);
   const [aulaAberta, setAulaAberta] = useState(false);
   const [ofensivaNova, setOfensivaNova] = useState<number | null>(null);
+  const [xpGanho, setXpGanho] = useState(0);
 
   useEffect(() => {
     if (!activeTrilha) return;
@@ -87,19 +89,23 @@ export default function CadernoErros() {
     if (!selected || answered || !usuario) return;
     const correct = selected === q.gabarito_letra;
     setAnswered(true);
+    setXpGanho(0);
     if (correct) {
       som.acerto();
       setAcertosNestaSessao((n) => n + 1);
-      await addXp(10);
     } else {
       som.erro();
     }
     try {
-      await atualizarRespostaErro(usuario.id, q.id, correct);
-      const [nova] = await Promise.all([registrarEstudo(), refreshDailyDone(), refreshErrosCount()]);
-      if (nova) setOfensivaNova(nova);
-    } catch {
-      // não deve travar a revisão se a gravação falhar — o aluno já viu o feedback
+      // o servidor confere o gabarito e decide XP e ofensiva
+      const r = await responderQuestao(q.id, selected);
+      aplicarResposta(r);
+      setXpGanho(r.xp_ganho);
+      if (r.ofensiva_nova) setOfensivaNova(r.ofensiva_nova);
+      await Promise.all([refreshDailyDone(), refreshErrosCount()]);
+    } catch (err) {
+      // não trava a revisão se a gravação falhar — o aluno já viu o feedback
+      logClientError(err, 'responderQuestao (caderno)');
     }
   }
 
@@ -261,7 +267,7 @@ export default function CadernoErros() {
             <div className="min-w-0 flex-1">
               <div className="feedback-title">{isCorrect ? 'Agora foi!' : 'Ainda não'}</div>
               <div className="feedback-sub">
-                {isCorrect ? <span className="xp-pill">+10 XP · saiu do caderno</span> : <span>Ela continua no caderno para revisar depois</span>}
+                {isCorrect ? <span className="xp-pill">{xpGanho > 0 ? `+${xpGanho} XP · saiu do caderno` : 'Saiu do caderno'}</span> : <span>Ela continua no caderno para revisar depois</span>}
               </div>
             </div>
           </div>

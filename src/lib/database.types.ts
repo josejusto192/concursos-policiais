@@ -155,6 +155,7 @@ export type Database = {
           questao_id: string;
           acertou: boolean;
           respondido_em: string;
+          xp_concedido: boolean;
         };
         Insert: {
           usuario_id: string;
@@ -512,6 +513,17 @@ export type Database = {
           cargos: string[] | null;
           niveis: string[] | null;
           orgaos: string[] | null;
+        }[];
+      };
+      responder_questao: {
+        Args: { p_questao_id: string; p_letra: string };
+        Returns: {
+          acertou: boolean;
+          xp_ganho: number;
+          xp: number;
+          streak: number;
+          ultimo_estudo: string;
+          ofensiva_nova: number | null;
         }[];
       };
       meus_creditos_tutor: {
