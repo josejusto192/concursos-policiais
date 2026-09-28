@@ -1,8 +1,8 @@
 # Handoff — Vídeo "Foco" em Remotion
 
-Documento para montar o vídeo de apresentação do app **Foco** com **Remotion**, a partir do roteiro em [`ROTEIRO.md`](./ROTEIRO.md). O objetivo é um vídeo vertical, rápido e "gostoso" de ver, com a cara do app: cores, mascote (Foquinho), botões 3D e as mesmas animações.
+Documento para montar o vídeo de apresentação do app **Foco** com **Remotion**, a partir do roteiro em [`ROTEIRO.md`](./ROTEIRO.md). O objetivo é um vídeo vertical, rápido e "gostoso" de ver, com a cara do app: cores, mascote (Foco), botões 3D e as mesmas animações.
 
-**É 100% motion graphics (ninguém aparece).** O narrador é o próprio **Foquinho**, com voz gerada no ElevenLabs (um arquivo por cena). Sempre que ele estiver na tela, a **boca mexe no ritmo da voz** (seção 5.1).
+**É 100% motion graphics (ninguém aparece).** O narrador é o próprio **Foco**, com voz gerada no ElevenLabs (um arquivo por cena). Sempre que ele estiver na tela, a **boca mexe no ritmo da voz** (seção 5.1).
 
 **Materiais nesta pasta**
 
@@ -10,11 +10,11 @@ Documento para montar o vídeo de apresentação do app **Foco** com **Remotion*
 |---|---|
 | `ROTEIRO.md` | Narração, texto na tela e tempo de cada cena |
 | `referencias/*.png` | Capturas reais das telas do app (390×844 pt, @3x) — use como **referência de layout**. A fonte nelas saiu como fonte do sistema; no vídeo use as fontes da seção 3. |
-| `assets/foquinho-*.svg` | Foquinho em cada expressão (idle, thinking, happy, celebrate, encourage, wave) — SVG estático, viewBox 0 0 144 144 |
+| `assets/mascote-*.svg` | Foco em cada expressão (idle, thinking, happy, celebrate, encourage, wave) — SVG estático, viewBox 0 0 144 144 |
 | `assets/icone-app-512.png` | Ícone do app |
 | `assets/trilha-pattern.webp` | Padrão de fundo claro das telas (ícones de estudo em traço) |
 | `assets/bg-blue-texture.jpg` | Textura azul (fundo do login/onboarding) |
-| Código do app | `src/components/Mascot.tsx` (SVG animável do Foquinho), `src/delight.css` (todas as animações), `src/lib/efeitos.ts` (sons), `src/index.css` (cores) |
+| Código do app | `src/components/Mascot.tsx` (SVG animável do Foco), `src/delight.css` (todas as animações), `src/lib/efeitos.ts` (sons), `src/index.css` (cores) |
 
 ---
 
@@ -27,11 +27,11 @@ Documento para montar o vídeo de apresentação do app **Foco** com **Remotion*
 | Duração | ~34 s (**1020 frames**) — o valor final vem do áudio (seção 4) |
 | Composição | `id="FocoReel"` |
 | Exportação | H.264, CRF 18, áudio AAC 320 kbps, `yuv420p` → `out/foco-reel.mp4` |
-| Capa | frame da cena 8 (Foquinho comemorando + logo) → `out/capa.png` via `npx remotion still` |
+| Capa | frame da cena 8 (Foco comemorando + logo) → `out/capa.png` via `npx remotion still` |
 
 ### Zonas seguras (Reels + TikTok)
 
-A interface das redes cobre partes do vídeo. **Nada importante** (texto, logo, rosto do Foquinho) fora desta área:
+A interface das redes cobre partes do vídeo. **Nada importante** (texto, logo, rosto do Foco) fora desta área:
 
 - topo: livre a partir de **y = 220**
 - base: livre até **y = 1480** (abaixo disso ficam legenda do post, botões e música)
@@ -53,7 +53,7 @@ npm i @remotion/install-whisper-cpp @remotion/captions
 ```
 
 Copie para `public/`:
-- `public/audio/cena-1.mp3` … `cena-8.mp3` (voz do Foquinho, ElevenLabs, uma por cena)
+- `public/audio/cena-1.mp3` … `cena-8.mp3` (voz do Foco, ElevenLabs, uma por cena)
 - `public/audio/musica.mp3` (trilha licenciada)
 - `public/audio/sfx/*.wav` (gerados — seção 7)
 - `public/img/` ← tudo de `docs/video/assets/`
@@ -67,7 +67,7 @@ src/
   timings.ts            // tempos de cada cena (em segundos) — ÚNICA fonte da verdade
   tokens.ts             // cores, fontes, sombras
   components/
-    Foquinho.tsx        // mascote animado por frame (seção 5)
+    Foco.tsx        // mascote animado por frame (seção 5)
     Phone.tsx           // moldura de celular
     Button3D.tsx
     Alternativa.tsx
@@ -112,7 +112,7 @@ export const gradAzul = 'linear-gradient(160deg, #2F6BF0 0%, #1557E6 55%, #0E3DA
 - **Botão 3D:** fundo sólido + sombra sólida embaixo (`box-shadow: 0 {6*s}px 0 <cor escura>`); ao "tocar" desce 4 px e a sombra vai para 2 px. Azul `#1557E6/#0E3DAE`, verde `#22A06B/#17784F`, vermelho `#E5484D/#B8343A`.
 - **Cartões:** branco, raio 18–24 px, borda 1,5 px `#E6EAF5`, sombra suave `0 10px 28px -18px rgba(11,31,77,.4)`.
 - **Pills:** raio 99 px, Manrope 800. XP = azul `#1557E6` com texto branco; sequência/ofensiva = `gradFogo`.
-- **Logo:** Foquinho numa caixa `#EEF3FF` com raio 13 px + "foco" em Plus Jakarta 800 cor `#0B1F4D` + ponto "." em `#FFCB2D`.
+- **Logo:** Foco numa caixa `#EEF3FF` com raio 13 px + "foco" em Plus Jakarta 800 cor `#0B1F4D` + ponto "." em `#FFCB2D`.
 
 **Supers (texto grande de cada cena):** Plus Jakarta Sans 800, 92–110 px, caixa alta, cor branca com contorno/sombra `0 8px 0 rgba(11,31,77,.35)` quando sobre fundo azul; sobre fundo claro, `#0B1F4D` com palavra-chave destacada em `#1557E6` ou `gradFogo`. Entram palavra por palavra (ver "pop de palavra" na seção 6).
 
@@ -173,7 +173,7 @@ No `FocoReel`, use `<Series>` (ou `<TransitionSeries>` com transições de 8–1
 
 ---
 
-## 5. O Foquinho (componente `<Foquinho mood frame />`)
+## 5. O Foco (componente `<Foco mood frame />`)
 
 Base: copie o SVG de `src/components/Mascot.tsx` (viewBox 0 0 144 144; mesmos grupos). Os `.svg` em `assets/` mostram cada expressão parada. No app as animações são CSS; no Remotion, cada grupo recebe `transform` calculado a partir do frame.
 
@@ -207,7 +207,7 @@ Dica: crie `usaCiclo(segundos)` e `keyframes(t, [[0,v0],[0.45,v1],[1,v2]])` para
 
 ### 5.1 Boca falando (lip-sync simples)
 
-O Foquinho é o narrador: sempre que estiver na tela, a boca acompanha a voz.
+O Foco é o narrador: sempre que estiver na tela, a boca acompanha a voz.
 
 ```ts
 import { useAudioData, visualizeAudio } from '@remotion/media-utils';
@@ -221,9 +221,9 @@ const abertura = Math.min(1, vol * 6); // 0 = fechada, 1 = aberta
 - Suavize: `abertura` = média dos últimos 2 frames (evita tremedeira).
 - Enquanto fala: antena balança um pouco mais (±10°), cabeça acompanha (`rotate` ±2° com a abertura).
 - Sem voz (entre frases): volta à boca sorrindo do humor atual.
-- Quando o Foquinho **não** está na tela (cenas 3, 5, 6 e 7 dentro do celular), mostre um **Foquinho pequeno (160 px) no canto inferior esquerdo** (x = 90, y = 1330, dentro da zona segura), falando, como um apresentador. Ele entra com a entrada padrão na cena 3 e fica até a cena 7.
+- Quando o Foco **não** está na tela (cenas 3, 5, 6 e 7 dentro do celular), mostre um **Foco pequeno (160 px) no canto inferior esquerdo** (x = 90, y = 1330, dentro da zona segura), falando, como um apresentador. Ele entra com a entrada padrão na cena 3 e fica até a cena 7.
 
-**Entrada padrão do Foquinho** (quando surge numa cena): `spring({ frame, fps, config: { damping: 11, stiffness: 160, mass: 0.8 } })` em `scale 0.4 → 1` + `translateY 60 → 0`, com um "squash" no pouso (corpo `scaleY 0.9 → 1` nos 6 frames seguintes).
+**Entrada padrão do Foco** (quando surge numa cena): `spring({ frame, fps, config: { damping: 11, stiffness: 160, mass: 0.8 } })` em `scale 0.4 → 1` + `translateY 60 → 0`, com um "squash" no pouso (corpo `scaleY 0.9 → 1` nos 6 frames seguintes).
 
 ---
 
@@ -277,20 +277,20 @@ Tempos em frames relativos ao início da cena (30 fps). O `<Phone>` tem **760 ×
 - **Som:** `whoosh` no 0; batida da música entra no 0.
 - **Saída (80–90):** flash azul (ver seção 6) cobrindo tudo a partir do centro.
 
-### Cena 2 — "Eu sou o Foquinho" + logo · 0–105 (3,5 s)
+### Cena 2 — "Eu sou o Foco" + logo · 0–105 (3,5 s)
 - **Fundo:** `gradAzul` + `bg-blue-texture.jpg` com 25% de opacidade (modo `overlay`).
-- **0–18:** Foquinho (humor **happy**, 520 px) entra de baixo com a "entrada padrão" (seção 5); pousa em y ≈ 820 (centro).
+- **0–18:** Foco (humor **happy**, 520 px) entra de baixo com a "entrada padrão" (seção 5); pousa em y ≈ 820 (centro).
 - **18–50:** vira **wave** (acena).
-- **24–40:** o Foquinho vai para a esquerda (x −170) e o logotipo "foco." surge à direita: letras de "foco" em pop (3 frames entre letras), o "." amarelo cai quicando por último (spring damping 8). Texto 150 px, branco (sobre azul).
-- **45–105:** frase de apoio abaixo, Manrope 800 54 px branco 90%: "estudar pra concurso **virou jogo** 🎮" ("virou jogo" com fundo `#FFCB2D` e texto `#0B1F4D`, marcador que "pinta" da esquerda para a direita em 10 frames). O marcador aparece quando o Foquinho diz "jogo".
-- O Foquinho fala a cena inteira (boca sincronizada) e dá um pulinho (**happy**) em "Foquinho".
+- **24–40:** o Foco vai para a esquerda (x −170) e o logotipo "foco." surge à direita: letras de "foco" em pop (3 frames entre letras), o "." amarelo cai quicando por último (spring damping 8). Texto 150 px, branco (sobre azul).
+- **45–105:** frase de apoio abaixo, Manrope 800 54 px branco 90%: "estudar pra concurso **virou jogo** 🎮" ("virou jogo" com fundo `#FFCB2D` e texto `#0B1F4D`, marcador que "pinta" da esquerda para a direita em 10 frames). O marcador aparece quando o Foco diz "jogo".
+- O Foco fala a cena inteira (boca sincronizada) e dá um pulinho (**happy**) em "Foco".
 - **Som:** `conclusao` baixinho (−10 dB) no frame 18.
 
 ### Cena 3 — Trilha pronta · 0–135 (4,5 s)
 Referências: `referencias/02-trilha.png`, `11-trilha-comemora-modulo.png`.
 - **Fundo:** `#F4F6FC` + `trilha-pattern.webp` (repetição 480 px, opacidade 0,7), deslizando para cima devagar (parallax, 0,6 px/frame).
 - **0–20:** `<Phone>` sobe de y = 1920 → 250 (spring damping 16).
-- **Conteúdo do celular (recriar a tela, não usar print):** cabeçalho com logo (Foquinho na caixinha), pill de fogo "🔥 4" (fundo `#FFF1E0`, borda `#FFC27A`) e pill "⚡ 340 XP" (fundo `#EEF3FF`); cartão azul "TRILHA ATUAL · IBGE Recenseador"; barra "Meta 3/20".
+- **Conteúdo do celular (recriar a tela, não usar print):** cabeçalho com logo (Foco na caixinha), pill de fogo "🔥 4" (fundo `#FFF1E0`, borda `#FFC27A`) e pill "⚡ 340 XP" (fundo `#EEF3FF`); cartão azul "TRILHA ATUAL · IBGE Recenseador"; barra "Meta 3/20".
 - **Trilha:** caminho pontilhado (traço `#D8E2F5`, 5 px, `dasharray 3 12`, curva em S — mesma fórmula do app: `x = 160 + sin(i·π/2)·66`, passo vertical 170 pt) com 5 nós de 72 pt (borda branca 5 pt):
   - nós 1–2 **concluídos** (azul `#1557E6`, sombra `0 5px 0 #0E3DAE`, ✓ branco) + legenda "Estatística básica · 5/6 acertos", "Porcentagem · 6/6";
   - nó 3 **atual** (amarelo `#FFCB2D`, sombra `#E0A800`, ▶ azul-escuro) com balão "SEU PRÓXIMO PASSO" e anel pulsando (`box-shadow 0 0 0 0 → 11px`, 2,3 s em loop);
@@ -300,16 +300,16 @@ Referências: `referencias/02-trilha.png`, `11-trilha-comemora-modulo.png`.
 - **Super** (fora do celular, y = 1500 → **atenção à zona segura**: use y ≈ 1380): "TRILHA PRONTA ✓", pop de palavra no frame 30.
 - **Som:** `toque` em cada nó (volume −18 dB), `combo` suave no pulo do nó atual.
 
-### Cena 4 — Errou? O Foquinho explica · 0–150 (5 s)
-Referências: `05-questao-selecionada.png`, `06-questao-erro.png`, `08-foquinho-chat.png`.
+### Cena 4 — Errou? O Foco explica · 0–150 (5 s)
+Referências: `05-questao-selecionada.png`, `06-questao-erro.png`, `08-mascote-chat.png`.
 - **0–15:** transição `slide from-right` dentro do celular para a tela da questão: barra de progresso no topo (azul, 1/6), "Estatística básica · Questão 1 de 6"; cartão com enunciado (Manrope 700, `#0B1F4D`): *"Qual é a média aritmética de 2, 4, 6, 8 e 10?"*; 5 alternativas (cartões brancos com letra num quadradinho `#F4F6FC`). Alternativas: A) 5 · **B) 6** · C) 7 · D) 8 · E) 30.
 - **20:** "toque" na alternativa **C** → ela fica selecionada (borda azul 2 px, fundo `#EEF3FF`, letra em azul) · som `toque`.
 - **32:** toque no botão 3D azul "Confirmar resposta" (aperta).
 - **38:** **erro** — alternativa C fica vermelha (borda `#E5484D`, fundo `#FDECEC`, ✕ branco em quadrado vermelho com pop) e **chacoalha**; B fica verde (borda `#22A06B`, fundo `#E9F7F0`, ✓); as demais esmaecem (opacidade 0,45). Som `erro`.
-- **40–55:** barra de feedback sobe da base do celular (`translateY 100% → 0`, spring): fundo `#FDECEC`, Foquinho **encourage** (62 pt) + "Não foi dessa vez" (Plus Jakarta 800, `#C0392B`) + "Resposta certa: B"; botão vermelho "Próxima questão".
-- **60:** botão azul-claro "Ainda com dúvida? **Chame o Foquinho**" (com Foquinho acenando 34 pt) aparece acima da barra; toque nele no 70.
-- **75–95:** folha do chat sobe (raio superior 28 pt, fundo branco, fundo do app escurece 45%): cabeçalho com Foquinho (humor **thinking**) em caixa `#EEF3FF` + "Foquinho · tutor com IA".
-- **95–150:** balão do Foquinho (fundo `#F4F6FC`, raio `16 16 16 4`) com o texto sendo **digitado** (2 caracteres/frame): *"A média é a soma dividida pela quantidade: 2+4+6+8+10 = 30, e 30 ÷ 5 = **6** 😉"* Quando o texto termina, o Foquinho do cabeçalho troca para **happy**.
+- **40–55:** barra de feedback sobe da base do celular (`translateY 100% → 0`, spring): fundo `#FDECEC`, Foco **encourage** (62 pt) + "Não foi dessa vez" (Plus Jakarta 800, `#C0392B`) + "Resposta certa: B"; botão vermelho "Próxima questão".
+- **60:** botão azul-claro "Ainda com dúvida? **Chame o Foco**" (com Foco acenando 34 pt) aparece acima da barra; toque nele no 70.
+- **75–95:** folha do chat sobe (raio superior 28 pt, fundo branco, fundo do app escurece 45%): cabeçalho com Foco (humor **thinking**) em caixa `#EEF3FF` + "Foco · tutor com IA".
+- **95–150:** balão do Foco (fundo `#F4F6FC`, raio `16 16 16 4`) com o texto sendo **digitado** (2 caracteres/frame): *"A média é a soma dividida pela quantidade: 2+4+6+8+10 = 30, e 30 ÷ 5 = **6** 😉"* Quando o texto termina, o Foco do cabeçalho troca para **happy**.
 - **Super:** "ERROU? **EU TE EXPLICO** 💬" (destaque em `#1557E6`), no frame 45, y ≈ 230 (acima do celular: reduza o celular para escala 0,92 nesta cena para caber).
 
 ### Cena 5 — Acertou! XP + combo · 0–135 (4,5 s)
@@ -317,7 +317,7 @@ Referência: `07-questao-acerto-combo.png`.
 - **0–10:** corte seco para outra questão (mesma estrutura), barra de progresso em 3/6.
 - **12:** toque na alternativa **B**; **20:** toque em "Confirmar".
 - **24:** **acerto** — B verde com pop do ✓ (`scale 0 → 1.3 → 1`); som `acerto`.
-- **26–45:** barra de feedback verde (`#E5F6EE`): Foquinho **happy** (pulinho + braços para cima), "Mandou bem!" (Plus Jakarta 800 `#17784F`); pill **"+10 XP"** azul salta (`xp-pop`: `translateY 10 → -3 → 0`, `scale .6 → 1.12 → 1`) e voa até o pill de XP do cabeçalho (curva de Bézier, 18 frames), que conta 340 → 350.
+- **26–45:** barra de feedback verde (`#E5F6EE`): Foco **happy** (pulinho + braços para cima), "Mandou bem!" (Plus Jakarta 800 `#17784F`); pill **"+10 XP"** azul salta (`xp-pop`: `translateY 10 → -3 → 0`, `scale .6 → 1.12 → 1`) e voa até o pill de XP do cabeçalho (curva de Bézier, 18 frames), que conta 340 → 350.
 - **55–70:** mais dois acertos rápidos em montagem (3 frames de "flash" branco entre eles), cada um com `acerto`.
 - **75:** **combo**: pill laranja **"🔥 3 seguidas!"** (gradiente de fogo) com `combo-pop` (`scale .4 → 1.15 → 1`, `rotate -8° → 3° → 0`); a barra de progresso vira laranja com brilho correndo; no topo, "🔥 3 seguidas" em `#E8590C`. Som `combo`. **Confete** a partir do centro do celular.
 - **Super:** "+10 XP" (azul) no 26 e "🔥 3 SEGUIDAS" (gradiente de fogo) no 75, empilhados, y ≈ 1380.
@@ -343,8 +343,8 @@ Referências: `02-trilha.png` (botão vermelho flutuante com o número).
 
 ### Cena 8 — CTA · 0–165 (5,5 s: ~3,5 s de fala + ~1,6 s parado)
 - **Fundo:** `gradAzul` + textura; confete contínuo leve (40 partículas caindo do topo, velocidade baixa).
-- **0–20:** o Foquinho pequeno do canto **cresce e vai para o centro** (vira 560 px, y = 700) e muda para **celebrate**; fala "Bora?" olhando para a câmera (pupilas no centro), com a boca sincronizada.
-- **10–30:** ícone do app (`icone-app-512.png`, 220 px, raio 50 px, sombra forte) desliza para o lado do Foquinho e "gira" levemente (`rotate -8° → 0`).
+- **0–20:** o Foco pequeno do canto **cresce e vai para o centro** (vira 560 px, y = 700) e muda para **celebrate**; fala "Bora?" olhando para a câmera (pupilas no centro), com a boca sincronizada.
+- **10–30:** ícone do app (`icone-app-512.png`, 220 px, raio 50 px, sombra forte) desliza para o lado do Foco e "gira" levemente (`rotate -8° → 0`).
 - **20–45:** logo "foco." 170 px branco, abaixo (y = 1080), com o "." amarelo quicando.
 - **45–70:** selo **"1º MÓDULO GRÁTIS"**: pill amarela `#FFCB2D` com texto `#0B1F4D` (Manrope 800, 58 px), sombra 3D `0 8px 0 #E0A800`, entra com `combo-pop` e fica "respirando" (`scale 1 ↔ 1.04`, 1,2 s).
 - **70–100:** botão 3D branco "**Link na bio** 👆" (texto azul, sombra `#CFE0FF`), em y ≈ 1380, fazendo o "aperta e solta" a cada 1 s (convidando ao toque).
@@ -359,7 +359,7 @@ Referências: `02-trilha.png` (botão vermelho flutuante com o número).
 - **Fonte:** Manrope 800, 58 px, branco, com contorno `#0B1F4D` de 10 px (`paint-order: stroke`) e sombra `0 6px 0 rgba(11,31,77,.35)`.
 - **Posição:** centralizada, largura máx. 860 px, base em y = 1450 (dentro da zona segura).
 - **Estilo TikTok:** até 5 palavras por vez; a palavra sendo falada fica **amarela** `#FFCB2D` e dá um pop pequeno (`scale 1 → 1.08 → 1`).
-- **Destaques:** "Foquinho", "XP", "ofensiva", "grátis" sempre em amarelo.
+- **Destaques:** "Foco", "XP", "ofensiva", "grátis" sempre em amarelo.
 - **Nas cenas com super grande no mesmo lugar**, esconda a legenda ou suba o super (nunca os dois sobrepostos).
 
 ---
@@ -370,7 +370,7 @@ Referências: `02-trilha.png` (botão vermelho flutuante com o número).
 - [ ] Nada usa CSS animation/transition, `setTimeout` ou `Math.random`
 - [ ] Todas as trocas de cena caem numa batida da música
 - [ ] Legenda legível no celular com brilho baixo (teste exportando e vendo no telefone)
-- [ ] O Foquinho aparece nos primeiros 3,5 s e a boca dele acompanha a voz em todas as cenas
+- [ ] O Foco aparece nos primeiros 3,5 s e a boca dele acompanha a voz em todas as cenas
 - [ ] Legendas mostram "IBGE" e "XP" (não a grafia fonética do ElevenLabs)
 - [ ] Os primeiros 2 s já têm movimento e texto (as pessoas decidem ficar nesse tempo)
 - [ ] Final de 1,5 s parado (vira capa e dá tempo de ler "Link na bio")
@@ -382,4 +382,4 @@ Referências: `02-trilha.png` (botão vermelho flutuante com o número).
 
 ## 11. Prompt pronto para o Claude Cowork
 
-> Estou na pasta do projeto Foco. Leia `docs/video/HANDOFF-REMOTION.md` e `docs/video/ROTEIRO.md`, veja as imagens em `docs/video/referencias/` e os arquivos em `docs/video/assets/`. Crie um projeto Remotion em `../foco-video` seguindo o handoff: tokens, componente `<Foquinho>` animado por frame (baseado em `src/components/Mascot.tsx` e nas animações de `src/delight.css`), as 8 cenas com duração calculada a partir dos áudios `public/audio/cena-1.mp3` … `cena-8.mp3` (voz do Foquinho gerada no ElevenLabs), lip-sync da boca do Foquinho com `visualizeAudio`, efeitos sonoros gerados por script, legendas e âncoras por palavra com Whisper, e o `<SafeZoneOverlay>`. Comece pelas cenas 2 (logo) e 5 (acerto + combo) para validarmos o estilo antes de fazer o resto. Quando terminar cada cena, abra o Remotion Studio e me mostre.
+> Estou na pasta do projeto Foco. Leia `docs/video/HANDOFF-REMOTION.md` e `docs/video/ROTEIRO.md`, veja as imagens em `docs/video/referencias/` e os arquivos em `docs/video/assets/`. Crie um projeto Remotion em `../foco-video` seguindo o handoff: tokens, componente `<Foco>` animado por frame (baseado em `src/components/Mascot.tsx` e nas animações de `src/delight.css`), as 8 cenas com duração calculada a partir dos áudios `public/audio/cena-1.mp3` … `cena-8.mp3` (voz do Foco gerada no ElevenLabs), lip-sync da boca do Foco com `visualizeAudio`, efeitos sonoros gerados por script, legendas e âncoras por palavra com Whisper, e o `<SafeZoneOverlay>`. Comece pelas cenas 2 (logo) e 5 (acerto + combo) para validarmos o estilo antes de fazer o resto. Quando terminar cada cena, abra o Remotion Studio e me mostre.

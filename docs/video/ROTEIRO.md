@@ -1,29 +1,29 @@
 # Vídeo de apresentação do Foco — Roteiro (voz ElevenLabs)
 
 **Formato:** vertical 9:16 (Reels e TikTok) · **Duração:** ~34 s · **Estilo:** 100% motion graphics, ninguém aparece.
-**Narrador:** o próprio **Foquinho**, o mascote, falando em primeira pessoa. Ele aparece animado na tela e a boca mexe no ritmo da voz, o que dá personalidade e deixa o vídeo memorável.
+**Narrador:** o próprio **Foco**, o mascote (mesmo nome do app), falando em primeira pessoa. Ele aparece animado na tela e a boca mexe no ritmo da voz, o que dá personalidade e deixa o vídeo memorável.
 **Tom:** animado, amigo, meio moleque. Ele "fala com" o concurseiro, sem cara de propaganda de cursinho.
 
 ---
 
 ## Roteiro cena a cena
 
-| # | Tempo aprox. | Foquinho fala | Texto grande na tela | O que aparece |
+| # | Tempo aprox. | Foco fala | Texto grande na tela | O que aparece |
 |---|---|---|---|---|
 | 1 | 0,0 – 3,0 s | "Você estuda pro IBGE… e no dia seguinte esquece tudo?" | ESQUECEU TUDO? 😵 | Pilha de PDFs e marca-texto caindo e tremendo, fundo azul-noite. |
-| 2 | 3,0 – 6,5 s | "Calma! Eu sou o Foquinho. Comigo, estudar pra concurso vira jogo." | ESTUDAR VIROU JOGO 🎮 | Tela vira azul, o Foquinho pula pra dentro, acena, e o logo "foco." aparece. |
+| 2 | 3,0 – 6,5 s | "Calma! Eu sou o Foco. Comigo, estudar pra concurso vira jogo." | ESTUDAR VIROU JOGO 🎮 | Tela vira azul, o Foco pula pra dentro, acena, e o logo "foco." aparece. |
 | 3 | 6,5 – 11,0 s | "Sua trilha já vem pronta. É só seguir: uma questão de cada vez." | TRILHA PRONTA ✓ | Celular mostrando a trilha se montando; o "próximo passo" pulsa em amarelo. |
-| 4 | 11,0 – 16,0 s | "Errou? Relaxa! Eu te explico na hora, com inteligência artificial." | ERROU? EU TE EXPLICO 💬 | Alternativa errada treme em vermelho; abre o chat e o Foquinho "digita" a explicação. |
+| 4 | 11,0 – 16,0 s | "Errou? Relaxa! Eu te explico na hora, com inteligência artificial." | ERROU? EU TE EXPLICO 💬 | Alternativa errada treme em vermelho; abre o chat e o Foco "digita" a explicação. |
 | 5 | 16,0 – 20,5 s | "Acertou? Ganha XP! Três seguidas… pegou fogo!" | +10 XP · 🔥 3 SEGUIDAS | Alternativa fica verde, "+10 XP" salta, barra vira laranja com fogo, confete. |
 | 6 | 20,5 – 25,0 s | "Estuda um pouquinho todo dia, e a sua ofensiva só cresce." | OFENSIVA: 5 DIAS 🔥 | Fogo cinza acende laranja, número pula de 4 pra 5, dias da semana "carimbados". |
 | 7 | 25,0 – 28,5 s | "E o que você errou volta pra revisão, até você acertar." | SEUS ERROS VIRAM REVISÃO | Questões "voam" pra dentro do botão vermelho do caderno de erros. |
-| 8 | 28,5 – 34,0 s | "Bora? O primeiro módulo é grátis. Link na bio!" | 1º MÓDULO GRÁTIS · LINK NA BIO | Foquinho comemorando, ícone do app, logo grande. Segura 1,5 s parado no fim. |
+| 8 | 28,5 – 34,0 s | "Bora? O primeiro módulo é grátis. Link na bio!" | 1º MÓDULO GRÁTIS · LINK NA BIO | Foco comemorando, ícone do app, logo grande. Segura 1,5 s parado no fim. |
 
 **Total:** ~70 palavras em ~32 s de fala, rápido mas claro.
 
 **Por que ficou assim:**
 - O **gancho** é uma pergunta que o concurseiro responde "sim" na cabeça, nos primeiros 2 segundos.
-- O Foquinho **se apresenta na cena 2**: o público liga o nome ao mascote, e o mascote ao app.
+- O mascote **se apresenta na cena 2 com o mesmo nome do app** ("Eu sou o Foco"): personagem e marca viram uma coisa só, e o nome gruda.
 - Cada cena mostra **um benefício só**, com uma frase curta: trilha, explicação, recompensa, hábito e revisão.
 - O **final** faz uma pergunta ("Bora?"), tira a barreira de preço ("grátis") e diz o que fazer ("link na bio").
 
@@ -63,7 +63,7 @@ Nomeie assim: `cena-1.mp3`, `cena-2.mp3`, …, `cena-8.mp3`. Gere 2 ou 3 versõe
 
 **Cena 2**
 ```
-[animado] Calma! Eu sou o Foquinho. Comigo, estudar pra concurso vira jogo!
+[animado] Calma! Eu sou o Foco. Comigo, estudar pra concurso vira jogo!
 ```
 
 **Cena 3**
@@ -99,7 +99,6 @@ E o que você errou volta pra revisão, até você acertar.
 ### Se algo sair estranho
 
 - **"IBGE" lido errado:** tente "í-bê-gê-é" (com hífens) ou "IBGÊ".
-- **"Foquinho" com sotaque estranho:** escreva "Fokinho".
 - **Ficou lento:** aumente a velocidade (até 1,15) em vez de cortar palavras.
 - **Emoção exagerada no v3:** troque Creative por Natural, ou tire a tag.
 - **Passou de 36 s no total:** encurte a cena 3 para "Sua trilha já vem pronta. É só seguir." e a cena 4 para "Errou? Relaxa, eu te explico na hora!".
@@ -110,7 +109,7 @@ E o que você errou volta pra revisão, até você acertar.
 
 1. **"Você estuda pro IBGE… e no dia seguinte esquece tudo?"** *(principal)*
 2. **"E se estudar pra concurso fosse tão viciante quanto um jogo?"**
-3. **"Oi! Eu sou o motivo de você não largar os estudos."** (o Foquinho já abre o vídeo, e a cena 2 vira só "Sou o Foquinho, e comigo estudar vira jogo.")
+3. **"Oi! Eu sou o motivo de você não largar os estudos."** (o mascote já abre o vídeo, e a cena 2 vira só "Sou o Foco, e comigo estudar vira jogo.")
 4. **"Pare de estudar pra concurso do jeito chato."**
 
 Poste a versão 1 e, alguns dias depois, uma com o gancho 2 ou 3. No Remotion basta trocar `cena-1.mp3` e o texto da cena 1.
@@ -119,16 +118,16 @@ Poste a versão 1 e, alguns dias depois, uma com o gancho 2 ou 3. No Remotion ba
 
 ## Música, efeitos e legendas
 
-- **Música:** pop/eletrônica animada, 118–128 BPM, sem voz. Use música com licença comercial: no TikTok, a *Biblioteca de Música Comercial*; em geral, bancos como Epidemic ou Artlist. Ela fica baixa (cerca de −14 dB) enquanto o Foquinho fala.
+- **Música:** pop/eletrônica animada, 118–128 BPM, sem voz. Use música com licença comercial: no TikTok, a *Biblioteca de Música Comercial*; em geral, bancos como Epidemic ou Artlist. Ela fica baixa (cerca de −14 dB) enquanto o Foco fala.
 - **Efeitos:** os mesmos sons do app (o "plim" do acerto, o "tum-tum" do erro, o arpejo das 3 seguidas, o "fuuum" do fogo). O handoff explica como gerar.
 - **Legendas:** sempre queimadas no vídeo, porque muita gente assiste sem som. Estilo no handoff.
 
 ## Legenda do post (sugestão)
 
 > Estudar pro IBGE não precisa ser chato 😅
-> No Foco você segue uma trilha pronta de questões comentadas, ganha XP, mantém sua ofensiva 🔥 e ainda tem o Foquinho, um tutor com IA que explica o que você errou.
+> No Foco você segue uma trilha pronta de questões comentadas, ganha XP, mantém sua ofensiva 🔥 e ainda tem um tutor com IA que explica o que você errou.
 > O primeiro módulo é grátis — link na bio!
 >
 > #concurso #ibge #concursopublico #recenseador #estudos #questoescomentadas #concurseiro
 
-**Capa do vídeo:** Foquinho comemorando + "ESTUDAR PRA CONCURSO VIROU JOGO".
+**Capa do vídeo:** o mascote comemorando + "ESTUDAR PRA CONCURSO VIROU JOGO".

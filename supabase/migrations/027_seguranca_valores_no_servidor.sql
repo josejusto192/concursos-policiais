@@ -71,7 +71,7 @@ end;
 $$;
 
 -- ---- Questão liberada pro aluno? (1º módulo grátis ou assinante) ----
--- Usada por responder_questao e pela função do Foquinho (tutor-ia).
+-- Usada por responder_questao e pela função do Foco (tutor-ia).
 create or replace function public.questao_liberada(p_questao_id uuid)
 returns boolean
 language sql

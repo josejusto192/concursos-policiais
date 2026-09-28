@@ -127,7 +127,7 @@ export default function Profile() {
                   ? `Ativa até ${new Date(usuario!.acesso_ate!).toLocaleDateString('pt-BR')}`
                   : usuario?.assinatura_cortesia
                     ? 'Todos os módulos liberados · veja os planos'
-                    : 'Todos os módulos, caderno de erros e o Foquinho (tutor com IA)'}
+                    : 'Todos os módulos, caderno de erros e tutor com IA'}
               </div>
             </span>
             <span className="text-[18px] text-blue">›</span>

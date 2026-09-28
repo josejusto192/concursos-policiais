@@ -1,6 +1,6 @@
 import Mascot from './Mascot';
 
-// Logo: o Foquinho (mascote) + "foco." — por enquanto o mascote é a marca.
+// Logo: o Foco (mascote, mesmo nome do app) + "foco."
 export default function Brand({ light = false, caption }: { light?: boolean; caption?: string }) {
   return (
     <div className={`brand ${light ? 'brand-light' : ''}`}>

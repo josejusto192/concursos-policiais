@@ -283,7 +283,7 @@ export default function Question() {
   function openAi() {
     dispatch({
       type: 'AI_OPEN_SEED',
-      text: `Oi! Sou o ${NOME_MASCOTE}. Vi que essa questão de ${q.disciplina} te pegou. Já li o enunciado, as alternativas e o comentário — me conta o que ficou confuso que eu te explico.`,
+      text: `Oi! Sou o ${NOME_MASCOTE}, seu tutor. Vi que essa questão de ${q.disciplina} te pegou. Já li o enunciado, as alternativas e o comentário — me conta o que ficou confuso que eu te explico.`,
     });
     setAiOpen(true);
   }
