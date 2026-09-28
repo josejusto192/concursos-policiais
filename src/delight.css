@@ -859,3 +859,13 @@
     scroll-behavior: auto !important;
   }
 }
+
+/* Logo com o Foquinho (components/Brand.tsx) */
+.brand .brand-mark {
+  overflow: hidden;
+  padding: 0;
+  background: #eef3ff;
+  letter-spacing: 0;
+}
+.brand .brand-mark .mascot { margin-top: 4px; }
+.brand-light .brand-mark { background: #fff; }

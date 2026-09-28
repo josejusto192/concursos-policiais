@@ -14,7 +14,10 @@ window.addEventListener('error', (e) => logClientError(e.error ?? e.message, 'wi
 window.addEventListener('unhandledrejection', (e) => logClientError(e.reason, 'unhandledrejection'));
 // iOS só libera áudio dentro de um toque: todo toque "acorda" o áudio (sai
 // de suspenso após o app ir pro fundo), pros sons de feedback funcionarem.
-window.addEventListener('pointerdown', desbloquearAudio, { passive: true });
+// iPhone só libera som em toque completo (touchend/click), não no pointerdown.
+for (const evento of ['touchend', 'click', 'keydown'] as const) {
+  window.addEventListener(evento, desbloquearAudio, { passive: true, capture: true });
+}
 
 // PWA: registra o service worker só em produção (no dev ele atrapalharia o
 // HMR). Sem esperar o evento load — recursos externos lentos (fontes,

@@ -6,7 +6,7 @@
 //   - QUALQUER outra origem (Supabase, fontes): passa direto, sem cache —
 //     dados de questões/progresso nunca podem ficar velhos.
 // Ao mudar a estratégia, incremente VERSION pra descartar caches antigos.
-const VERSION = 'v2';
+const VERSION = 'v3';
 const RUNTIME = `foco-${VERSION}`;
 
 self.addEventListener('install', () => {

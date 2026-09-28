@@ -2,11 +2,14 @@
 //
 // Sons sintetizados na hora com Web Audio — nenhum arquivo pra baixar.
 // Preferência "Sons e vibração" fica no aparelho (localStorage), ligada por
-// padrão; o iPhone no modo silencioso também silencia (Web Audio respeita).
+// padrão; o iPhone no modo silencioso também silencia (como em jogos: sessão
+// "ambient", que não interrompe a música que o aluno estiver ouvindo).
 //
-// iOS só libera áudio dentro de um toque do usuário: desbloquearAudio()
-// (chamado no 1º toque em qualquer lugar do app, ver main.tsx) cria/retoma o
-// AudioContext, e os sons tocados depois (mesmo após um await) funcionam.
+// iPhone só libera áudio dentro de um toque "completo" (touchend/click — o
+// pointerdown não conta) e só de verdade depois de tocar algum som ali dentro:
+// desbloquearAudio() (ver main.tsx) cria/retoma o AudioContext e toca 1
+// amostra muda. Ele também volta "interrupted" depois de ligação ou de o app
+// ir pro fundo, então cada toque retoma se precisar.
 
 const CHAVE = 'foco:sons';
 
@@ -35,15 +38,35 @@ function contexto(): AudioContext | null {
       if (!Ctor) return null;
       ctx = new Ctor();
     }
-    if (ctx.state === 'suspended') void ctx.resume();
+    if (ctx.state !== 'running') void ctx.resume().catch(() => {});
     return ctx;
   } catch {
     return null;
   }
 }
 
+let liberado = false;
+
 export function desbloquearAudio() {
-  if (sonsAtivos()) contexto();
+  if (!sonsAtivos()) return;
+  if (liberado && ctx?.state === 'running') return;
+  try {
+    const sessao = (navigator as unknown as { audioSession?: { type: string } }).audioSession;
+    if (sessao) sessao.type = 'ambient';
+  } catch {
+    // Safari antigo: sem audioSession
+  }
+  const c = contexto();
+  if (!c) return;
+  try {
+    const mudo = c.createBufferSource();
+    mudo.buffer = c.createBuffer(1, 1, 22050);
+    mudo.connect(c.destination);
+    mudo.start(0);
+    liberado = true;
+  } catch {
+    // tenta de novo no próximo toque
+  }
 }
 
 function nota(c: AudioContext, freq: number, inicio: number, duracao: number, tipo: OscillatorType = 'triangle', volume = 0.16) {
@@ -79,7 +102,9 @@ function varredura(c: AudioContext, de: number, para: number, inicio: number, du
 function tocar(fn: (c: AudioContext) => void) {
   if (!sonsAtivos()) return;
   const c = contexto();
-  if (c) fn(c);
+  if (!c) return;
+  if (c.state === 'running') fn(c);
+  else c.resume().then(() => fn(c)).catch(() => {});
 }
 
 export function vibrar(padrao: number | number[]) {
