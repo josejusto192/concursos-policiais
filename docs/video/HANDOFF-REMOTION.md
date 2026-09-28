@@ -2,6 +2,8 @@
 
 Documento para montar o vídeo de apresentação do app **Foco** com **Remotion**, a partir do roteiro em [`ROTEIRO.md`](./ROTEIRO.md). O objetivo é um vídeo vertical, rápido e "gostoso" de ver, com a cara do app: cores, mascote (Foquinho), botões 3D e as mesmas animações.
 
+**É 100% motion graphics (ninguém aparece).** O narrador é o próprio **Foquinho**, com voz gerada no ElevenLabs (um arquivo por cena). Sempre que ele estiver na tela, a **boca mexe no ritmo da voz** (seção 5.1).
+
 **Materiais nesta pasta**
 
 | Pasta/arquivo | O que é |
@@ -51,7 +53,7 @@ npm i @remotion/install-whisper-cpp @remotion/captions
 ```
 
 Copie para `public/`:
-- `public/audio/narracao.wav` (gravado pelo usuário)
+- `public/audio/cena-1.mp3` … `cena-8.mp3` (voz do Foquinho, ElevenLabs, uma por cena)
 - `public/audio/musica.mp3` (trilha licenciada)
 - `public/audio/sfx/*.wav` (gerados — seção 7)
 - `public/img/` ← tudo de `docs/video/assets/`
@@ -116,32 +118,58 @@ export const gradAzul = 'linear-gradient(160deg, #2F6BF0 0%, #1557E6 55%, #0E3DA
 
 ---
 
-## 4. Tempo: tudo amarrado no áudio
+## 4. Tempo: tudo amarrado no áudio (automático)
 
-O vídeo segue a narração. Depois de gravar, anote em que segundo cada frase **começa** (dá para ver no Audacity, no CapCut ou pela transcrição do Whisper) e preencha `timings.ts`. As cenas se ajustam sozinhas.
+Cada cena tem seu próprio arquivo de voz. A duração da cena = **duração do áudio + folga**, calculada no `calculateMetadata` da composição. Trocou um áudio no ElevenLabs? O vídeo se reajusta sozinho.
 
 ```ts
-// timings.ts — valores iniciais (roteiro). Troque pelos tempos reais do áudio.
+// timings.ts
+import { getAudioDurationInSeconds } from '@remotion/media-utils';
+import { staticFile } from 'remotion';
+
 export const FPS = 30;
 export const cenas = [
-  { id: 'gancho',   inicio: 0.0,  fala: 'Estudando pro IBGE e esquecendo tudo no dia seguinte?' },
-  { id: 'logo',     inicio: 3.0,  fala: 'Conheça o Foco: estudar pra concurso agora parece jogo.' },
-  { id: 'trilha',   inicio: 6.0,  fala: 'Você segue uma trilha pronta, questão por questão, do básico até a prova.' },
-  { id: 'erro',     inicio: 11.0, fala: 'Errou? O Foquinho, seu tutor com inteligência artificial, te explica na hora.' },
-  { id: 'acerto',   inicio: 16.5, fala: 'Acertou? Ganha XP e sobe no ranking. Três seguidas… pegou fogo!' },
-  { id: 'ofensiva', inicio: 21.0, fala: 'Estude um pouquinho todo dia e veja sua ofensiva crescer.' },
-  { id: 'caderno',  inicio: 25.5, fala: 'E o que você errou vira revisão no seu caderno de erros.' },
-  { id: 'cta',      inicio: 29.0, fala: 'Foco. O primeiro módulo é grátis. Link na bio!' },
+  { id: 'gancho',   audio: 'audio/cena-1.mp3', antes: 0.15, depois: 0.25, minimo: 3.0 },
+  { id: 'logo',     audio: 'audio/cena-2.mp3', antes: 0.10, depois: 0.30, minimo: 3.5 },
+  { id: 'trilha',   audio: 'audio/cena-3.mp3', antes: 0.10, depois: 0.30, minimo: 4.5 },
+  { id: 'erro',     audio: 'audio/cena-4.mp3', antes: 0.10, depois: 0.60, minimo: 5.0 }, // folga p/ ver o chat digitando
+  { id: 'acerto',   audio: 'audio/cena-5.mp3', antes: 0.10, depois: 0.40, minimo: 4.5 },
+  { id: 'ofensiva', audio: 'audio/cena-6.mp3', antes: 0.10, depois: 0.40, minimo: 4.5 },
+  { id: 'caderno',  audio: 'audio/cena-7.mp3', antes: 0.10, depois: 0.30, minimo: 3.5 },
+  { id: 'cta',      audio: 'audio/cena-8.mp3', antes: 0.10, depois: 1.60, minimo: 5.0 }, // 1,5 s parado no fim
 ] as const;
-export const DURACAO_TOTAL = 34.0; // fim do áudio + ~1,5 s segurando a última imagem
-export const f = (s: number) => Math.round(s * FPS);
+
+// Roteiro "de referência" (s) — os tempos da seção 8 foram escritos para estas durações.
+export const duracaoRoteiro = { gancho: 3, logo: 3.5, trilha: 4.5, erro: 5, acerto: 4.5, ofensiva: 4.5, caderno: 3.5, cta: 5.5 };
+
+export async function calcularCenas() {
+  const out = [];
+  for (const c of cenas) {
+    const voz = await getAudioDurationInSeconds(staticFile(c.audio));
+    const dur = Math.max(c.minimo, c.antes + voz + c.depois);
+    out.push({ ...c, voz, frames: Math.round(dur * FPS), vozInicio: Math.round(c.antes * FPS) });
+  }
+  return out;
+}
 ```
 
-Duração de cada cena = `inicio` da próxima − `inicio` dela. Dentro de cada cena, os tempos abaixo estão em **frames relativos ao início da cena** e devem ser **escalados** se a cena ficar mais curta/longa (`const k = duracaoReal / duracaoRoteiro`).
+```tsx
+// Root.tsx
+<Composition id="FocoReel" component={FocoReel} width={1080} height={1920} fps={30} durationInFrames={1020}
+  defaultProps={{ cenas: [] }}
+  calculateMetadata={async () => {
+    const cenas = await calcularCenas();
+    return { durationInFrames: cenas.reduce((t, c) => t + c.frames, 0), props: { cenas } };
+  }} />
+```
 
-**Legendas:** use `@remotion/install-whisper-cpp` + `transcribe()` (modelo `medium`, `language: 'pt'`, `tokenLevelTimestamps: true`) para gerar as palavras com tempo e `createTikTokStyleCaptions()` de `@remotion/captions` (páginas de ~1,2 s). Alternativa manual: um JSON com `{texto, inicio, fim}` por frase.
+No `FocoReel`, use `<Series>` (ou `<TransitionSeries>` com transições de 8–10 frames) e, dentro de cada cena, `<Sequence from={vozInicio}><Audio src={staticFile(c.audio)} /></Sequence>`.
 
-**Batidas:** se a música for 120 BPM, uma batida = 15 frames. Coloque os cortes de cena e os "pops" em múltiplos de 15 depois do primeiro tempo forte (dá muito mais energia).
+**Escala dos tempos internos:** os frames da seção 8 são para a duração de referência (`duracaoRoteiro`). Em cada cena, `const k = framesReais / (duracaoRoteiro[id] * FPS)` e multiplique os marcos por `k`, **exceto** as micro-animações (pops, chacoalhar, carimbo), que ficam com a duração fixa. Os momentos-chave (toque na alternativa, "+10 XP", "pegou fogo", 4→5) devem cair **na palavra** correspondente: use os tempos por palavra do Whisper (abaixo) para ancorá-los, por exemplo "fogo" dispara o confete.
+
+**Legendas e âncoras por palavra:** rode `@remotion/install-whisper-cpp` + `transcribe()` (modelo `medium`, `language: 'pt'`, `tokenLevelTimestamps: true`) em cada `cena-N.mp3` e salve `public/legendas/cena-N.json`. Use em `createTikTokStyleCaptions()` (`@remotion/captions`) para as legendas e numa função `momento('fogo')` para ancorar animações. O texto das legendas deve ser o do roteiro ("IBGE", "XP"), não a grafia fonética usada no ElevenLabs: corrija no JSON.
+
+**Batidas:** com música a 120 BPM, uma batida = 15 frames. Quando possível, alinhe cortes de cena e "pops" em múltiplos de 15 depois do primeiro tempo forte.
 
 ---
 
@@ -176,6 +204,24 @@ Base: copie o SVG de `src/components/Mascot.tsx` (viewBox 0 0 144 144; mesmos gr
 | **wave** | tchau | braço direito 2,6 s: `0 (0–12%) → -122° → -96° → -124° → -96° → -120° → 0 (74%)` |
 
 Dica: crie `usaCiclo(segundos)` e `keyframes(t, [[0,v0],[0.45,v1],[1,v2]])` para não repetir `interpolate`.
+
+### 5.1 Boca falando (lip-sync simples)
+
+O Foquinho é o narrador: sempre que estiver na tela, a boca acompanha a voz.
+
+```ts
+import { useAudioData, visualizeAudio } from '@remotion/media-utils';
+const audio = useAudioData(staticFile(`audio/cena-${n}.mp3`));
+const vol = audio ? visualizeAudio({ fps, frame: frame - vozInicio, audioData: audio, numberOfSamples: 16 })
+  .slice(1, 6).reduce((a, b) => a + b, 0) / 5 : 0;
+const abertura = Math.min(1, vol * 6); // 0 = fechada, 1 = aberta
+```
+
+- Troque o `<path class="m-mouth">` por uma boca "D" deitada: largura 14 → 18 (viewBox), altura `2 + abertura * 9`, fundo `#0B1F4D`, língua `#FF8A8A` aparecendo quando `abertura > 0.5`.
+- Suavize: `abertura` = média dos últimos 2 frames (evita tremedeira).
+- Enquanto fala: antena balança um pouco mais (±10°), cabeça acompanha (`rotate` ±2° com a abertura).
+- Sem voz (entre frases): volta à boca sorrindo do humor atual.
+- Quando o Foquinho **não** está na tela (cenas 3, 5, 6 e 7 dentro do celular), mostre um **Foquinho pequeno (160 px) no canto inferior esquerdo** (x = 90, y = 1330, dentro da zona segura), falando, como um apresentador. Ele entra com a entrada padrão na cena 3 e fica até a cena 7.
 
 **Entrada padrão do Foquinho** (quando surge numa cena): `spring({ frame, fps, config: { damping: 11, stiffness: 160, mass: 0.8 } })` em `scale 0.4 → 1` + `translateY 60 → 0`, com um "squash" no pouso (corpo `scaleY 0.9 → 1` nos 6 frames seguintes).
 
@@ -231,15 +277,16 @@ Tempos em frames relativos ao início da cena (30 fps). O `<Phone>` tem **760 ×
 - **Som:** `whoosh` no 0; batida da música entra no 0.
 - **Saída (80–90):** flash azul (ver seção 6) cobrindo tudo a partir do centro.
 
-### Cena 2 — Virada + logo · 0–90 (3 s)
+### Cena 2 — "Eu sou o Foquinho" + logo · 0–105 (3,5 s)
 - **Fundo:** `gradAzul` + `bg-blue-texture.jpg` com 25% de opacidade (modo `overlay`).
 - **0–18:** Foquinho (humor **happy**, 520 px) entra de baixo com a "entrada padrão" (seção 5); pousa em y ≈ 820 (centro).
 - **18–50:** vira **wave** (acena).
 - **24–40:** o Foquinho vai para a esquerda (x −170) e o logotipo "foco." surge à direita: letras de "foco" em pop (3 frames entre letras), o "." amarelo cai quicando por último (spring damping 8). Texto 150 px, branco (sobre azul).
-- **45–90:** frase de apoio abaixo, Manrope 800 54 px branco 90%: "estudar pra concurso **virou jogo**" ("virou jogo" com fundo `#FFCB2D` e texto `#0B1F4D`, marcador que "pinta" da esquerda para a direita em 10 frames).
+- **45–105:** frase de apoio abaixo, Manrope 800 54 px branco 90%: "estudar pra concurso **virou jogo** 🎮" ("virou jogo" com fundo `#FFCB2D` e texto `#0B1F4D`, marcador que "pinta" da esquerda para a direita em 10 frames). O marcador aparece quando o Foquinho diz "jogo".
+- O Foquinho fala a cena inteira (boca sincronizada) e dá um pulinho (**happy**) em "Foquinho".
 - **Som:** `conclusao` baixinho (−10 dB) no frame 18.
 
-### Cena 3 — Trilha pronta · 0–150 (5 s)
+### Cena 3 — Trilha pronta · 0–135 (4,5 s)
 Referências: `referencias/02-trilha.png`, `11-trilha-comemora-modulo.png`.
 - **Fundo:** `#F4F6FC` + `trilha-pattern.webp` (repetição 480 px, opacidade 0,7), deslizando para cima devagar (parallax, 0,6 px/frame).
 - **0–20:** `<Phone>` sobe de y = 1920 → 250 (spring damping 16).
@@ -253,7 +300,7 @@ Referências: `referencias/02-trilha.png`, `11-trilha-comemora-modulo.png`.
 - **Super** (fora do celular, y = 1500 → **atenção à zona segura**: use y ≈ 1380): "TRILHA PRONTA ✓", pop de palavra no frame 30.
 - **Som:** `toque` em cada nó (volume −18 dB), `combo` suave no pulo do nó atual.
 
-### Cena 4 — Errou? O Foquinho explica · 0–165 (5,5 s)
+### Cena 4 — Errou? O Foquinho explica · 0–150 (5 s)
 Referências: `05-questao-selecionada.png`, `06-questao-erro.png`, `08-foquinho-chat.png`.
 - **0–15:** transição `slide from-right` dentro do celular para a tela da questão: barra de progresso no topo (azul, 1/6), "Estatística básica · Questão 1 de 6"; cartão com enunciado (Manrope 700, `#0B1F4D`): *"Qual é a média aritmética de 2, 4, 6, 8 e 10?"*; 5 alternativas (cartões brancos com letra num quadradinho `#F4F6FC`). Alternativas: A) 5 · **B) 6** · C) 7 · D) 8 · E) 30.
 - **20:** "toque" na alternativa **C** → ela fica selecionada (borda azul 2 px, fundo `#EEF3FF`, letra em azul) · som `toque`.
@@ -262,8 +309,8 @@ Referências: `05-questao-selecionada.png`, `06-questao-erro.png`, `08-foquinho-
 - **40–55:** barra de feedback sobe da base do celular (`translateY 100% → 0`, spring): fundo `#FDECEC`, Foquinho **encourage** (62 pt) + "Não foi dessa vez" (Plus Jakarta 800, `#C0392B`) + "Resposta certa: B"; botão vermelho "Próxima questão".
 - **60:** botão azul-claro "Ainda com dúvida? **Chame o Foquinho**" (com Foquinho acenando 34 pt) aparece acima da barra; toque nele no 70.
 - **75–95:** folha do chat sobe (raio superior 28 pt, fundo branco, fundo do app escurece 45%): cabeçalho com Foquinho (humor **thinking**) em caixa `#EEF3FF` + "Foquinho · tutor com IA".
-- **95–150:** balão do Foquinho (fundo `#F4F6FC`, raio `16 16 16 4`) com o texto sendo **digitado** (2 caracteres/frame): *"Oi! Sou o Foquinho 👋 A média é a soma dividida pela quantidade: 2+4+6+8+10 = 30, e 30 ÷ 5 = **6**. Você marcou 7 — fácil de confundir com o número do meio!"* Quando o texto termina, o Foquinho do cabeçalho troca para **happy**.
-- **Super:** "ERROU? O **FOQUINHO** EXPLICA 💬" (Foquinho em `#1557E6`), no frame 45, y ≈ 230 (acima do celular: reduza o celular para escala 0,92 nesta cena para caber).
+- **95–150:** balão do Foquinho (fundo `#F4F6FC`, raio `16 16 16 4`) com o texto sendo **digitado** (2 caracteres/frame): *"A média é a soma dividida pela quantidade: 2+4+6+8+10 = 30, e 30 ÷ 5 = **6** 😉"* Quando o texto termina, o Foquinho do cabeçalho troca para **happy**.
+- **Super:** "ERROU? **EU TE EXPLICO** 💬" (destaque em `#1557E6`), no frame 45, y ≈ 230 (acima do celular: reduza o celular para escala 0,92 nesta cena para caber).
 
 ### Cena 5 — Acertou! XP + combo · 0–135 (4,5 s)
 Referência: `07-questao-acerto-combo.png`.
@@ -286,7 +333,7 @@ Referências: `10-ofensiva-estendida.png`, `04-janela-ofensiva.png`.
 - **75–135:** "Ofensiva estendida!" (Plus Jakarta 800, 76 px) + "Volte amanhã para chegar a 6!" (Manrope 700, 44 px, `#6B7488`) em tip-in; brasas (partículas laranja pequenas subindo) em volta do fogo.
 - **Super:** pode ser o próprio "5 DIAS DE OFENSIVA" (a cena já é um grande texto).
 
-### Cena 7 — Caderno de erros · 0–105 (3,5 s)
+### Cena 7 — Erros viram revisão · 0–105 (3,5 s)
 Referências: `02-trilha.png` (botão vermelho flutuante com o número).
 - **Fundo:** `#F4F6FC` + padrão.
 - **0–15:** o **botão do caderno** (círculo 260 px, gradiente `#EF5A5A → #C9302C`, borda branca 14 px, ícone de caderno branco, badge amarelo `#FFCB2D` com número) entra com pop no centro, badge = **0**.
@@ -294,15 +341,16 @@ Referências: `02-trilha.png` (botão vermelho flutuante com o número).
 - **75–105:** o botão encolhe e vai para o canto; entra uma lista em "Revisão" com a primeira questão virando verde ✓ e o texto "+10 XP · saiu do caderno" (pill azul). Som `acerto`.
 - **Super:** "SEUS ERROS VIRAM **REVISÃO**", y ≈ 300.
 
-### Cena 8 — CTA · 0–150 (5 s: ~3,5 s de fala + 1,5 s parado)
+### Cena 8 — CTA · 0–165 (5,5 s: ~3,5 s de fala + ~1,6 s parado)
 - **Fundo:** `gradAzul` + textura; confete contínuo leve (40 partículas caindo do topo, velocidade baixa).
-- **0–20:** Foquinho **celebrate** (560 px) entra com a entrada padrão, centro em y = 700.
+- **0–20:** o Foquinho pequeno do canto **cresce e vai para o centro** (vira 560 px, y = 700) e muda para **celebrate**; fala "Bora?" olhando para a câmera (pupilas no centro), com a boca sincronizada.
 - **10–30:** ícone do app (`icone-app-512.png`, 220 px, raio 50 px, sombra forte) desliza para o lado do Foquinho e "gira" levemente (`rotate -8° → 0`).
 - **20–45:** logo "foco." 170 px branco, abaixo (y = 1080), com o "." amarelo quicando.
 - **45–70:** selo **"1º MÓDULO GRÁTIS"**: pill amarela `#FFCB2D` com texto `#0B1F4D` (Manrope 800, 58 px), sombra 3D `0 8px 0 #E0A800`, entra com `combo-pop` e fica "respirando" (`scale 1 ↔ 1.04`, 1,2 s).
 - **70–100:** botão 3D branco "**Link na bio** 👆" (texto azul, sombra `#CFE0FF`), em y ≈ 1380, fazendo o "aperta e solta" a cada 1 s (convidando ao toque).
-- **100–150:** tudo parado (só respiração e confete) — isso vira o final do loop e a capa.
+- **100–165:** tudo parado (só respiração e confete) — isso vira o final do loop e a capa.
 - **Som:** `conclusao` no 0; a música sobe (−8 dB) quando a fala termina.
+- **"Link na bio"** dispara no momento em que ele fala "bio" (âncora do Whisper).
 
 ---
 
@@ -322,7 +370,8 @@ Referências: `02-trilha.png` (botão vermelho flutuante com o número).
 - [ ] Nada usa CSS animation/transition, `setTimeout` ou `Math.random`
 - [ ] Todas as trocas de cena caem numa batida da música
 - [ ] Legenda legível no celular com brilho baixo (teste exportando e vendo no telefone)
-- [ ] O Foquinho aparece nos primeiros 3,5 s (gancho visual)
+- [ ] O Foquinho aparece nos primeiros 3,5 s e a boca dele acompanha a voz em todas as cenas
+- [ ] Legendas mostram "IBGE" e "XP" (não a grafia fonética do ElevenLabs)
 - [ ] Os primeiros 2 s já têm movimento e texto (as pessoas decidem ficar nesse tempo)
 - [ ] Final de 1,5 s parado (vira capa e dá tempo de ler "Link na bio")
 - [ ] Áudio: voz sempre acima da música; picos abaixo de −1 dBFS
@@ -333,4 +382,4 @@ Referências: `02-trilha.png` (botão vermelho flutuante com o número).
 
 ## 11. Prompt pronto para o Claude Cowork
 
-> Estou na pasta do projeto Foco. Leia `docs/video/HANDOFF-REMOTION.md` e `docs/video/ROTEIRO.md`, veja as imagens em `docs/video/referencias/` e os arquivos em `docs/video/assets/`. Crie um projeto Remotion em `../foco-video` seguindo o handoff: tokens, componente `<Foquinho>` animado por frame (baseado em `src/components/Mascot.tsx` e nas animações de `src/delight.css`), as 8 cenas com os tempos de `timings.ts`, efeitos sonoros gerados por script, legendas com Whisper a partir de `public/audio/narracao.wav`, e o `<SafeZoneOverlay>`. Comece pelas cenas 2 (logo) e 5 (acerto + combo) para validarmos o estilo antes de fazer o resto. Quando terminar cada cena, abra o Remotion Studio e me mostre.
+> Estou na pasta do projeto Foco. Leia `docs/video/HANDOFF-REMOTION.md` e `docs/video/ROTEIRO.md`, veja as imagens em `docs/video/referencias/` e os arquivos em `docs/video/assets/`. Crie um projeto Remotion em `../foco-video` seguindo o handoff: tokens, componente `<Foquinho>` animado por frame (baseado em `src/components/Mascot.tsx` e nas animações de `src/delight.css`), as 8 cenas com duração calculada a partir dos áudios `public/audio/cena-1.mp3` … `cena-8.mp3` (voz do Foquinho gerada no ElevenLabs), lip-sync da boca do Foquinho com `visualizeAudio`, efeitos sonoros gerados por script, legendas e âncoras por palavra com Whisper, e o `<SafeZoneOverlay>`. Comece pelas cenas 2 (logo) e 5 (acerto + combo) para validarmos o estilo antes de fazer o resto. Quando terminar cada cena, abra o Remotion Studio e me mostre.
