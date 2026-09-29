@@ -2,38 +2,47 @@
 
 O Cowork, ligado direto no Supabase, faz o mesmo que o botão "Revisar com IA" do app faz com o Gemini: reescreve o comentário de cada questão com outras palavras, sem perder conteúdo, e marca a questão como revisada (aparece como **"Revisada (cowork)"** no painel).
 
-Para ser seguro, ele **não mexe direto nas tabelas**. Usa só duas funções do banco (migrations 033 e 034):
+Para ser seguro, ele **não mexe direto nas tabelas**. Usa só três funções do banco (migrations 033, 034 e 035):
 
 | Função | O que faz |
 |---|---|
+| `cowork_resumo_pendentes()` | Mostra quantas questões faltam revisar por disciplina e banca (e quantas têm imagem), para o Cowork te perguntar o que revisar. |
 | `cowork_proximas_questoes(limite, disciplina, banca)` | Traz o próximo lote de questões **sem revisão** (máx. 50), com enunciado (texto e HTML), alternativas, gabarito, comentário original, **os links de todas as imagens** (enunciado, alternativas e comentário) e as diretrizes extras de Configurações. |
 | `cowork_salvar_revisao(questao_id, html)` | **Confere e salva.** Recusa texto vazio ou curto demais, texto que encolheu mais da metade (perda de conteúdo), HTML perigoso e imagens perdidas ou alteradas. Não sobrescreve questão já revisada. |
 
 ## 1. Preparar (uma vez)
 
-1. No Supabase (SQL Editor), rode `supabase/migrations/033_revisao_via_cowork.sql` e depois `supabase/migrations/034_cowork_ve_imagens.sql`.
+1. No Supabase (SQL Editor), rode, nesta ordem, `033_revisao_via_cowork.sql`, `034_cowork_ve_imagens.sql` e `035_cowork_resumo_pendentes.sql` (pasta `supabase/migrations`).
 2. No Claude Cowork, conecte o **conector do Supabase** (Configurações → Conectores → Supabase), entre com a sua conta e dê acesso **só ao projeto do Foco**.
 3. Recomendado: antes da primeira rodada grande, faça um backup em Supabase → Database → Backups, ou teste com um lote pequeno (5 questões) e confira no painel.
 
 ## 2. Prompt para colar no Cowork
 
-Troque os valores entre `[colchetes]`. Por exemplo, `[100]` é o total de questões desta rodada e `[null]` significa sem filtro de disciplina.
+Cole como está, sem editar nada. O Cowork mostra o que falta revisar e **pergunta** o que você quer antes de começar.
 
 ```text
-Você vai revisar comentários de questões de concurso do app Foco, no projeto Supabase conectado.
+Você vai me ajudar a revisar comentários de questões de concurso do app Foco, no projeto Supabase conectado.
 
-## Sua tarefa
-Revisar [100] questões ainda não revisadas[, só da disciplina "Língua Portuguesa"].
-Trabalhe em lotes de 10:
-1. Busque o lote com a ferramenta de SQL do Supabase:
-   select * from public.cowork_proximas_questoes(10, [null], [null]);
-   (2º parâmetro = disciplina, 3º = banca; null = todas)
+## Passo 1 — Mostrar o que falta e me perguntar (NÃO comece antes da minha resposta)
+Rode com a ferramenta de SQL do Supabase:
+   select * from public.cowork_resumo_pendentes();
+Mostre o resultado numa tabela simples (disciplina, banca, pendentes, com imagem) e o total geral.
+Depois me pergunte, numa mensagem só:
+1. Qual disciplina revisar (ou "todas")?
+2. Qual banca (ou "todas")?
+3. Quantas questões nesta rodada? (sugira 20 se eu não souber)
+Espere eu responder. Se eu responder só parte, use "todas" para o que faltar e 20 como quantidade.
+
+## Passo 2 — Revisar em lotes de 10
+1. Busque o lote (use null para "todas"; o nome da disciplina/banca exatamente como apareceu na tabela):
+   select * from public.cowork_proximas_questoes(10, 'DISCIPLINA' ou null, 'BANCA' ou null);
 2. Para CADA questão do lote, escreva o novo comentário (regras abaixo) e salve:
    select public.cowork_salvar_revisao('<questao_id>', $html$<p>...novo comentário...</p>$html$);
    Use SEMPRE o delimitador $html$ ... $html$ em volta do HTML (nunca aspas simples).
 3. Se a função recusar com um erro, leia a mensagem, corrija o texto e tente de novo UMA vez.
    Se recusar de novo, pule a questão e anote no relatório.
-4. Repita até completar o total ou até não vir mais nenhuma questão.
+4. Repita até completar a quantidade combinada ou até não vir mais nenhuma questão.
+5. Depois do PRIMEIRO lote, pare e me mostre 2 exemplos (antes → depois) e pergunte se pode continuar. Só siga se eu aprovar.
 
 ## Imagens (gráficos, tabelas, figuras)
 - A coluna "imagens" traz os links de todas as imagens da questão (enunciado, alternativas e comentário).
@@ -42,7 +51,7 @@ Trabalhe em lotes de 10:
 - Nunca descreva no comentário algo da imagem que você não viu de fato.
 
 ## Regras de segurança (obrigatórias)
-- Use SOMENTE estas duas funções: public.cowork_proximas_questoes e public.cowork_salvar_revisao.
+- Use SOMENTE estas três funções: public.cowork_resumo_pendentes, public.cowork_proximas_questoes e public.cowork_salvar_revisao.
 - NUNCA rode insert, update, delete, alter, drop, create nem qualquer outro comando que mude o banco.
 - Não leia outras tabelas (usuários, pagamentos, configurações etc.).
 - Não mude o gabarito nem o enunciado. Você só escreve o comentário revisado.
@@ -68,7 +77,8 @@ NÃO salve (pule e anote no relatório) se:
 Ao terminar, mostre:
 - quantas questões foram salvas;
 - uma tabela das PULADAS com questao_id, disciplina e o motivo;
-- 3 exemplos (antes → depois) para eu conferir a qualidade.
+- 3 exemplos (antes → depois) para eu conferir a qualidade;
+- e pergunte se quero fazer outra rodada (mostrando de novo o resumo do que ainda falta).
 ```
 
 ## 3. Conferir
@@ -81,5 +91,5 @@ Ao terminar, mostre:
 ## Dicas
 
 - Comece com 10 a 20 questões e confira a qualidade antes de rodadas grandes. Inclua no teste questões com imagem (gráfico, tabela) para confirmar que o Cowork consegue abrir as imagens no seu computador.
-- O prompt pode ser reaproveitado: basta trocar o total e o filtro de disciplina.
+- O prompt é sempre o mesmo: o Cowork pergunta a disciplina, a banca e a quantidade a cada rodada.
 - A questão só entra nas trilhas depois de revisada. Quando estiver tudo revisado, lembre de desligar o "usar questões ainda não revisadas" das trilhas inteligentes (item do checklist de lançamento no README).
