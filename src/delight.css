@@ -1241,3 +1241,7 @@
 .ficha-barras-valor { grid-column: 2; color: #0b1f4d; font-weight: 800; font-size: 11.5px; }
 .ficha-barras-valor small { color: #8993a7; font-weight: 700; }
 .ficha-barras-valor em { color: #6d3fd8; font-style: normal; font-weight: 700; }
+
+/* Fórmulas (KaTeX, via sanitizeHtml): cabem na linha e rolam se forem largas */
+.formula { display: inline-block; max-width: 100%; overflow-x: auto; overflow-y: hidden; vertical-align: middle; }
+.formula .katex { font-size: 1.08em; }

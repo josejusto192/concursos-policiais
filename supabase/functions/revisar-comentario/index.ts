@@ -70,6 +70,7 @@ Deno.serve(async (req: Request) => {
     'mantendo 100% da informação técnica e do gabarito, em tom claro e didático. ' +
     'Preserve exatamente os marcadores no formato [[IMG_n]] nas posições onde fizerem sentido — ' +
     'não invente, remova ou altere esses marcadores. ' +
+    'Fórmulas matemáticas devem continuar no formato <span class="render-latex">código LaTeX</span> (o app desenha a fórmula). ' +
     'Responda só com o HTML do comentário reescrito (parágrafos <p>), sem comentários extras nem markdown.';
 
   const extra = config.prompt_extra ? `\n\nDiretrizes adicionais do professor:\n${config.prompt_extra}` : '';
