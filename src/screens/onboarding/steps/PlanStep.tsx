@@ -76,8 +76,16 @@ export default function PlanStep({ planConcurso, planMeta, prazoDias, refCode }:
   }, [ob.concurso]);
 
   // Semanas para concluir a trilha no ritmo escolhido (com o tamanho real dela).
-  const semanas = plano && plano.questoes > 0 ? Math.max(1, Math.ceil(plano.questoes / planMeta / 7)) : null;
-  const cabeNoPrazo = semanas != null && prazoDias != null ? semanas * 7 <= prazoDias : null;
+  const dias = plano && plano.questoes > 0 ? Math.ceil(plano.questoes / planMeta) : null;
+  const semanas = dias != null ? Math.ceil(dias / 7) : null;
+  const cabeNoPrazo = dias != null && prazoDias != null ? dias <= prazoDias : null;
+  const tamanho = !plano
+    ? '…'
+    : plano.licoes !== plano.unidades
+      ? `${plano.licoes} ${plano.licoes === 1 ? 'lição' : 'lições'}`
+      : `${plano.unidades} ${plano.unidades === 1 ? 'etapa' : 'etapas'}`;
+  const previsao =
+    dias == null ? '…' : dias < 7 ? 'menos de 1 semana' : `cerca de ${semanas} ${semanas === 1 ? 'semana' : 'semanas'}`;
   const primeiroNome = ob.nome.trim().split(/\s+/)[0];
 
   async function finish(e: FormEvent) {
@@ -176,28 +184,34 @@ export default function PlanStep({ planConcurso, planMeta, prazoDias, refCode }:
       <div className="ob-plano">
         <span className="ob-plano-rotulo">SUA TRILHA</span>
         <strong className="ob-plano-nome">{planConcurso}</strong>
-        <div className="ob-plano-numeros">
-          <div>
-            <Lightning size={17} weight="fill" />
-            <b>{planMeta}</b>
-            <small>questões por dia</small>
-          </div>
-          <div>
-            <Path size={17} weight="fill" />
-            <b>{plano ? plano.licoes : '—'}</b>
-            <small>{plano && plano.licoes !== plano.unidades ? 'lições no caminho' : 'etapas'}</small>
-          </div>
-          <div>
-            <CalendarCheck size={17} weight="fill" />
-            <b>{semanas != null ? `~${semanas}` : '—'}</b>
-            <small>semanas no seu ritmo</small>
-          </div>
-        </div>
+        <ul className="ob-plano-lista">
+          <li>
+            <span className="ob-plano-icone">
+              <Lightning size={16} weight="fill" />
+            </span>
+            <span className="ob-plano-item">Meta diária</span>
+            <b>{planMeta} questões</b>
+          </li>
+          <li>
+            <span className="ob-plano-icone">
+              <Path size={16} weight="fill" />
+            </span>
+            <span className="ob-plano-item">Tamanho da trilha</span>
+            <b>{tamanho}</b>
+          </li>
+          <li>
+            <span className="ob-plano-icone">
+              <CalendarCheck size={16} weight="fill" />
+            </span>
+            <span className="ob-plano-item">Previsão</span>
+            <b>{previsao}</b>
+          </li>
+        </ul>
         {cabeNoPrazo != null && (
           <p className={`ob-plano-prazo${cabeNoPrazo ? ' ok' : ''}`}>
             {cabeNoPrazo
-              ? '✓ Nesse ritmo você termina a trilha antes da prova.'
-              : 'Dica: para terminar antes da prova, aumente um pouco o tempo por dia depois (no Perfil).'}
+              ? '✓ Nesse ritmo, dá tempo de terminar antes da prova.'
+              : 'Dica: para terminar antes da prova, aumente um pouco a meta diária depois, no Perfil.'}
           </p>
         )}
       </div>

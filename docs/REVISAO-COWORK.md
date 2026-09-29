@@ -2,16 +2,16 @@
 
 O Cowork, ligado direto no Supabase, faz o mesmo que o botão "Revisar com IA" do app faz com o Gemini: reescreve o comentário de cada questão com outras palavras, sem perder conteúdo, e marca a questão como revisada (aparece como **"Revisada (cowork)"** no painel).
 
-Para ser seguro, ele **não mexe direto nas tabelas**. Usa só duas funções do banco (migration 033):
+Para ser seguro, ele **não mexe direto nas tabelas**. Usa só duas funções do banco (migrations 033 e 034):
 
 | Função | O que faz |
 |---|---|
-| `cowork_proximas_questoes(limite, disciplina, banca)` | Traz o próximo lote de questões **sem revisão** (máx. 50), com enunciado, alternativas, gabarito, comentário original e as diretrizes extras de Configurações. |
+| `cowork_proximas_questoes(limite, disciplina, banca)` | Traz o próximo lote de questões **sem revisão** (máx. 50), com enunciado (texto e HTML), alternativas, gabarito, comentário original, **os links de todas as imagens** (enunciado, alternativas e comentário) e as diretrizes extras de Configurações. |
 | `cowork_salvar_revisao(questao_id, html)` | **Confere e salva.** Recusa texto vazio ou curto demais, texto que encolheu mais da metade (perda de conteúdo), HTML perigoso e imagens perdidas ou alteradas. Não sobrescreve questão já revisada. |
 
 ## 1. Preparar (uma vez)
 
-1. No Supabase (SQL Editor), rode `supabase/migrations/033_revisao_via_cowork.sql`.
+1. No Supabase (SQL Editor), rode `supabase/migrations/033_revisao_via_cowork.sql` e depois `supabase/migrations/034_cowork_ve_imagens.sql`.
 2. No Claude Cowork, conecte o **conector do Supabase** (Configurações → Conectores → Supabase), entre com a sua conta e dê acesso **só ao projeto do Foco**.
 3. Recomendado: antes da primeira rodada grande, faça um backup em Supabase → Database → Backups, ou teste com um lote pequeno (5 questões) e confira no painel.
 
@@ -35,6 +35,12 @@ Trabalhe em lotes de 10:
    Se recusar de novo, pule a questão e anote no relatório.
 4. Repita até completar o total ou até não vir mais nenhuma questão.
 
+## Imagens (gráficos, tabelas, figuras)
+- A coluna "imagens" traz os links de todas as imagens da questão (enunciado, alternativas e comentário).
+- Se a questão tiver imagens, ABRA E OLHE cada uma antes de escrever (baixe/abra o link) e use o que ela mostra para conferir a explicação e o gabarito.
+- Se não conseguir abrir alguma imagem e ela for necessária para entender a questão, NÃO salve: pule e anote no relatório ("imagem não abriu").
+- Nunca descreva no comentário algo da imagem que você não viu de fato.
+
 ## Regras de segurança (obrigatórias)
 - Use SOMENTE estas duas funções: public.cowork_proximas_questoes e public.cowork_salvar_revisao.
 - NUNCA rode insert, update, delete, alter, drop, create nem qualquer outro comando que mude o banco.
@@ -55,7 +61,7 @@ Você é um editor pedagógico revisando o comentário/resolução de uma quest�
 ## Quando NÃO salvar
 NÃO salve (pule e anote no relatório) se:
 - o comentário original contradiz o gabarito ou parece errado;
-- a questão depende de um texto ou imagem que não está disponível e o comentário não faz sentido sem ele;
+- a questão depende de um texto ou de uma imagem que você não conseguiu ver;
 - o comentário original é só "gabarito: X", sem explicação suficiente para reescrever.
 
 ## Relatório final
@@ -74,6 +80,6 @@ Ao terminar, mostre:
 
 ## Dicas
 
-- Comece com 10 a 20 questões e confira a qualidade antes de rodadas grandes.
+- Comece com 10 a 20 questões e confira a qualidade antes de rodadas grandes. Inclua no teste questões com imagem (gráfico, tabela) para confirmar que o Cowork consegue abrir as imagens no seu computador.
 - O prompt pode ser reaproveitado: basta trocar o total e o filtro de disciplina.
 - A questão só entra nas trilhas depois de revisada. Quando estiver tudo revisado, lembre de desligar o "usar questões ainda não revisadas" das trilhas inteligentes (item do checklist de lançamento no README).

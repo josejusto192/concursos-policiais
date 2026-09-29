@@ -1121,11 +1121,12 @@
 }
 .ob-plano-rotulo { color: #bcd0fb; font-size: 11px; font-weight: 800; letter-spacing: .6px; }
 .ob-plano-nome { display: block; margin-top: 2px; font-size: 18px; font-weight: 800; }
-.ob-plano-numeros { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 14px; }
-.ob-plano-numeros div { display: flex; flex-direction: column; gap: 2px; padding: 10px; border-radius: 13px; background: rgba(255, 255, 255, .14); }
-.ob-plano-numeros svg { color: #ffcb2d; }
-.ob-plano-numeros b { color: #ffcb2d; font-family: var(--font-display); font-size: 20px; font-weight: 800; font-variant-numeric: tabular-nums; }
-.ob-plano-numeros small { color: #c9d7fb; font-size: 10.5px; font-weight: 700; line-height: 1.25; }
+.ob-plano-lista { display: flex; flex-direction: column; margin-top: 12px; border-radius: 14px; background: rgba(255, 255, 255, .12); }
+.ob-plano-lista li { display: flex; align-items: center; gap: 10px; padding: 11px 12px; }
+.ob-plano-lista li + li { border-top: 1px solid rgba(255, 255, 255, .14); }
+.ob-plano-icone { display: grid; flex: none; place-items: center; width: 28px; height: 28px; border-radius: 9px; background: rgba(255, 203, 45, .18); color: #ffcb2d; }
+.ob-plano-item { flex: 1; min-width: 0; color: #d6e2ff; font-size: 13px; font-weight: 700; }
+.ob-plano-lista b { color: #fff; font-size: 14px; font-weight: 800; text-align: right; white-space: nowrap; }
 .ob-plano-prazo { margin-top: 12px; padding: 8px 10px; border-radius: 10px; background: rgba(255, 255, 255, .12); color: #fff4cc; font-size: 12px; font-weight: 700; }
 .ob-plano-prazo.ok { color: #c9f5de; }
 .ob-termos { display: flex; align-items: flex-start; gap: 10px; margin-top: 16px; color: #5f6b85; font-size: 12.5px; font-weight: 600; line-height: 1.45; }
