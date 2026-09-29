@@ -108,6 +108,8 @@ export default function AdminPublicoPage() {
 
           <Funil funil={dados.funil} />
 
+          <Origens origens={dados.origens ?? []} />
+
           <div className="publico-grade">
             <Barras titulo="Faixa etária" itens={grupo('faixa')} />
             <Barras titulo="Concurso (trilha atual)" itens={grupo('trilha')} />
@@ -243,6 +245,47 @@ function MetaReal({ metas }: { metas: Publico['metas'] }) {
                 <td>{m.media_real.toLocaleString('pt-BR')}</td>
                 <td>
                   {m.batem_meta} <small>({pct(m.batem_meta, m.alunos)}%)</small>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+    </section>
+  );
+}
+
+function Origens({ origens }: { origens: NonNullable<Publico['origens']> }) {
+  return (
+    <section className="panel publico-painel publico-funil">
+      <h2>De onde vêm os cadastros (UTM)</h2>
+      <p className="publico-sub">
+        Pela fonte e campanha do link (utm_source e utm_campaign). “Visitas” = pessoas que abriram o cadastro; “(direto)” = sem UTM.
+      </p>
+      {origens.length === 0 ? (
+        <p className="publico-vazio">Sem dados no período.</p>
+      ) : (
+        <table className="publico-tabela">
+          <thead>
+            <tr>
+              <th>Fonte</th>
+              <th>Campanha</th>
+              <th>Visitas</th>
+              <th>Cadastros</th>
+              <th>Conversão</th>
+              <th>Assinantes</th>
+            </tr>
+          </thead>
+          <tbody>
+            {origens.map((o) => (
+              <tr key={`${o.fonte}§${o.campanha}`}>
+                <td>{o.fonte}</td>
+                <td>{o.campanha}</td>
+                <td>{o.visitas}</td>
+                <td>{o.cadastros}</td>
+                <td>{o.visitas ? `${pct(o.cadastros, o.visitas)}%` : '—'}</td>
+                <td>
+                  {o.assinantes} <small>({pct(o.assinantes, o.cadastros)}%)</small>
                 </td>
               </tr>
             ))}

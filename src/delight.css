@@ -1218,3 +1218,25 @@
   .publico-barras li { grid-template-columns: 1fr 64px; }
   .publico-barras li .publico-trilho { grid-column: 1 / -1; grid-row: 2; }
 }
+
+/* ---------- Admin: ficha do aluno (AdminUsuariosPage) ---------- */
+.ficha-aluno { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px; animation: tip-in 280ms cubic-bezier(.2, .8, .2, 1) both; }
+.ficha-bloco { padding: 14px 16px; border: 1px solid #e3e8f4; border-radius: 14px; background: #fff; }
+.ficha-bloco h3 { margin-bottom: 8px; color: #0b1f4d; font-size: 12.5px; font-weight: 800; }
+.ficha-linha { display: flex; justify-content: space-between; gap: 12px; padding: 5px 0; border-bottom: 1px solid #f3f5fa; font-size: 12.5px; }
+.ficha-linha:last-child { border-bottom: 0; }
+.ficha-linha span { flex: none; color: #758198; }
+.ficha-linha strong { min-width: 0; overflow-wrap: anywhere; color: #0b1f4d; font-weight: 700; text-align: right; }
+.ficha-link { display: inline-flex; align-items: center; gap: 4px; color: #17784f; }
+.ficha-dias { display: flex; align-items: flex-end; gap: 3px; height: 44px; margin-top: 10px; }
+.ficha-dias span { flex: 1; min-height: 2px; border-radius: 3px 3px 0 0; background: #1557e6; }
+.ficha-dias span.zero { background: #e3e8f4; }
+.ficha-nota { display: block; margin-top: 4px; color: #8993a7; font-size: 11px; }
+.ficha-barras { display: flex; flex-direction: column; gap: 8px; }
+.ficha-barras li { display: grid; grid-template-columns: minmax(80px, 34%) 1fr; grid-template-rows: auto auto; column-gap: 8px; font-size: 12px; }
+.ficha-barras-nome { overflow: hidden; color: #33415c; font-weight: 700; text-overflow: ellipsis; white-space: nowrap; }
+.ficha-barras-trilho { align-self: center; height: 8px; border-radius: 0 4px 4px 0; background: #f1f4fb; }
+.ficha-barras-trilho span { display: block; height: 100%; border-radius: 0 4px 4px 0; background: #1557e6; }
+.ficha-barras-valor { grid-column: 2; color: #0b1f4d; font-weight: 800; font-size: 11.5px; }
+.ficha-barras-valor small { color: #8993a7; font-weight: 700; }
+.ficha-barras-valor em { color: #6d3fd8; font-style: normal; font-weight: 700; }

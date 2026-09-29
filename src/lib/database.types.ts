@@ -128,8 +128,25 @@ export type Database = {
           // no futuro — calculado pelo banco, nunca gravado pelo app.
           assinatura_cortesia: boolean;
           acesso_ate: string | null;
+          // Origem do cadastro (migration 032)
+          utm_source: string | null;
+          utm_medium: string | null;
+          utm_campaign: string | null;
+          utm_content: string | null;
+          utm_term: string | null;
+          origem_referrer: string | null;
+          origem_pagina: string | null;
+          origem_em: string | null;
         };
         Insert: {
+          utm_source?: string | null;
+          utm_medium?: string | null;
+          utm_campaign?: string | null;
+          utm_content?: string | null;
+          utm_term?: string | null;
+          origem_referrer?: string | null;
+          origem_pagina?: string | null;
+          origem_em?: string | null;
           id: string;
           nome?: string | null;
           email: string;
@@ -148,6 +165,14 @@ export type Database = {
           cpf?: string | null;
         };
         Update: {
+          utm_source?: string | null;
+          utm_medium?: string | null;
+          utm_campaign?: string | null;
+          utm_content?: string | null;
+          utm_term?: string | null;
+          origem_referrer?: string | null;
+          origem_pagina?: string | null;
+          origem_em?: string | null;
           nome?: string | null;
           assinatura_cortesia?: boolean;
           streak?: number;
@@ -685,12 +710,16 @@ export type Database = {
       };
       // Onboarding e painel Público (migration 031)
       registrar_onboarding: {
-        Args: { p_sessao: string; p_etapa: string };
+        Args: { p_sessao: string; p_etapa: string; p_utm_source?: string | null; p_utm_campaign?: string | null };
         Returns: undefined;
       };
       plano_onboarding: {
         Args: { p_trilha_id: number };
         Returns: { unidades: number; licoes: number; questoes: number }[];
+      };
+      admin_aluno_detalhe: {
+        Args: { p_id: string };
+        Returns: Json;
       };
       admin_publico: {
         Args: { p_dias?: number };

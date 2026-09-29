@@ -115,5 +115,13 @@ function perfilDaConta(o: unknown) {
     meta_diaria: numero(d.meta_diaria) ?? 20,
     trilha_ativa_id: numero(d.trilha_ativa_id),
     termos_aceitos_em: texto(d.termos_aceitos_em),
+    utm_source: texto(d.utm_source),
+    utm_medium: texto(d.utm_medium),
+    utm_campaign: texto(d.utm_campaign),
+    utm_content: texto(d.utm_content),
+    utm_term: texto(d.utm_term),
+    origem_referrer: texto(d.origem_referrer),
+    origem_pagina: texto(d.origem_pagina),
+    origem_em: texto(d.origem_em),
   }
 }

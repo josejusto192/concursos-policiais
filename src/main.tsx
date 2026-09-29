@@ -9,6 +9,10 @@ import App from './App.tsx';
 import ErrorBoundary from './components/ErrorBoundary.tsx';
 import { logClientError } from './lib/errorLog.ts';
 import { desbloquearAudio } from './lib/efeitos.ts';
+import { capturarOrigem } from './lib/origem.ts';
+
+// Guarda de onde a pessoa veio (UTMs) antes de qualquer redirecionamento.
+capturarOrigem();
 
 window.addEventListener('error', (e) => logClientError(e.error ?? e.message, 'window.onerror'));
 window.addEventListener('unhandledrejection', (e) => logClientError(e.reason, 'unhandledrejection'));

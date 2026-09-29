@@ -7,6 +7,7 @@ import { useAppState } from '../../../state/AppStateContext';
 import { supabase } from '../../../lib/supabase';
 import { fetchPlanoOnboarding, registerReferral, registrarOnboarding, resolveReferralCode, type PlanoOnboarding } from '../../../lib/queries';
 import { som } from '../../../lib/efeitos';
+import { lerOrigem } from '../../../lib/origem';
 import type { OnboardingState } from '../../../state/types';
 import FocoFala from './FocoFala';
 
@@ -30,6 +31,23 @@ function perfilDoOnboarding(ob: OnboardingState, meta: number) {
     meta_diaria: meta,
     trilha_ativa_id: ob.concurso,
     termos_aceitos_em: new Date().toISOString(),
+    ...origemDoCadastro(),
+  };
+}
+
+// UTMs e site de origem guardados na chegada (src/lib/origem.ts).
+function origemDoCadastro() {
+  const o = lerOrigem();
+  if (!o) return {};
+  return {
+    utm_source: o.utm_source,
+    utm_medium: o.utm_medium,
+    utm_campaign: o.utm_campaign,
+    utm_content: o.utm_content,
+    utm_term: o.utm_term,
+    origem_referrer: o.origem_referrer,
+    origem_pagina: o.origem_pagina,
+    origem_em: o.origem_em,
   };
 }
 

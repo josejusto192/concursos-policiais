@@ -267,5 +267,13 @@ Cada lição (`montar_sessao_inteligente`) traz revisões vencidas, obrigatória
 
 **Ordem de publicação:** rode a migration 031 no Supabase **antes** de promover a versão do app no Vercel.
 
+## Origem dos cadastros (UTM) e ficha do aluno (migration 032)
+
+- **UTMs:** ao chegar no app por um link como `https://SEU-DOMINIO/?utm_source=instagram&utm_medium=social&utm_campaign=lancamento&utm_content=reels1`, a origem fica guardada no aparelho (30 dias) e vai para o perfil no cadastro. Vale o último link com UTM; acessos diretos não apagam. Cliques de anúncio sem UTM (`gclid`, `fbclid`, `ttclid`) e o site de origem também são registrados. O código de indicação (`?ref=`) é preservado junto.
+- **Admin → Público:** tabela "De onde vêm os cadastros" (visitas, cadastros, conversão e assinantes por fonte e campanha).
+- **Admin → Alunos e equipe:** toque numa pessoa para abrir a ficha (contato, respostas do cadastro, origem, estudo dos últimos 14 dias, desempenho por disciplina, assinatura e indicações). A busca também encontra por WhatsApp e campanha.
+
+**Ordem de publicação:** rode a migration 032 no Supabase **antes** de promover a versão do app no Vercel.
+
 ### ⚠️ Checklist antes do lançamento
 - [ ] Remover a opção **"Usar também questões ainda não revisadas"** da trilha inteligente (temporária, migration 029): nova migration apagando `trilha_config.permitir_nao_revisadas` e voltando `questoes_filtradas`/`questoes_da_etapa`/`admin_contar_estoque` à versão da 028; no app, procurar `permitir_nao_revisadas`.

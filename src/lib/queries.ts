@@ -1,4 +1,5 @@
 import { supabase } from './supabase';
+import { lerOrigem } from './origem';
 import { invokeEdgeFunction } from './edgeFunctions';
 import type { Alternativa, Database, ModuloQuestaoRow } from './database.types';
 import type { EtapaProgresso, MotivoQuestao, Questao } from '../data/types';
@@ -72,8 +73,14 @@ function sessaoOnboarding(): string {
 // Registra a tela do onboarding vista. Nunca atrapalha o cadastro.
 export function registrarOnboarding(etapa: string) {
   try {
+    const origem = lerOrigem();
     void supabase
-      .rpc('registrar_onboarding', { p_sessao: sessaoOnboarding(), p_etapa: etapa })
+      .rpc('registrar_onboarding', {
+        p_sessao: sessaoOnboarding(),
+        p_etapa: etapa,
+        p_utm_source: origem?.utm_source ?? null,
+        p_utm_campaign: origem?.utm_campaign ?? null,
+      })
       .then(() => undefined, () => undefined);
   } catch {
     // sem crypto/rede: só não registra

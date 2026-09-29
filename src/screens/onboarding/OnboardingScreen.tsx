@@ -3,6 +3,7 @@ import { useEffect, useState, type ReactNode } from 'react';
 import { useAppState } from '../../state/AppStateContext';
 import { fetchTrilhas, registrarOnboarding, type TrilhaRow } from '../../lib/queries';
 import { PRAZO_DAYS, QUESTIONS_PER_DAY } from '../../lib/format';
+import { lerOrigem } from '../../lib/origem';
 import type { MascotMood } from '../../components/Mascot';
 import WelcomeStep from './steps/WelcomeStep';
 import ContactStep from './steps/ContactStep';
@@ -56,7 +57,7 @@ export default function OnboardingScreen() {
   }, [obKind]);
 
   // Código de indicação (?ref=FOCO-XXXXXXXX na URL), preservado durante o onboarding.
-  const [refCode] = useState(() => new URLSearchParams(window.location.search).get('ref'));
+  const [refCode] = useState(() => new URLSearchParams(window.location.search).get('ref') ?? lerOrigem()?.ref ?? null);
 
   const qPerDay = QUESTIONS_PER_DAY[ob.meta] || 20;
   const trilhaEscolhida = trilhas.find((t) => t.id === ob.concurso);

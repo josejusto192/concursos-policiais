@@ -386,7 +386,16 @@ const USUARIOS_PAGE_SIZE = 20;
 export async function searchUsuarios(texto: string | undefined, page: number): Promise<{ rows: Usuario[]; total: number }> {
   let query = supabase.from('usuarios').select('*', { count: 'exact' }).order('created_at', { ascending: false });
 
-  if (texto) query = query.or(`nome.ilike.%${texto}%,email.ilike.%${texto}%`);
+  if (texto) {
+    // vírgula e parênteses quebram o filtro do PostgREST
+    const t = texto.replace(/[,()]/g, ' ').trim();
+    const digitos = t.replace(/\D/g, '');
+    query = query.or(
+      [`nome.ilike.%${t}%`, `email.ilike.%${t}%`, `utm_campaign.ilike.%${t}%`, `utm_source.ilike.%${t}%`]
+        .concat(digitos.length >= 4 ? [`whatsapp.ilike.%${digitos.slice(-8)}%`] : [])
+        .join(','),
+    );
+  }
 
   const { data, error, count } = await query.range(page * USUARIOS_PAGE_SIZE, page * USUARIOS_PAGE_SIZE + USUARIOS_PAGE_SIZE - 1);
   if (error) throw error;
@@ -658,10 +667,38 @@ export interface Publico {
   contagens: Array<{ campo: string; valor: string; total: number }>;
   metas: Array<{ meta: number; alunos: number; media_real: number; batem_meta: number }>;
   funil: Array<{ etapa: string; sessoes: number }>;
+  origens?: Array<{ fonte: string; campanha: string; visitas: number; cadastros: number; assinantes: number }>;
 }
 
 export async function fetchPublico(dias: number): Promise<Publico> {
   const { data, error } = await supabase.rpc('admin_publico', { p_dias: dias });
   if (error) throw error;
   return data as unknown as Publico;
+}
+
+// ---- Ficha do aluno (migration 032) ----
+
+export interface AlunoDetalhe {
+  trilha: string | null;
+  modulos_total: number;
+  modulos_feitos: number;
+  respostas: number;
+  acertos: number;
+  respostas_7d: number;
+  respostas_30d: number;
+  dias_estudo_30d: number;
+  ultima_resposta: string | null;
+  ultimos_14d: number[];
+  por_disciplina: Array<{ disciplina: string; total: number; acertos: number }>;
+  dominio: Array<{ disciplina: string; dominio: number; respostas: number }>;
+  revisoes_pendentes: number;
+  indicacoes: number;
+  indicacoes_assinaram: number;
+  indicado_por: string | null;
+}
+
+export async function fetchAlunoDetalhe(id: string): Promise<AlunoDetalhe> {
+  const { data, error } = await supabase.rpc('admin_aluno_detalhe', { p_id: id });
+  if (error) throw error;
+  return data as unknown as AlunoDetalhe;
 }
