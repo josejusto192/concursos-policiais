@@ -3,7 +3,7 @@ import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAppData } from '../../contexts/AppDataContext';
 import {
-  avaliarEtapa,
+  concluirLicao,
   criarTicket,
   fetchQuestoesDoModulo,
   fetchRespostas,
@@ -70,8 +70,6 @@ export default function Question() {
   const savingRef = useRef(false);
   const explicacaoRef = useRef<HTMLDivElement>(null);
   const [ultimoGanho, setUltimoGanho] = useState(0);
-  // trilha inteligente: domínio no assunto depois da última resposta
-  const [ultimoDominio, setUltimoDominio] = useState<number | null>(null);
   // Retomada: módulo não concluído continua da 1ª questão sem resposta.
   // Só na entrada (sessão zerada) — nunca no meio de uma sessão em curso.
   const sessaoNovaRef = useRef(state.session.qIndex === 0 && state.session.sessionAnswered === 0);
@@ -104,6 +102,11 @@ export default function Question() {
   const currentModulo = modules.find((m) => m.status === 'current') ?? null;
   const currentModuloId = currentModulo?.id;
   const ehInteligente = currentModulo?.tipo === 'inteligente';
+  // unidade inteligente: depois das lições vem a bolinha de revisão
+  // (lido por ref: ao concluir a lição o progresso muda e não deve remontar a sessão)
+  const ehRevisaoUnidade = !!currentModulo?.etapa && currentModulo.etapa.licoesFeitas >= currentModulo.etapa.licoes;
+  const revisaoRef = useRef(ehRevisaoUnidade);
+  revisaoRef.current = ehRevisaoUnidade;
   const trilhaId = activeTrilha?.id;
   const precisaAssinar = !!currentModulo?.premium;
   const usuarioId = usuario?.id;
@@ -127,11 +130,11 @@ export default function Question() {
       setLoadError(true);
     };
 
-    // Trilha inteligente: o servidor monta a sessão (revisões, reforço e
+    // Trilha inteligente: o servidor monta a lição (revisões, reforço e
     // questões novas no nível do aluno) — não existe "retomar".
     if (ehInteligente) {
       sessaoNovaRef.current = false;
-      fetchSessaoInteligente(currentModuloId)
+      fetchSessaoInteligente(currentModuloId, revisaoRef.current)
         .then(setQuestoes)
         .catch((err) => falhou(err, 'fetchSessaoInteligente'));
       return;
@@ -272,7 +275,6 @@ export default function Question() {
         q.motivo === 'revisao' || q.motivo === 'relembrar' || q.motivo === 'reforco' ? 'revisao' : ehInteligente ? 'inteligente' : 'trilha';
       const r = await responderQuestao(q.id, selected ?? '', origem);
       aplicarResposta(r);
-      setUltimoDominio(ehInteligente ? r.dominio : null);
       const correct = r.acertou;
       const gained = r.xp_ganho;
       dispatch({ type: 'MARK_ANSWERED', correct, gained });
@@ -310,25 +312,27 @@ export default function Question() {
   }
 
   async function concluirModulo(acertos: number, respondidas: number) {
-    // Etapa inteligente: o servidor avalia domínio e meta e decide se conclui.
+    // Unidade inteligente: terminou a lição, a próxima libera (sem nota
+    // mínima); depois da revisão final a unidade fica concluída.
     if (ehInteligente && currentModuloId) {
       if (finalizing) return;
       savingRef.current = true;
       setFinalizing(true);
-      const antes = currentModulo?.etapa?.dominio ?? 0;
       try {
-        const av = await avaliarEtapa(currentModuloId);
+        const licao = await concluirLicao(currentModuloId);
         await refreshModules();
         navigate('/resultado', {
           state: {
             moduloId: currentModuloId,
             moduloTitulo: currentModulo?.titulo,
             trilhaNome: activeTrilha?.nome,
-            etapa: { ...av, antes },
+            acertos,
+            total: respondidas,
+            licao,
           },
         });
       } catch (err) {
-        logClientError(err, 'avaliarEtapa');
+        logClientError(err, 'concluirLicao');
         setSaveError('Não foi possível salvar o resultado da sessão. Tente novamente.');
         setFinalizing(false);
         savingRef.current = false;
@@ -617,11 +621,6 @@ export default function Question() {
                   ultimoGanho > 0 ? <span className="xp-pill">+{ultimoGanho} XP</span> : <span>Resposta certa!</span>
                 ) : (
                   <span>Resposta certa: {q.gabarito_letra}</span>
-                )}
-                {ultimoDominio !== null && (
-                  <span className="dominio-pill" title="Chance de acertar uma questão média deste assunto">
-                    Domínio {ultimoDominio}%
-                  </span>
                 )}
                 {isCorrect && ehMarcoDeCombo(combo) && (
                   <span className="combo-pill">

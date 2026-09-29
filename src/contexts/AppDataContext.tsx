@@ -6,9 +6,11 @@ import {
   fetchModulos,
   fetchProgressoModulos,
   fetchProgressoTrilhaInteligente,
+  fetchSecoes,
   fetchTrilhas,
   type ModuloRow,
   type RespostaServidor,
+  type SecaoRow,
   type TrilhaRow,
 } from '../lib/queries';
 import type { Database } from '../lib/database.types';
@@ -57,8 +59,9 @@ function computeModules(
       status,
       acertos: prog?.acertos ?? 0,
       total: prog?.total ?? 0,
-      // etapa de trilha inteligente: domínio e meta (migration 028)
+      // unidade de trilha inteligente: lições feitas (migration 030)
       etapa: etapas.get(m.id),
+      secaoId: m.secao_id,
     };
   });
 }
@@ -75,6 +78,8 @@ interface AppDataContextValue {
   activeTrilha: TrilhaRow | null;
   setActiveTrilha: (id: number) => Promise<void>;
   modules: Modulo[];
+  // Seções da trilha inteligente (vazio nas trilhas manuais).
+  secoes: SecaoRow[];
   refreshModules: () => Promise<void>;
   // Assinatura ativa (cortesia ou paga) ou equipe — libera todos os módulos.
   temAcesso: boolean;
@@ -97,6 +102,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
   const { usuario, loading: loadingUsuario, updateUsuario, aplicarDoServidor, recarregarUsuario } = useUsuario();
   const [trilhas, setTrilhas] = useState<TrilhaRow[]>([]);
   const [baseModules, setModules] = useState<Omit<Modulo, 'premium'>[]>([]);
+  const [secoes, setSecoes] = useState<SecaoRow[]>([]);
   const [dailyDone, setDailyDone] = useState(0);
   const [errosCount, setErrosCount] = useState(0);
   const [loadingTrilhas, setLoadingTrilhas] = useState(true);
@@ -127,16 +133,26 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     const request = ++moduleRequest.current;
     const scope = `${usuario.id}:${activeTrilha.id}`;
     try {
-      const modulos = await fetchModulos(activeTrilha.id);
+      const inteligente = activeTrilha.tipo === 'inteligente';
+      const [modulosDb, secoesDb] = await Promise.all([
+        fetchModulos(activeTrilha.id),
+        inteligente ? fetchSecoes(activeTrilha.id) : Promise.resolve([] as SecaoRow[]),
+      ]);
+      // Trilha inteligente: a sequência segue as seções (sem seção primeiro),
+      // igual ao servidor (modulo_liberado, migration 030).
+      const posSecao = new Map(secoesDb.map((sec, i) => [sec.id, i + 1]));
+      const pos = (m: ModuloRow) => (m.secao_id != null ? (posSecao.get(m.secao_id) ?? 0) : 0);
+      const modulos = inteligente ? [...modulosDb].sort((a, b) => pos(a) - pos(b) || a.ordem - b.ordem || a.id - b.id) : modulosDb;
       const [progresso, etapas] = await Promise.all([
         fetchProgressoModulos(
           usuario.id,
           modulos.map((m) => m.id),
         ),
-        activeTrilha.tipo === 'inteligente' ? fetchProgressoTrilhaInteligente(activeTrilha.id) : Promise.resolve(new Map<number, EtapaProgresso>()),
+        inteligente ? fetchProgressoTrilhaInteligente(activeTrilha.id) : Promise.resolve(new Map<number, EtapaProgresso>()),
       ]);
       if (request !== moduleRequest.current) return;
       setModules(computeModules(modulos, progresso, etapas));
+      setSecoes(secoesDb);
       setLoadError(null);
     } catch (err) {
       if (request !== moduleRequest.current) return;
@@ -237,6 +253,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
         activeTrilha,
         setActiveTrilha,
         modules,
+        secoes,
         refreshModules,
         temAcesso,
         refreshUsuario: recarregarUsuario,

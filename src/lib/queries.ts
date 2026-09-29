@@ -34,6 +34,22 @@ export interface ModuloRow {
   assuntos: string[];
   meta_questoes: number;
   dominio_alvo: number;
+  // unidade da trilha inteligente (migration 030)
+  secao_id: number | null;
+  licoes: number;
+}
+
+export interface SecaoRow {
+  id: number;
+  trilha_id: number;
+  titulo: string;
+  ordem: number;
+}
+
+export async function fetchSecoes(trilhaId: number): Promise<SecaoRow[]> {
+  const { data, error } = await supabase.from('trilha_secoes').select('*').eq('trilha_id', trilhaId).order('ordem').order('id');
+  if (error) throw error;
+  return data ?? [];
 }
 
 // Módulos tipo 'aula' apontam para a biblioteca de aulas (aula_id): o vídeo
@@ -127,22 +143,25 @@ export async function fetchRevisoesParaSessao(trilhaId: number, limite: number, 
   return (data ?? []).map((row) => ({ ...mapQuestaoRow(row), motivo: comoMotivo(row.motivo) }));
 }
 
-// Sessão montada pelo algoritmo para uma etapa de trilha inteligente.
-export async function fetchSessaoInteligente(moduloId: number): Promise<Questao[]> {
-  const { data, error } = await supabase.rpc('montar_sessao_inteligente', { p_modulo_id: moduloId });
+// Lição montada pelo algoritmo para uma unidade de trilha inteligente
+// (revisao = última bolinha da unidade: erros e o que foi visto há mais tempo).
+export async function fetchSessaoInteligente(moduloId: number, revisao = false): Promise<Questao[]> {
+  const { data, error } = await supabase.rpc('montar_sessao_inteligente', { p_modulo_id: moduloId, p_revisao: revisao });
   if (error) throw error;
   return (data ?? []).map((row) => ({ ...mapQuestaoRow(row), motivo: comoMotivo(row.motivo) }));
 }
 
-export interface AvaliacaoEtapa extends EtapaProgresso {
-  acertos: number;
-  concluida: boolean;
+export interface LicaoConcluida {
+  licoes_feitas: number;
+  licoes: number;
+  unidade_concluida: boolean;
   concluiu_agora: boolean;
 }
 
-// Depois de cada sessão: domínio atualizado e se a etapa foi concluída.
-export async function avaliarEtapa(moduloId: number): Promise<AvaliacaoEtapa> {
-  const { data, error } = await supabase.rpc('avaliar_etapa', { p_modulo_id: moduloId }).single<AvaliacaoEtapa>();
+// Fim da lição: a próxima bolinha libera (o servidor confere se o aluno
+// respondeu); depois da revisão final, a unidade fica concluída.
+export async function concluirLicao(moduloId: number): Promise<LicaoConcluida> {
+  const { data, error } = await supabase.rpc('concluir_licao', { p_modulo_id: moduloId }).single<LicaoConcluida>();
   if (error) throw error;
   return data;
 }
@@ -150,7 +169,7 @@ export async function avaliarEtapa(moduloId: number): Promise<AvaliacaoEtapa> {
 export async function fetchProgressoTrilhaInteligente(trilhaId: number): Promise<Map<number, EtapaProgresso>> {
   const { data, error } = await supabase.rpc('progresso_trilha_inteligente', { p_trilha_id: trilhaId });
   if (error) throw error;
-  return new Map((data ?? []).map((r) => [r.modulo_id, { dominio: r.dominio, respondidas: r.respondidas, meta: r.meta, alvo: r.alvo, estoque: r.estoque }]));
+  return new Map((data ?? []).map((r) => [r.modulo_id, { licoes: r.licoes, licoesFeitas: r.licoes_feitas, estoque: r.estoque }]));
 }
 
 export interface DominioAssunto {

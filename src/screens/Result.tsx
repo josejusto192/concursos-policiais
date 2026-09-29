@@ -9,23 +9,15 @@ import { useAppData } from '../contexts/AppDataContext';
 import { diaLocal } from '../lib/datas';
 import { som } from '../lib/efeitos';
 import { useContagem } from '../lib/movimento';
+import type { LicaoConcluida } from '../lib/queries';
 import { useAppState } from '../state/AppStateContext';
 
 interface ResultLocationState {
   moduloId?: number;
   moduloTitulo?: string;
   trilhaNome?: string;
-  // sessão de etapa inteligente: domínio antes/depois e se concluiu (migration 028)
-  etapa?: {
-    antes: number;
-    dominio: number;
-    alvo: number;
-    meta: number;
-    respondidas: number;
-    estoque: number;
-    concluida: boolean;
-    concluiu_agora: boolean;
-  };
+  // lição de unidade inteligente: quantas lições feitas e se a unidade fechou (migration 030)
+  licao?: LicaoConcluida;
 }
 
 type Destino = '/trilha' | '/caderno-de-erros';
@@ -71,14 +63,14 @@ function Resultado() {
   const { usuario, ofensiva, dailyDone, modules } = useAppData();
   const navigate = useNavigate();
   const location = useLocation();
-  const { moduloId, moduloTitulo, trilhaNome, etapa: sessaoEtapa } = (location.state as ResultLocationState) ?? {};
+  const { moduloId, moduloTitulo, trilhaNome, licao } = (location.state as ResultLocationState) ?? {};
   const { sessionAnswered, sessionCorrect, gained, maxCombo } = state.session;
   const ofensivaEstendida = state.ofensivaEstendida;
   const pct = Math.round((sessionCorrect / sessionAnswered) * 100);
   const erros = sessionAnswered - sessionCorrect;
-  const d = sessaoEtapa?.concluiu_agora
-    ? { titulo: 'Etapa concluída!', frase: 'Você chegou ao domínio que esta etapa pedia. Próxima liberada!', humor: 'celebrate' as MascotMood, festa: true }
-    : desempenho(pct, sessaoEtapa ? 'Sessão concluída!' : 'Módulo concluído!');
+  const d = licao?.concluiu_agora
+    ? { titulo: 'Unidade concluída!', frase: 'Você fechou esta unidade com a revisão. Próxima liberada!', humor: 'celebrate' as MascotMood, festa: true }
+    : desempenho(pct, licao ? 'Lição concluída!' : 'Módulo concluído!');
   const proximo = modules.find((m) => m.status === 'current');
 
   // 1º estudo do dia: depois do resultado vem a tela da ofensiva (Duolingo).
@@ -127,10 +119,12 @@ function Resultado() {
   }
 
   const resumo =
-    sessaoEtapa && !sessaoEtapa.concluida
+    licao && !licao.unidade_concluida
       ? erros > 0
-        ? `${erros === 1 ? 'A que você errou volta' : `As ${erros} que você errou voltam`} para revisão. Mais uma sessão te deixa mais perto da meta!`
-        : 'Mais uma sessão te deixa mais perto da meta desta etapa!'
+        ? `${erros === 1 ? 'A que você errou volta' : `As ${erros} que você errou voltam`} nas próximas lições para você fixar.`
+        : licao.licoes_feitas >= licao.licoes
+          ? 'Falta só a revisão da unidade!'
+          : 'Próxima lição liberada!'
       : erros > 0
       ? `${erros === 1 ? 'A que você errou foi' : `As ${erros} que você errou foram`} para o caderno de erros. Revisar agora ajuda a fixar!`
       : proximo
@@ -185,7 +179,7 @@ function Resultado() {
           </div>
         </div>
 
-        {sessaoEtapa && <DominioEtapa etapa={sessaoEtapa} titulo={moduloTitulo ?? 'esta etapa'} />}
+        {licao && <ProgressoUnidade licao={licao} titulo={moduloTitulo ?? 'esta unidade'} />}
 
         {maxCombo >= 3 && (
           <div className="resultado-combo">
@@ -274,30 +268,20 @@ function OfensivaEstendida({ valor, usuarioId, onContinuar }: { valor: number; u
   );
 }
 
-// Barra de domínio da etapa inteligente: sobe do valor antes da sessão pro
-// novo, com a marca da meta (domínio-alvo).
-function DominioEtapa({ etapa, titulo }: { etapa: NonNullable<ResultLocationState['etapa']>; titulo: string }) {
-  const valor = useContagem(etapa.dominio, 1100, 700);
-  const largura = Math.max(0, Math.min(100, valor));
-  const diferenca = etapa.dominio - etapa.antes;
-  const metaQuestoes = Math.min(etapa.meta, etapa.estoque);
+// Bolinhas da unidade inteligente: lições feitas + a revisão final.
+function ProgressoUnidade({ licao, titulo }: { licao: LicaoConcluida; titulo: string }) {
+  const total = licao.licoes + 1;
+  const feitas = Math.min(total, licao.licoes_feitas);
   return (
-    <div className="dominio-card">
-      <div className="dominio-card-topo">
-        <span>Domínio em {titulo}</span>
-        <strong>
-          {valor}%
-          {diferenca !== 0 && <em className={diferenca > 0 ? 'sobe' : 'desce'}>{diferenca > 0 ? `+${diferenca}` : diferenca}</em>}
-        </strong>
+    <div className="unidade-card">
+      <div className="unidade-card-topo">
+        <span>{titulo}</span>
+        <strong>{licao.unidade_concluida ? 'Concluída 🏆' : `${Math.min(feitas, licao.licoes)} de ${licao.licoes} lições`}</strong>
       </div>
-      <div className="dominio-barra" aria-hidden="true">
-        <span style={{ width: `${largura}%` }} className={etapa.dominio >= etapa.alvo ? 'ok' : ''} />
-        <i style={{ left: `${etapa.alvo}%` }} />
-      </div>
-      <div className="dominio-card-meta">
-        {etapa.concluida
-          ? 'Etapa concluída ✓'
-          : `Meta: ${etapa.alvo}% de domínio · ${Math.min(etapa.respondidas, metaQuestoes)}/${metaQuestoes} questões`}
+      <div className="unidade-bolinhas" aria-hidden="true">
+        {Array.from({ length: total }, (_, i) => (
+          <span key={i} className={`${i < feitas ? 'feita' : ''}${i === feitas - 1 ? ' agora' : ''}${i === total - 1 ? ' revisao' : ''}`} />
+        ))}
       </div>
     </div>
   );

@@ -3,7 +3,9 @@ import {
   CONFIG_PADRAO,
   contarEstoque,
   createModulo,
+  createSecao,
   deleteModulo,
+  deleteSecao,
   fetchAssuntos,
   fetchEstoqueTrilha,
   fetchFiltrosQuestoes,
@@ -13,23 +15,27 @@ import {
   salvarRegra,
   saveTrilhaConfig,
   searchQuestoes,
+  sugerirEstrutura,
   updateModulo,
+  updateSecao,
   type AssuntoEstoque,
+  type EstoqueAssunto,
   type EstoqueContado,
   type EstoqueEtapa,
   type FiltrosQuestoes,
   type RegraQuestao,
   type TrilhaConfig,
 } from '../lib/adminQueries';
-import { fetchModulos, fetchSessaoInteligente, type ModuloRow } from '../lib/queries';
+import { fetchModulos, fetchSecoes, fetchSessaoInteligente, type ModuloRow, type SecaoRow } from '../lib/queries';
 import type { QuestaoRow } from '../lib/database.types';
 import type { Questao } from '../data/types';
 import { useDebouncedValue } from '../hooks/useDebouncedValue';
 
-// Trilha inteligente (migration 028): o admin define concurso, filtros do
-// banco, banca-alvo, etapas (disciplina/assuntos, meta e domínio-alvo) e
-// questões obrigatórias/excluídas; o algoritmo monta as sessões de cada
-// aluno dentro dessas regras.
+// Trilha inteligente (migrations 028 e 030): o admin define concurso,
+// filtros do banco, banca-alvo, seções e unidades (disciplina/assuntos e
+// quantas lições) e questões obrigatórias/excluídas; o algoritmo monta cada
+// lição de cada aluno dentro dessas regras. Para o aluno é um caminho
+// estilo Duolingo: seções → unidades → bolinhas, sem meta nem nota mínima.
 
 const MOTIVO_ROTULO: Record<string, string> = {
   nova: 'Nova',
@@ -48,6 +54,7 @@ export default function AdminTrilhaInteligente({ trilhaId }: { trilhaId: number 
   const [configSalva, setConfigSalva] = useState<string>('');
   const [filtros, setFiltros] = useState<FiltrosQuestoes | null>(null);
   const [etapas, setEtapas] = useState<ModuloRow[] | null>(null);
+  const [secoes, setSecoes] = useState<SecaoRow[]>([]);
   const [estoque, setEstoque] = useState<Map<number, EstoqueEtapa>>(new Map());
   const [regras, setRegras] = useState<RegraQuestao[]>([]);
   const [salvando, setSalvando] = useState(false);
@@ -55,6 +62,7 @@ export default function AdminTrilhaInteligente({ trilhaId }: { trilhaId: number 
 
   function recarregar() {
     fetchModulos(trilhaId).then((rows) => setEtapas(rows.filter((m) => m.tipo === 'inteligente')));
+    fetchSecoes(trilhaId).then(setSecoes).catch(() => setSecoes([]));
     fetchEstoqueTrilha(trilhaId).then(setEstoque).catch(() => setEstoque(new Map()));
     fetchRegrasTrilha(trilhaId).then(setRegras).catch(() => setRegras([]));
   }
@@ -96,9 +104,11 @@ export default function AdminTrilhaInteligente({ trilhaId }: { trilhaId: number 
   return (
     <div className="mt-6 space-y-6">
       <div className="rounded-xl border border-violet-200 bg-violet-50 p-4 text-sm text-violet-900">
-        <strong>✨ Trilha inteligente.</strong> Você define as regras; o algoritmo monta cada sessão para cada aluno: revisões
-        vencidas, questões obrigatórias, um reforço da etapa em que ele está mais fraco e questões novas no nível dele (chance de ~70%
-        de acerto), priorizando a banca-alvo. A etapa só é concluída quando o aluno responde a meta <em>e</em> atinge o domínio-alvo.
+        <strong>✨ Trilha inteligente.</strong> O aluno vê um caminho como o do Duolingo: <b>seções</b> (blocos grandes, ex.: uma
+        disciplina) → <b>unidades</b> (um tema) → <b>bolinhas</b> (lições). Cada unidade tem N lições e, no fim, uma bolinha de{' '}
+        <b>revisão da unidade</b>. Terminou a lição, a próxima libera — sem nota mínima. Por trás, o algoritmo escolhe as questões
+        de cada lição no nível do aluno (chance de ~70% de acerto), intercala revisões vencidas e reforça o que ele mais erra,
+        priorizando a banca-alvo.
       </div>
 
       {/* ---------- Concurso e filtros ---------- */}
@@ -235,50 +245,92 @@ export default function AdminTrilhaInteligente({ trilhaId }: { trilhaId: number 
         </div>
       </Secao>
 
-      {/* ---------- Etapas ---------- */}
+      {/* ---------- Seções e unidades ---------- */}
       <Secao
-        titulo="2. Etapas"
-        subtitulo="Cada etapa é um passo do caminho do aluno. A 1ª é grátis; as demais exigem assinatura."
+        titulo="2. Seções e unidades"
+        subtitulo="A 1ª unidade do caminho é grátis; as demais exigem assinatura. Trilhas longas: muitas unidades pequenas funcionam melhor que poucas enormes."
       >
-        <div className="space-y-3">
-          {etapas.map((m, i) => (
-            <EtapaEditor
-              key={m.id}
-              etapa={m}
-              indice={i}
-              total={etapas.length}
-              disciplinas={filtros.disciplinas}
-              estoque={estoque.get(m.id)}
-              trilhaId={trilhaId}
-              bancaAlvo={config.banca_alvo}
-              onSalva={recarregar}
-              onMover={async (dir) => {
-                const outra = etapas[i + dir];
-                if (!outra) return;
-                await Promise.all([updateModulo(m.id, { ordem: outra.ordem }), updateModulo(outra.id, { ordem: m.ordem })]);
-                recarregar();
-              }}
-              onExcluir={async () => {
-                if (!confirm(`Excluir a etapa "${m.titulo}"? O progresso dos alunos nela é perdido.`)) return;
-                await deleteModulo(m.id);
-                recarregar();
-              }}
-            />
-          ))}
-          {etapas.length === 0 && <div className="rounded-lg bg-gray-50 p-4 text-center text-sm text-gray-400">Nenhuma etapa ainda.</div>}
-        </div>
-        <NovaEtapa
+        <SugerirEstrutura
           trilhaId={trilhaId}
-          disciplinas={filtros.disciplinas}
-          ordem={etapas.length ? Math.max(...etapas.map((e) => e.ordem)) + 1 : 0}
+          secoes={secoes}
+          etapas={etapas}
+          questoesPorLicao={config.questoes_por_sessao}
+          configMudou={configMudou}
           onCriada={recarregar}
         />
+        <div className="mt-4 space-y-5">
+          {gruposDe(etapas, secoes).map((g) => (
+            <div key={g.secao?.id ?? 'sem'} className="rounded-xl border border-gray-200 bg-gray-50/60 p-3">
+              {g.secao ? (
+                <CabecalhoSecao
+                  secao={g.secao}
+                  indice={secoes.indexOf(g.secao)}
+                  total={secoes.length}
+                  unidades={g.unidades.length}
+                  onMudou={recarregar}
+                  onMover={async (dir) => {
+                    const i = secoes.indexOf(g.secao!);
+                    const outra = secoes[i + dir];
+                    if (!outra) return;
+                    await Promise.all([updateSecao(g.secao!.id, { ordem: outra.ordem }), updateSecao(outra.id, { ordem: g.secao!.ordem })]);
+                    recarregar();
+                  }}
+                />
+              ) : (
+                <div className="mb-2 text-xs font-bold text-gray-500">
+                  {secoes.length ? 'SEM SEÇÃO (aparecem antes da 1ª seção)' : 'UNIDADES'}
+                </div>
+              )}
+              <div className="space-y-3">
+                {g.unidades.map((m, i) => (
+                  <EtapaEditor
+                    key={m.id}
+                    etapa={m}
+                    numero={numeroDa(m, etapas, secoes)}
+                    indice={i}
+                    total={g.unidades.length}
+                    secoes={secoes}
+                    disciplinas={filtros.disciplinas}
+                    estoque={estoque.get(m.id)}
+                    trilhaId={trilhaId}
+                    bancaAlvo={config.banca_alvo}
+                    questoesPorLicao={config.questoes_por_sessao}
+                    onSalva={recarregar}
+                    onMover={async (dir) => {
+                      const outra = g.unidades[i + dir];
+                      if (!outra) return;
+                      const [a, b] = outra.ordem === m.ordem ? [m.ordem + dir, m.ordem] : [outra.ordem, m.ordem];
+                      await Promise.all([updateModulo(m.id, { ordem: a }), updateModulo(outra.id, { ordem: b })]);
+                      recarregar();
+                    }}
+                    onExcluir={async () => {
+                      if (!confirm(`Excluir a unidade "${m.titulo}"? O progresso dos alunos nela é perdido.`)) return;
+                      await deleteModulo(m.id);
+                      recarregar();
+                    }}
+                  />
+                ))}
+                {g.unidades.length === 0 && <div className="rounded-lg bg-white p-3 text-center text-xs text-gray-400">Nenhuma unidade nesta seção.</div>}
+              </div>
+            </div>
+          ))}
+        </div>
+        <div className="mt-4 grid gap-3 md:grid-cols-[1fr_1.6fr]">
+          <NovaSecao trilhaId={trilhaId} ordem={secoes.length ? Math.max(...secoes.map((x) => x.ordem)) + 1 : 0} onCriada={recarregar} />
+          <NovaEtapa
+            trilhaId={trilhaId}
+            disciplinas={filtros.disciplinas}
+            secoes={secoes}
+            ordem={etapas.length ? Math.max(...etapas.map((e) => e.ordem)) + 1 : 0}
+            onCriada={recarregar}
+          />
+        </div>
       </Secao>
 
       {/* ---------- Questões fixas ---------- */}
       <Secao
         titulo="3. Questões obrigatórias e excluídas"
-        subtitulo="Obrigatórias aparecem para todo aluno na etapa escolhida (antes das novas). Excluídas nunca aparecem nesta trilha."
+        subtitulo="Obrigatórias aparecem para todo aluno na unidade escolhida (antes das novas). Excluídas nunca aparecem nesta trilha."
       >
         <QuestoesFixas
           trilhaId={trilhaId}
@@ -295,6 +347,318 @@ export default function AdminTrilhaInteligente({ trilhaId }: { trilhaId: number 
 
 function limitar(n: number, min: number, max: number) {
   return Number.isFinite(n) ? Math.min(max, Math.max(min, Math.round(n))) : min;
+}
+
+// Lições sugeridas para uma unidade: cada questão nova aparece ~2 vezes
+// no caminho (lição + revisões), entre 2 e 8 bolinhas.
+function licoesSugeridas(estoque: number, questoesPorLicao: number) {
+  return limitar(estoque / (Math.max(5, questoesPorLicao) * 1.5), 2, 8);
+}
+
+interface GrupoAdmin {
+  secao: SecaoRow | null;
+  unidades: ModuloRow[];
+}
+
+// Mesma ordem que o aluno vê: sem seção primeiro, depois cada seção.
+function gruposDe(etapas: ModuloRow[], secoes: SecaoRow[]): GrupoAdmin[] {
+  const ids = new Set(secoes.map((x) => x.id));
+  const porOrdem = (a: ModuloRow, b: ModuloRow) => a.ordem - b.ordem || a.id - b.id;
+  const soltas = etapas.filter((m) => m.secao_id == null || !ids.has(m.secao_id)).sort(porOrdem);
+  const grupos: GrupoAdmin[] = soltas.length || !secoes.length ? [{ secao: null, unidades: soltas }] : [];
+  for (const sec of secoes) grupos.push({ secao: sec, unidades: etapas.filter((m) => m.secao_id === sec.id).sort(porOrdem) });
+  return grupos;
+}
+
+function numeroDa(m: ModuloRow, etapas: ModuloRow[], secoes: SecaoRow[]) {
+  return gruposDe(etapas, secoes).flatMap((g) => g.unidades).findIndex((u) => u.id === m.id) + 1;
+}
+
+function CabecalhoSecao({
+  secao,
+  indice,
+  total,
+  unidades,
+  onMudou,
+  onMover,
+}: {
+  secao: SecaoRow;
+  indice: number;
+  total: number;
+  unidades: number;
+  onMudou: () => void;
+  onMover: (dir: -1 | 1) => void;
+}) {
+  const [titulo, setTitulo] = useState(secao.titulo);
+  const mudou = titulo.trim() !== secao.titulo && !!titulo.trim();
+  return (
+    <div className="mb-3 flex flex-wrap items-center gap-2">
+      <div className="flex flex-col">
+        <button disabled={indice === 0} onClick={() => onMover(-1)} className="text-[10px] text-gray-400 hover:text-gray-700 disabled:opacity-30" aria-label="Subir seção">
+          ▲
+        </button>
+        <button disabled={indice === total - 1} onClick={() => onMover(1)} className="text-[10px] text-gray-400 hover:text-gray-700 disabled:opacity-30" aria-label="Descer seção">
+          ▼
+        </button>
+      </div>
+      <span className="rounded bg-violet-100 px-2 py-0.5 text-xs font-extrabold text-violet-700">SEÇÃO {indice + 1}</span>
+      <input value={titulo} onChange={(e) => setTitulo(e.target.value)} className="min-w-[200px] flex-1 rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-sm font-bold" />
+      {mudou && (
+        <button
+          onClick={async () => {
+            await updateSecao(secao.id, { titulo: titulo.trim() });
+            onMudou();
+          }}
+          className="rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-bold text-white hover:bg-blue-700"
+        >
+          Salvar nome
+        </button>
+      )}
+      <span className="text-xs text-gray-500">{unidades} unidade(s)</span>
+      <button
+        onClick={async () => {
+          if (!confirm(`Excluir a seção "${secao.titulo}"? As unidades dela não são apagadas: ficam "sem seção".`)) return;
+          await deleteSecao(secao.id);
+          onMudou();
+        }}
+        className="text-xs font-bold text-red-600 hover:underline"
+      >
+        Excluir seção
+      </button>
+    </div>
+  );
+}
+
+function NovaSecao({ trilhaId, ordem, onCriada }: { trilhaId: number; ordem: number; onCriada: () => void }) {
+  const [titulo, setTitulo] = useState('');
+  const [erro, setErro] = useState<string | null>(null);
+  async function criar() {
+    if (!titulo.trim()) return setErro('Dê um nome à seção.');
+    setErro(null);
+    try {
+      await createSecao(trilhaId, titulo.trim(), ordem);
+      setTitulo('');
+      onCriada();
+    } catch (err) {
+      setErro(err instanceof Error ? err.message : 'Erro ao criar seção.');
+    }
+  }
+  return (
+    <div className="rounded-lg border border-dashed border-gray-300 p-3">
+      <div className="text-xs font-bold text-gray-500">NOVA SEÇÃO</div>
+      <div className="mt-2 flex gap-2">
+        <input
+          value={titulo}
+          onChange={(e) => setTitulo(e.target.value)}
+          onKeyDown={(e) => e.key === 'Enter' && criar()}
+          placeholder="Ex.: Língua Portuguesa"
+          className="min-w-0 flex-1 rounded-lg border border-gray-300 px-3 py-2 text-sm"
+        />
+        <button onClick={criar} className="rounded-lg bg-violet-600 px-3 py-2 text-sm font-bold text-white hover:bg-violet-700">
+          Criar
+        </button>
+      </div>
+      {erro && <div className="mt-1 text-xs font-semibold text-red-600">{erro}</div>}
+    </div>
+  );
+}
+
+// ---------- Sugerir estrutura: seções por disciplina, unidades por assunto ----------
+
+interface UnidadeSugerida {
+  chave: string;
+  titulo: string;
+  disciplina: string;
+  assuntos: string[];
+  estoque: number;
+  licoes: number;
+  jaExiste: boolean;
+}
+
+interface SecaoSugerida {
+  disciplina: string;
+  estoque: number;
+  unidades: UnidadeSugerida[];
+}
+
+function montarSugestao(linhas: EstoqueAssunto[], etapas: ModuloRow[], questoesPorLicao: number): SecaoSugerida[] {
+  const minimo = Math.max(5, questoesPorLicao);
+  const cobertos = new Set(etapas.flatMap((e) => (e.assuntos ?? []).map((a) => `${e.disciplina}§${a}`)));
+  const disciplinasInteiras = new Set(etapas.filter((e) => e.disciplina && !(e.assuntos ?? []).length).map((e) => e.disciplina));
+  const porDisciplina = new Map<string, EstoqueAssunto[]>();
+  for (const l of linhas) porDisciplina.set(l.disciplina, [...(porDisciplina.get(l.disciplina) ?? []), l]);
+  const secoes: SecaoSugerida[] = [];
+  for (const [disciplina, itens] of porDisciplina) {
+    const comNome = itens.filter((i) => i.assunto.trim()).sort((a, b) => b.estoque - a.estoque);
+    const grandes = comNome.filter((i) => i.estoque >= minimo);
+    const pequenos = comNome.filter((i) => i.estoque < minimo);
+    const unidades: UnidadeSugerida[] = grandes.map((i) => ({
+      chave: `${disciplina}§${i.assunto}`,
+      titulo: i.assunto,
+      disciplina,
+      assuntos: [i.assunto],
+      estoque: i.estoque,
+      licoes: licoesSugeridas(i.estoque, questoesPorLicao),
+      jaExiste: cobertos.has(`${disciplina}§${i.assunto}`) || disciplinasInteiras.has(disciplina),
+    }));
+    // assuntos com pouca questão viram uma unidade só ("Mais de X")
+    const somaPequenos = pequenos.reduce((t, i) => t + i.estoque, 0);
+    if (pequenos.length && somaPequenos >= minimo)
+      unidades.push({
+        chave: `${disciplina}§+outros`,
+        titulo: grandes.length ? `Mais de ${disciplina}` : disciplina,
+        disciplina,
+        assuntos: pequenos.map((i) => i.assunto),
+        estoque: somaPequenos,
+        licoes: licoesSugeridas(somaPequenos, questoesPorLicao),
+        jaExiste: disciplinasInteiras.has(disciplina) || pequenos.every((i) => cobertos.has(`${disciplina}§${i.assunto}`)),
+      });
+    if (unidades.length) secoes.push({ disciplina, estoque: unidades.reduce((t, u) => t + u.estoque, 0), unidades });
+  }
+  return secoes.sort((a, b) => b.estoque - a.estoque);
+}
+
+function SugerirEstrutura({
+  trilhaId,
+  secoes,
+  etapas,
+  questoesPorLicao,
+  configMudou,
+  onCriada,
+}: {
+  trilhaId: number;
+  secoes: SecaoRow[];
+  etapas: ModuloRow[];
+  questoesPorLicao: number;
+  configMudou: boolean;
+  onCriada: () => void;
+}) {
+  const [sugestao, setSugestao] = useState<SecaoSugerida[] | null>(null);
+  const [marcadas, setMarcadas] = useState<Set<string>>(new Set());
+  const [carregando, setCarregando] = useState(false);
+  const [criando, setCriando] = useState(false);
+  const [aviso, setAviso] = useState<string | null>(null);
+
+  async function sugerir() {
+    setCarregando(true);
+    setAviso(null);
+    try {
+      const s = montarSugestao(await sugerirEstrutura(trilhaId), etapas, questoesPorLicao);
+      setSugestao(s);
+      setMarcadas(new Set(s.flatMap((sec) => sec.unidades.filter((u) => !u.jaExiste).map((u) => u.chave))));
+      if (!s.length) setAviso('Não há questões suficientes com os filtros salvos. Amplie os filtros (seção 1) e tente de novo.');
+    } catch (err) {
+      setAviso(err instanceof Error ? err.message : 'Não foi possível sugerir.');
+    } finally {
+      setCarregando(false);
+    }
+  }
+
+  async function criar() {
+    if (!sugestao) return;
+    setCriando(true);
+    setAviso(null);
+    try {
+      let ordemSecao = secoes.length ? Math.max(...secoes.map((x) => x.ordem)) + 1 : 0;
+      let ordemUnidade = etapas.length ? Math.max(...etapas.map((e) => e.ordem)) + 1 : 0;
+      let criadas = 0;
+      for (const sec of sugestao) {
+        const escolhidas = sec.unidades.filter((u) => marcadas.has(u.chave));
+        if (!escolhidas.length) continue;
+        // reaproveita a seção de mesmo nome, se já existir
+        const existente = secoes.find((x) => x.titulo.trim().toLowerCase() === sec.disciplina.trim().toLowerCase());
+        const secaoId = existente?.id ?? (await createSecao(trilhaId, sec.disciplina, ordemSecao++)).id;
+        for (const u of escolhidas) {
+          await createModulo(trilhaId, {
+            titulo: u.titulo,
+            ordem: ordemUnidade++,
+            tipo: 'inteligente',
+            disciplina: u.disciplina,
+            assuntos: u.assuntos,
+            secao_id: secaoId,
+            licoes: u.licoes,
+          });
+          criadas++;
+        }
+      }
+      setSugestao(null);
+      setAviso(`${criadas} unidade(s) criada(s). Ajuste nomes, ordem e lições à vontade.`);
+      onCriada();
+    } catch (err) {
+      setAviso(err instanceof Error ? `Erro ao criar: ${err.message}` : 'Erro ao criar.');
+    } finally {
+      setCriando(false);
+    }
+  }
+
+  const alternar = (chave: string) =>
+    setMarcadas((atual) => {
+      const nova = new Set(atual);
+      if (nova.has(chave)) nova.delete(chave);
+      else nova.add(chave);
+      return nova;
+    });
+
+  const escolhidas = sugestao?.flatMap((x) => x.unidades).filter((u) => marcadas.has(u.chave)) ?? [];
+  const licoesTotal = escolhidas.reduce((t, u) => t + u.licoes + 1, 0);
+
+  return (
+    <div className="rounded-xl border border-blue-200 bg-blue-50 p-3">
+      <div className="flex flex-wrap items-center gap-3">
+        <div className="min-w-0 flex-1 text-sm text-blue-900">
+          <strong>💡 Não sabe o que colocar?</strong> Eu olho o banco com os filtros salvos e sugiro uma seção por disciplina e uma
+          unidade por assunto (com as lições calculadas pelo estoque). Você marca o que quer e cria tudo de uma vez.
+        </div>
+        <button
+          onClick={sugestao ? () => setSugestao(null) : sugerir}
+          disabled={carregando || configMudou}
+          title={configMudou ? 'Salve os filtros antes' : ''}
+          className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-bold text-white hover:bg-blue-700 disabled:bg-gray-300"
+        >
+          {carregando ? 'Analisando o banco…' : sugestao ? 'Fechar sugestão' : 'Sugerir estrutura'}
+        </button>
+      </div>
+      {aviso && <div className="mt-2 text-xs font-semibold text-blue-900">{aviso}</div>}
+      {sugestao && sugestao.length > 0 && (
+        <div className="mt-3 space-y-3">
+          {sugestao.map((sec) => (
+            <div key={sec.disciplina} className="rounded-lg border border-blue-100 bg-white p-3">
+              <div className="flex items-center gap-2 text-sm font-extrabold text-gray-900">
+                Seção: {sec.disciplina}
+                <span className="text-xs font-semibold text-gray-400">{sec.estoque} questões</span>
+              </div>
+              <div className="mt-2 grid gap-1.5">
+                {sec.unidades.map((u) => (
+                  <label key={u.chave} className={`flex items-center gap-2 text-xs ${u.jaExiste ? 'text-gray-400' : 'text-gray-700'}`}>
+                    <input type="checkbox" checked={marcadas.has(u.chave)} onChange={() => alternar(u.chave)} />
+                    <span className="min-w-0 flex-1 truncate font-semibold" title={u.assuntos.join(', ')}>
+                      {u.titulo}
+                      {u.assuntos.length > 1 && <span className="font-normal text-gray-400"> ({u.assuntos.length} assuntos)</span>}
+                    </span>
+                    {u.jaExiste && <span className="rounded bg-gray-100 px-1.5 font-bold">já tem na trilha</span>}
+                    <span className="w-24 text-right">{u.estoque} questões</span>
+                    <span className="w-16 text-right font-bold text-blue-700">{u.licoes} lições</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+          ))}
+          <div className="flex flex-wrap items-center gap-3">
+            <button
+              onClick={criar}
+              disabled={!escolhidas.length || criando}
+              className="rounded-lg bg-green-600 px-4 py-2 text-sm font-bold text-white hover:bg-green-700 disabled:bg-gray-300"
+            >
+              {criando ? 'Criando…' : `Criar ${escolhidas.length} unidade(s)`}
+            </button>
+            <span className="text-xs font-semibold text-gray-600">
+              ≈ {licoesTotal} bolinhas no caminho · {licoesTotal * questoesPorLicao} questões respondidas por aluno
+            </span>
+          </div>
+        </div>
+      )}
+    </div>
+  );
 }
 
 function Secao({ titulo, subtitulo, children }: { titulo: string; subtitulo?: string; children: React.ReactNode }) {
@@ -351,7 +715,7 @@ function MultiEscolha({
   );
 }
 
-function AvisosEstoque({ total, meta, naoRevisadas, bancaAlvo, daBanca }: { total: number; meta: number; naoRevisadas?: number; bancaAlvo: string | null; daBanca: number }) {
+function AvisosEstoque({ total, porUnidade, naoRevisadas, bancaAlvo, daBanca }: { total: number; porUnidade: number; naoRevisadas?: number; bancaAlvo: string | null; daBanca: number }) {
   return (
     <div className="mt-2 space-y-1 text-xs font-semibold">
       <div className="text-gray-600">
@@ -364,9 +728,9 @@ function AvisosEstoque({ total, meta, naoRevisadas, bancaAlvo, daBanca }: { tota
         )}
       </div>
       {total === 0 ? (
-        <div className="text-red-600">⛔ Nenhuma questão com esses filtros — a etapa ficaria vazia.</div>
-      ) : total < meta ? (
-        <div className="text-amber-600">⚠ Estoque menor que a meta: a etapa conclui quando o aluno responder todas e atingir o domínio.</div>
+        <div className="text-red-600">⛔ Nenhuma questão com esses filtros — a unidade ficaria vazia.</div>
+      ) : total < porUnidade * 0.6 ? (
+        <div className="text-amber-600">⚠ Poucas questões para tantas lições: o aluno vai repetir bastante. Diminua as lições ou amplie os assuntos.</div>
       ) : total < 30 ? (
         <div className="text-amber-600">⚠ Pouco estoque: o ideal é 30+ para o algoritmo ter onde escolher no nível de cada aluno.</div>
       ) : (
@@ -383,23 +747,29 @@ function AvisosEstoque({ total, meta, naoRevisadas, bancaAlvo, daBanca }: { tota
 
 function EtapaEditor({
   etapa,
+  numero,
   indice,
   total,
+  secoes,
   disciplinas,
   estoque,
   trilhaId,
   bancaAlvo,
+  questoesPorLicao,
   onSalva,
   onMover,
   onExcluir,
 }: {
   etapa: ModuloRow;
+  numero: number;
   indice: number;
   total: number;
+  secoes: SecaoRow[];
   disciplinas: string[];
   estoque: EstoqueEtapa | undefined;
   trilhaId: number;
   bancaAlvo: string | null;
+  questoesPorLicao: number;
   onSalva: () => void;
   onMover: (dir: -1 | 1) => void;
   onExcluir: () => void;
@@ -407,8 +777,8 @@ function EtapaEditor({
   const [titulo, setTitulo] = useState(etapa.titulo);
   const [disciplina, setDisciplina] = useState(etapa.disciplina ?? '');
   const [assuntos, setAssuntos] = useState<string[]>(etapa.assuntos ?? []);
-  const [meta, setMeta] = useState(etapa.meta_questoes);
-  const [alvo, setAlvo] = useState(etapa.dominio_alvo);
+  const [licoes, setLicoes] = useState(etapa.licoes);
+  const [secaoId, setSecaoId] = useState<number | null>(etapa.secao_id);
   const [opcoesAssunto, setOpcoesAssunto] = useState<AssuntoEstoque[]>([]);
   const [contagem, setContagem] = useState<EstoqueContado | null>(null);
   const [salvando, setSalvando] = useState(false);
@@ -419,8 +789,8 @@ function EtapaEditor({
     titulo !== etapa.titulo ||
     disciplina !== (etapa.disciplina ?? '') ||
     assuntos.join('|') !== (etapa.assuntos ?? []).join('|') ||
-    meta !== etapa.meta_questoes ||
-    alvo !== etapa.dominio_alvo;
+    licoes !== etapa.licoes ||
+    secaoId !== etapa.secao_id;
 
   useEffect(() => {
     if (!disciplina) {
@@ -447,6 +817,9 @@ function EtapaEditor({
     };
   }, [opcoesAssunto]);
 
+  const totalEstoque = contagem?.total ?? estoque?.total ?? 0;
+  const sugeridas = licoesSugeridas(totalEstoque, questoesPorLicao);
+
   async function salvar() {
     setSalvando(true);
     try {
@@ -454,8 +827,8 @@ function EtapaEditor({
         titulo: titulo.trim() || etapa.titulo,
         disciplina: disciplina || null,
         assuntos,
-        meta_questoes: limitar(meta, 1, 500),
-        dominio_alvo: limitar(alvo, 10, 100),
+        licoes: limitar(licoes, 1, 20),
+        secao_id: secaoId,
       });
       onSalva();
     } finally {
@@ -484,11 +857,11 @@ function EtapaEditor({
           </button>
         </div>
         <div className="min-w-0 flex-1">
-          <div className="grid grid-cols-[1fr_1fr_140px_140px] gap-3">
+          <div className="grid grid-cols-[1fr_1fr_1fr_120px] gap-3">
             <div>
               <label className={rotulo}>
-                ETAPA {indice + 1}
-                {indice === 0 && <span className="ml-1 rounded bg-green-100 px-1.5 text-green-700">GRÁTIS</span>}
+                UNIDADE {numero}
+                {numero === 1 && <span className="ml-1 rounded bg-green-100 px-1.5 text-green-700">GRÁTIS</span>}
               </label>
               <input value={titulo} onChange={(e) => setTitulo(e.target.value)} className={input} />
             </div>
@@ -511,12 +884,24 @@ function EtapaEditor({
               </select>
             </div>
             <div>
-              <label className={rotulo} title="Quantas questões diferentes o aluno precisa responder nesta etapa">META (QUESTÕES)</label>
-              <input type="number" min={1} value={meta} onChange={(e) => setMeta(Number(e.target.value))} className={input} />
+              <label className={rotulo}>SEÇÃO</label>
+              <select value={secaoId ?? ''} onChange={(e) => setSecaoId(e.target.value ? Number(e.target.value) : null)} className={input}>
+                <option value="">Sem seção</option>
+                {secoes.map((x) => (
+                  <option key={x.id} value={x.id}>
+                    {x.titulo}
+                  </option>
+                ))}
+              </select>
             </div>
             <div>
-              <label className={rotulo} title="Domínio mínimo para concluir a etapa">DOMÍNIO-ALVO %</label>
-              <input type="number" min={10} max={100} step={5} value={alvo} onChange={(e) => setAlvo(Number(e.target.value))} className={input} />
+              <label className={rotulo} title="Bolinhas desta unidade (fora a revisão final)">LIÇÕES (1–20)</label>
+              <input type="number" min={1} max={20} value={licoes} onChange={(e) => setLicoes(Number(e.target.value))} className={input} />
+              {totalEstoque > 0 && sugeridas !== licoes && (
+                <button type="button" onClick={() => setLicoes(sugeridas)} className="mt-1 text-[11px] font-bold text-blue-600 hover:underline">
+                  Sugerido: {sugeridas}
+                </button>
+              )}
             </div>
           </div>
           {disciplina && (
@@ -531,13 +916,13 @@ function EtapaEditor({
             </div>
           )}
           <AvisosEstoque
-            total={contagem?.total ?? estoque?.total ?? 0}
+            total={totalEstoque}
             daBanca={contagem?.banca_alvo ?? estoque?.banca_alvo ?? 0}
-            meta={meta}
+            porUnidade={limitar(licoes, 1, 20) * questoesPorLicao}
             naoRevisadas={contagem?.nao_revisadas}
             bancaAlvo={bancaAlvo}
           />
-          {!!estoque?.obrigatorias && <div className="mt-1 text-xs font-semibold text-violet-700">★ {estoque.obrigatorias} questões obrigatórias nesta etapa</div>}
+          {!!estoque?.obrigatorias && <div className="mt-1 text-xs font-semibold text-violet-700">★ {estoque.obrigatorias} questões obrigatórias nesta unidade</div>}
 
           <div className="mt-3 flex flex-wrap items-center gap-3">
             <button
@@ -545,20 +930,20 @@ function EtapaEditor({
               disabled={!mudou || salvando}
               className="rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-bold text-white hover:bg-blue-700 disabled:bg-gray-300"
             >
-              {salvando ? 'Salvando…' : 'Salvar etapa'}
+              {salvando ? 'Salvando…' : 'Salvar unidade'}
             </button>
             {mudou && <span className="text-xs font-bold text-amber-600">Alterações não salvas</span>}
             <button onClick={simulacao ? () => setSimulacao(null) : simular} className="text-xs font-bold text-violet-700 hover:underline">
-              {simulacao ? 'Fechar simulação' : 'Simular uma sessão (como se fosse você)'}
+              {simulacao ? 'Fechar simulação' : 'Simular uma lição (como se fosse você)'}
             </button>
             <button onClick={onExcluir} className="ml-auto text-xs font-bold text-red-600 hover:underline">
-              Excluir etapa
+              Excluir unidade
             </button>
           </div>
           {erroSim && <div className="mt-2 text-xs font-semibold text-red-600">{erroSim}</div>}
           {simulacao && (
             <ol className="mt-3 space-y-1 rounded-lg bg-gray-50 p-3 text-xs">
-              {simulacao.length === 0 && <li className="text-gray-400">A sessão veio vazia — confira os filtros e o estoque.</li>}
+              {simulacao.length === 0 && <li className="text-gray-400">A lição veio vazia — confira os filtros e o estoque.</li>}
               {simulacao.map((q, i) => (
                 <li key={`${q.id}-${i}`} className="flex gap-2">
                   <span className="w-5 flex-none text-right font-bold text-gray-400">{i + 1}.</span>
@@ -569,7 +954,7 @@ function EtapaEditor({
                   <span className="min-w-0 flex-1 truncate text-gray-700">{q.enunciado}</span>
                 </li>
               ))}
-              <li className="pt-1 text-gray-400">A sessão real de cada aluno muda conforme o histórico e o nível dele.</li>
+              <li className="pt-1 text-gray-400">A lição real de cada aluno muda conforme o histórico e o nível dele.</li>
             </ol>
           )}
         </div>
@@ -578,9 +963,22 @@ function EtapaEditor({
   );
 }
 
-function NovaEtapa({ trilhaId, disciplinas, ordem, onCriada }: { trilhaId: number; disciplinas: string[]; ordem: number; onCriada: () => void }) {
+function NovaEtapa({
+  trilhaId,
+  disciplinas,
+  secoes,
+  ordem,
+  onCriada,
+}: {
+  trilhaId: number;
+  disciplinas: string[];
+  secoes: SecaoRow[];
+  ordem: number;
+  onCriada: () => void;
+}) {
   const [titulo, setTitulo] = useState('');
   const [disciplina, setDisciplina] = useState('');
+  const [secaoId, setSecaoId] = useState<number | ''>('');
   const [erro, setErro] = useState<string | null>(null);
 
   async function criar() {
@@ -591,27 +989,49 @@ function NovaEtapa({ trilhaId, disciplinas, ordem, onCriada }: { trilhaId: numbe
     }
     setErro(null);
     try {
-      await createModulo(trilhaId, { titulo: nome, ordem, tipo: 'inteligente', disciplina: disciplina || null, assuntos: [], meta_questoes: 20, dominio_alvo: 70 });
+      await createModulo(trilhaId, {
+        titulo: nome,
+        ordem,
+        tipo: 'inteligente',
+        disciplina: disciplina || null,
+        assuntos: [],
+        secao_id: secaoId || (secoes.length ? secoes[secoes.length - 1].id : null),
+        licoes: 4,
+      });
       setTitulo('');
       setDisciplina('');
       onCriada();
     } catch (err) {
-      setErro(err instanceof Error ? err.message : 'Erro ao criar etapa.');
+      setErro(err instanceof Error ? err.message : 'Erro ao criar unidade.');
     }
   }
 
   return (
     <div className="mt-4 rounded-lg border border-dashed border-gray-300 p-3">
-      <div className="text-xs font-bold text-gray-500">NOVA ETAPA</div>
+      <div className="text-xs font-bold text-gray-500">NOVA UNIDADE</div>
       <div className="mt-2 flex flex-wrap gap-2">
         <input
           value={titulo}
           onChange={(e) => setTitulo(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && criar()}
           placeholder="Título (ex.: Crase e regência)"
-          className="flex-1 rounded-lg border border-gray-300 px-3 py-2 text-sm"
+          className="min-w-[160px] flex-1 rounded-lg border border-gray-300 px-3 py-2 text-sm"
         />
-        <select value={disciplina} onChange={(e) => setDisciplina(e.target.value)} className="w-64 rounded-lg border border-gray-300 px-2 py-2 text-sm">
+        {secoes.length > 0 && (
+          <select
+            value={secaoId || secoes[secoes.length - 1].id}
+            onChange={(e) => setSecaoId(Number(e.target.value))}
+            className="w-44 rounded-lg border border-gray-300 px-2 py-2 text-sm"
+            title="Seção"
+          >
+            {secoes.map((x) => (
+              <option key={x.id} value={x.id}>
+                {x.titulo}
+              </option>
+            ))}
+          </select>
+        )}
+        <select value={disciplina} onChange={(e) => setDisciplina(e.target.value)} className="w-48 rounded-lg border border-gray-300 px-2 py-2 text-sm">
           <option value="">Disciplina…</option>
           {disciplinas.map((d) => (
             <option key={d} value={d}>
@@ -620,10 +1040,10 @@ function NovaEtapa({ trilhaId, disciplinas, ordem, onCriada }: { trilhaId: numbe
           ))}
         </select>
         <button onClick={criar} className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-bold text-white hover:bg-blue-700">
-          Adicionar etapa
+          Adicionar
         </button>
       </div>
-      <p className="mt-1.5 text-xs text-gray-400">Depois de criar, escolha os assuntos, a meta e o domínio-alvo na etapa.</p>
+      <p className="mt-1.5 text-xs text-gray-400">Depois de criar, escolha os assuntos e quantas lições a unidade tem.</p>
       {erro && <div className="mt-1 text-xs font-semibold text-red-600">{erro}</div>}
     </div>
   );
@@ -679,7 +1099,7 @@ function QuestoesFixas({
           titulo={`★ Obrigatórias (${obrigatorias.length})`}
           vazio="Nenhuma. O algoritmo escolhe tudo sozinho dentro dos filtros."
           regras={obrigatorias}
-          detalhe={(r) => `Etapa: ${nomeEtapa(r.modulo_id)}`}
+          detalhe={(r) => `Unidade: ${nomeEtapa(r.modulo_id)}`}
           onRemover={async (r) => {
             await removerRegra(trilhaId, r.questao_id);
             onMudou();
@@ -717,9 +1137,9 @@ function QuestoesFixas({
             value={etapaEscolhida}
             onChange={(e) => setEtapaEscolhida(e.target.value ? Number(e.target.value) : '')}
             className="w-56 rounded-lg border border-gray-300 px-2 py-2 text-sm"
-            title="Etapa em que a questão obrigatória aparece"
+            title="Unidade em que a questão obrigatória aparece"
           >
-            <option value="">Obrigatória em qual etapa?</option>
+            <option value="">Obrigatória em qual unidade?</option>
             {etapas.map((e) => (
               <option key={e.id} value={e.id}>
                 {e.titulo}
@@ -755,7 +1175,7 @@ function QuestoesFixas({
                           !q.revisado && !permitirNaoRevisadas
                             ? 'Revise o comentário antes de tornar obrigatória (ou ligue "usar não revisadas" nos filtros)'
                             : !etapaEscolhida
-                              ? 'Escolha a etapa acima'
+                              ? 'Escolha a unidade acima'
                               : ''
                         }
                         className="flex-none rounded-lg bg-violet-600 px-2.5 py-1 font-bold text-white hover:bg-violet-700 disabled:bg-gray-300"

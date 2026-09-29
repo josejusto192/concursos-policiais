@@ -7,11 +7,19 @@ import type { Modulo } from '../../data/types';
 import VideoSheet from '../../components/sheets/VideoSheet';
 import { som, vibrar } from '../../lib/efeitos';
 import { prefereMenosMovimento } from '../../lib/movimento';
+import TrilhaInteligentePath from './TrilhaInteligentePath';
 
 const STEP_HEIGHT = 170;
 const centerX = (index: number) => 160 + Math.sin((index * Math.PI) / 2) * 66;
 
 export default function TrilhaPath() {
+  const { activeTrilha } = useAppData();
+  // Trilha inteligente: seções, unidades e lições (estilo Duolingo)
+  if (activeTrilha?.tipo === 'inteligente') return <TrilhaInteligentePath />;
+  return <TrilhaManualPath />;
+}
+
+function TrilhaManualPath() {
   const { modules, activeTrilha } = useAppData();
   const { dispatch } = useAppState();
   const navigate = useNavigate();
@@ -157,9 +165,7 @@ export default function TrilhaPath() {
               <div className="map-caption">
                 <h3>{m.titulo}</h3>
                 <p>
-                  {m.etapa && !premium && (done || current)
-                    ? `Domínio ${m.etapa.dominio}% · ${done ? 'concluída' : `meta ${m.etapa.alvo}%`}`
-                    : done
+                  {done
                     ? `${m.acertos}/${m.total} acertos · concluído`
                     : premium
                       ? 'EXCLUSIVO PARA ASSINANTES'
@@ -171,11 +177,6 @@ export default function TrilhaPath() {
                           ? 'Conclua a etapa anterior'
                           : 'Próxima conquista'}
                 </p>
-                {m.etapa && !premium && (done || current) && (
-                  <span className="map-dominio" aria-hidden="true">
-                    <span style={{ width: `${Math.min(100, m.etapa.dominio)}%` }} className={m.etapa.dominio >= m.etapa.alvo ? 'ok' : ''} />
-                  </span>
-                )}
               </div>
             </div>
           );

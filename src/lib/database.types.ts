@@ -210,6 +210,8 @@ export type Database = {
           assuntos: string[];
           meta_questoes: number;
           dominio_alvo: number;
+          secao_id: number | null;
+          licoes: number;
         };
         Insert: {
           trilha_id: number;
@@ -222,6 +224,8 @@ export type Database = {
           assuntos?: string[];
           meta_questoes?: number;
           dominio_alvo?: number;
+          secao_id?: number | null;
+          licoes?: number;
         };
         Update: {
           titulo?: string;
@@ -233,6 +237,8 @@ export type Database = {
           assuntos?: string[];
           meta_questoes?: number;
           dominio_alvo?: number;
+          secao_id?: number | null;
+          licoes?: number;
         };
         Relationships: [];
       };
@@ -408,6 +414,13 @@ export type Database = {
         };
         Insert: never;
         Update: never;
+        Relationships: [];
+      };
+      // Seções da trilha inteligente (migration 030)
+      trilha_secoes: {
+        Row: { id: number; trilha_id: number; titulo: string; ordem: number };
+        Insert: { trilha_id: number; titulo: string; ordem?: number };
+        Update: { titulo?: string; ordem?: number };
         Relationships: [];
       };
       trilha_config: {
@@ -642,7 +655,7 @@ export type Database = {
         Returns: (ModuloQuestaoRow & { motivo: string })[];
       };
       montar_sessao_inteligente: {
-        Args: { p_modulo_id: number };
+        Args: { p_modulo_id: number; p_revisao?: boolean };
         Returns: (ModuloQuestaoRow & { motivo: string })[];
       };
       avaliar_etapa: {
@@ -660,7 +673,15 @@ export type Database = {
       };
       progresso_trilha_inteligente: {
         Args: { p_trilha_id: number };
-        Returns: { modulo_id: number; dominio: number; respondidas: number; meta: number; alvo: number; estoque: number }[];
+        Returns: { modulo_id: number; licoes: number; licoes_feitas: number; estoque: number }[];
+      };
+      concluir_licao: {
+        Args: { p_modulo_id: number };
+        Returns: { licoes_feitas: number; licoes: number; unidade_concluida: boolean; concluiu_agora: boolean }[];
+      };
+      admin_sugerir_estrutura: {
+        Args: { p_trilha_id: number };
+        Returns: { disciplina: string; assunto: string; estoque: number; banca_alvo: number }[];
       };
       meu_dominio: {
         Args: Record<string, never>;

@@ -246,17 +246,16 @@ evento: `select asaas_processar_evento(<id>);`.
 
 **Algoritmo (cálculo, sem IA).** A cada resposta o banco atualiza a nota do aluno por disciplina e assunto (`proficiencia`) e a dificuldade da questão (`questao_stats`), num modelo tipo Elo com chance de chute (1/nº de alternativas; Certo/Errado = 50%). Domínio exibido = chance de acertar uma questão média. A tela Evolução mostra o domínio por assunto.
 
-**Trilha inteligente (admin → Trilhas → Nova trilha → Inteligente).** O admin define:
+**Trilha inteligente (admin → Trilhas → Nova trilha → Inteligente) — formato Duolingo (migration 030).** Para o aluno é um caminho de **seções → unidades → bolinhas**: cada unidade tem N lições e, no fim, uma bolinha de **revisão da unidade**. Terminou a lição, a próxima libera — sem meta nem nota mínima na tela. O admin define:
 - concurso/cargo, filtros do banco (bancas, órgãos, cargos, escolaridade, anos, só Certo/Errado);
-- banca-alvo e % de prioridade;
-- questões por sessão e revisões por sessão;
-- etapas (disciplina + assuntos, meta de questões, domínio-alvo), com estoque ao vivo e avisos;
-- questões obrigatórias (por etapa) e excluídas;
-- "Simular uma sessão" mostra o que o algoritmo montaria.
+- banca-alvo e % de prioridade; questões por lição e revisões por lição;
+- seções (criar, renomear, reordenar, excluir) e unidades (disciplina + assuntos, seção e nº de lições, com sugestão pelo estoque);
+- **"Sugerir estrutura"**: olha o banco com os filtros salvos e propõe uma seção por disciplina e uma unidade por assunto (assuntos pequenos são agrupados), com as lições calculadas — marque e crie tudo de uma vez;
+- questões obrigatórias (por unidade) e excluídas; "Simular uma lição" mostra o que o algoritmo montaria.
 
-Cada sessão (`montar_sessao_inteligente`) traz revisões vencidas, obrigatórias, 1 reforço da etapa anterior mais fraca e questões novas perto do nível do aluno (~70% de chance de acerto), priorizando a banca-alvo. `avaliar_etapa` conclui a etapa quando o aluno responde a meta **e** atinge o domínio-alvo (com limite de segurança). Só questões revisadas, não anuladas e não desatualizadas entram. A 1ª etapa é grátis.
+Cada lição (`montar_sessao_inteligente`) traz revisões vencidas, obrigatórias, 1 reforço da unidade anterior mais fraca e questões novas perto do nível do aluno (~70% de chance de acerto), priorizando a banca-alvo. A revisão da unidade (`p_revisao = true`) traz os erros e o que foi visto há mais tempo. `concluir_licao` avança a unidade (o servidor confere se o aluno respondeu). Só questões revisadas, não anuladas e não desatualizadas entram. A 1ª unidade do caminho (na ordem das seções) é grátis.
 
-**Ordem de publicação:** rode a migration 028 no Supabase **antes** de promover a versão do app no Vercel.
+**Ordem de publicação:** rode as migrations 028, 029 e 030 no Supabase **antes** de promover a versão do app no Vercel.
 
 ### ⚠️ Checklist antes do lançamento
 - [ ] Remover a opção **"Usar também questões ainda não revisadas"** da trilha inteligente (temporária, migration 029): nova migration apagando `trilha_config.permitir_nao_revisadas` e voltando `questoes_filtradas`/`questoes_da_etapa`/`admin_contar_estoque` à versão da 028; no app, procurar `permitir_nao_revisadas`.

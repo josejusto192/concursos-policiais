@@ -1,7 +1,7 @@
 import { supabase } from './supabase';
 import { invokeEdgeFunction } from './edgeFunctions';
 import type { Database, QuestaoRow, TrilhaConfigRow } from './database.types';
-import type { ModuloRow, TrilhaRow } from './queries';
+import type { ModuloRow, SecaoRow, TrilhaRow } from './queries';
 import type { Usuario } from '../hooks/useUsuario';
 
 // ---- Trilhas ----
@@ -46,6 +46,8 @@ export async function createModulo(
     assuntos?: string[];
     meta_questoes?: number;
     dominio_alvo?: number;
+    secao_id?: number | null;
+    licoes?: number;
   }
 ) {
   const { data, error } = await supabase.from('modulos').insert({ trilha_id: trilhaId, ...input }).select().single();
@@ -65,6 +67,8 @@ export async function updateModulo(
     assuntos: string[];
     meta_questoes: number;
     dominio_alvo: number;
+    secao_id: number | null;
+    licoes: number;
   }>
 ) {
   const { error } = await supabase.from('modulos').update(patch).eq('id', id);
@@ -610,4 +614,37 @@ export async function salvarRegra(trilhaId: number, questaoId: string, regra: 'o
 export async function removerRegra(trilhaId: number, questaoId: string) {
   const { error } = await supabase.from('trilha_questoes_regras').delete().eq('trilha_id', trilhaId).eq('questao_id', questaoId);
   if (error) throw error;
+}
+
+// ---- Trilha inteligente: seções e sugestão de estrutura (migration 030) ----
+
+export async function createSecao(trilhaId: number, titulo: string, ordem: number): Promise<SecaoRow> {
+  const { data, error } = await supabase.from('trilha_secoes').insert({ trilha_id: trilhaId, titulo, ordem }).select().single();
+  if (error) throw error;
+  return data;
+}
+
+export async function updateSecao(id: number, patch: { titulo?: string; ordem?: number }) {
+  const { error } = await supabase.from('trilha_secoes').update(patch).eq('id', id);
+  if (error) throw error;
+}
+
+// As unidades da seção apagada ficam "sem seção" (não são apagadas).
+export async function deleteSecao(id: number) {
+  const { error } = await supabase.from('trilha_secoes').delete().eq('id', id);
+  if (error) throw error;
+}
+
+export interface EstoqueAssunto {
+  disciplina: string;
+  assunto: string;
+  estoque: number;
+  banca_alvo: number;
+}
+
+// Estoque por disciplina/assunto com os filtros salvos da trilha.
+export async function sugerirEstrutura(trilhaId: number): Promise<EstoqueAssunto[]> {
+  const { data, error } = await supabase.rpc('admin_sugerir_estrutura', { p_trilha_id: trilhaId });
+  if (error) throw error;
+  return data ?? [];
 }

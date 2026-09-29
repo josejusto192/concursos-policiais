@@ -60,15 +60,15 @@ export interface Modulo {
   total: number;
   // Exige assinatura e o aluno não tem (só o 1º módulo de questões é grátis).
   premium: boolean;
-  // Etapa de trilha inteligente: domínio do aluno e meta (migration 028).
+  // Unidade de trilha inteligente: lições feitas (migration 030).
   etapa?: EtapaProgresso;
+  secaoId?: number | null;
 }
 
+// Unidade de trilha inteligente: N lições + 1 revisão final.
 export interface EtapaProgresso {
-  dominio: number;
-  respondidas: number;
-  meta: number;
-  alvo: number;
+  licoes: number;
+  licoesFeitas: number;
   estoque: number;
 }
 
