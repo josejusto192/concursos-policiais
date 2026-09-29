@@ -58,6 +58,8 @@ export type TrilhaConfigRow = {
   ano_min: number | null;
   ano_max: number | null;
   apenas_certo_errado: boolean;
+  // TEMPORÁRIO (migration 029): remover antes do lançamento
+  permitir_nao_revisadas: boolean;
   questoes_por_sessao: number;
   revisoes_por_sessao: number;
   atualizado_em: string;

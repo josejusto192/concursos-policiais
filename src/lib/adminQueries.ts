@@ -519,6 +519,7 @@ export const CONFIG_PADRAO = (trilhaId: number): TrilhaConfig => ({
   ano_min: null,
   ano_max: null,
   apenas_certo_errado: false,
+  permitir_nao_revisadas: false,
   questoes_por_sessao: 10,
   revisoes_por_sessao: 2,
 });

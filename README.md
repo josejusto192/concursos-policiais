@@ -257,3 +257,6 @@ evento: `select asaas_processar_evento(<id>);`.
 Cada sessão (`montar_sessao_inteligente`) traz revisões vencidas, obrigatórias, 1 reforço da etapa anterior mais fraca e questões novas perto do nível do aluno (~70% de chance de acerto), priorizando a banca-alvo. `avaliar_etapa` conclui a etapa quando o aluno responde a meta **e** atinge o domínio-alvo (com limite de segurança). Só questões revisadas, não anuladas e não desatualizadas entram. A 1ª etapa é grátis.
 
 **Ordem de publicação:** rode a migration 028 no Supabase **antes** de promover a versão do app no Vercel.
+
+### ⚠️ Checklist antes do lançamento
+- [ ] Remover a opção **"Usar também questões ainda não revisadas"** da trilha inteligente (temporária, migration 029): nova migration apagando `trilha_config.permitir_nao_revisadas` e voltando `questoes_filtradas`/`questoes_da_etapa`/`admin_contar_estoque` à versão da 028; no app, procurar `permitir_nao_revisadas`.

@@ -180,6 +180,22 @@ export default function AdminTrilhaInteligente({ trilhaId }: { trilhaId: number 
           Só questões Certo/Errado (estilo Cebraspe)
         </label>
 
+        {/* TEMPORÁRIO (migration 029): remover antes do lançamento — procure por "permitir_nao_revisadas" */}
+        <label className="mt-3 flex items-start gap-2 rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm font-semibold text-amber-900">
+          <input
+            type="checkbox"
+            className="mt-0.5"
+            checked={config.permitir_nao_revisadas}
+            onChange={(e) => set('permitir_nao_revisadas', e.target.checked)}
+          />
+          <span>
+            Usar também questões ainda não revisadas <span className="rounded bg-amber-200 px-1.5 text-xs">TEMPORÁRIO</span>
+            <span className="block text-xs font-medium text-amber-800">
+              O aluno vê o comentário original da questão. Útil enquanto o banco não está todo revisado — desligar antes do lançamento.
+            </span>
+          </span>
+        </label>
+
         <div className="mt-4 grid grid-cols-2 gap-3">
           <div>
             <label className={rotulo}>QUESTÕES POR SESSÃO (5–30)</label>
@@ -264,7 +280,14 @@ export default function AdminTrilhaInteligente({ trilhaId }: { trilhaId: number 
         titulo="3. Questões obrigatórias e excluídas"
         subtitulo="Obrigatórias aparecem para todo aluno na etapa escolhida (antes das novas). Excluídas nunca aparecem nesta trilha."
       >
-        <QuestoesFixas trilhaId={trilhaId} etapas={etapas} regras={regras} disciplinas={filtros.disciplinas} onMudou={recarregar} />
+        <QuestoesFixas
+          trilhaId={trilhaId}
+          etapas={etapas}
+          regras={regras}
+          disciplinas={filtros.disciplinas}
+          permitirNaoRevisadas={config.permitir_nao_revisadas}
+          onMudou={recarregar}
+        />
       </Secao>
     </div>
   );
@@ -351,7 +374,7 @@ function AvisosEstoque({ total, meta, naoRevisadas, bancaAlvo, daBanca }: { tota
       )}
       {!!naoRevisadas && (
         <div className="text-gray-500">
-          ℹ {naoRevisadas} questões desse recorte ainda não têm comentário revisado e não entram — revise no Banco de questões para liberar.
+          ℹ {naoRevisadas} questões desse recorte ainda não têm comentário revisado e não entram — revise no Banco de questões ou ligue “usar não revisadas” nos filtros.
         </div>
       )}
     </div>
@@ -611,12 +634,14 @@ function QuestoesFixas({
   etapas,
   regras,
   disciplinas,
+  permitirNaoRevisadas,
   onMudou,
 }: {
   trilhaId: number;
   etapas: ModuloRow[];
   regras: RegraQuestao[];
   disciplinas: string[];
+  permitirNaoRevisadas: boolean;
   onMudou: () => void;
 }) {
   const [texto, setTexto] = useState('');
@@ -725,8 +750,14 @@ function QuestoesFixas({
                     <>
                       <button
                         onClick={() => aplicar(q, 'obrigatoria')}
-                        disabled={!q.revisado || !etapaEscolhida}
-                        title={!q.revisado ? 'Revise o comentário antes de tornar obrigatória' : !etapaEscolhida ? 'Escolha a etapa acima' : ''}
+                        disabled={(!q.revisado && !permitirNaoRevisadas) || !etapaEscolhida}
+                        title={
+                          !q.revisado && !permitirNaoRevisadas
+                            ? 'Revise o comentário antes de tornar obrigatória (ou ligue "usar não revisadas" nos filtros)'
+                            : !etapaEscolhida
+                              ? 'Escolha a etapa acima'
+                              : ''
+                        }
                         className="flex-none rounded-lg bg-violet-600 px-2.5 py-1 font-bold text-white hover:bg-violet-700 disabled:bg-gray-300"
                       >
                         Obrigatória
