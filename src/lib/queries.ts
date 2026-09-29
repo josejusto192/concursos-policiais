@@ -1,7 +1,7 @@
 import { supabase } from './supabase';
 import { invokeEdgeFunction } from './edgeFunctions';
 import type { Alternativa, Database, ModuloQuestaoRow } from './database.types';
-import type { Questao } from '../data/types';
+import type { EtapaProgresso, MotivoQuestao, Questao } from '../data/types';
 import type { AiMessage } from '../state/types';
 
 export interface TrilhaRow {
@@ -12,6 +12,7 @@ export interface TrilhaRow {
   ativa: boolean;
   ordem: number;
   secao_nome: string | null;
+  tipo: 'manual' | 'inteligente';
 }
 
 export async function fetchTrilhas(): Promise<TrilhaRow[]> {
@@ -25,9 +26,14 @@ export interface ModuloRow {
   trilha_id: number;
   titulo: string;
   ordem: number;
-  tipo: 'questoes' | 'aula';
+  tipo: 'questoes' | 'aula' | 'inteligente';
   video_url: string | null;
   aula_id: number | null;
+  // etapa de trilha inteligente (migration 028)
+  disciplina: string | null;
+  assuntos: string[];
+  meta_questoes: number;
+  dominio_alvo: number;
 }
 
 // Módulos tipo 'aula' apontam para a biblioteca de aulas (aula_id): o vídeo
@@ -104,6 +110,61 @@ export async function fetchQuestoesDoModulo(moduloId: number): Promise<Questao[]
   const { data, error } = await supabase.rpc('get_modulo_questoes', { p_modulo_id: moduloId });
   if (error) throw error;
   return (data ?? []).map(mapQuestaoRow);
+}
+
+const MOTIVOS: MotivoQuestao[] = ['nova', 'obrigatoria', 'revisao', 'relembrar', 'reforco', 'repeticao'];
+const comoMotivo = (m: string | null | undefined): MotivoQuestao | undefined =>
+  MOTIVOS.includes(m as MotivoQuestao) ? (m as MotivoQuestao) : undefined;
+
+// ---- Revisão espaçada e trilha inteligente (migration 028) ----
+
+// Até `limite` questões antigas pra intercalar numa sessão de módulo manual:
+// revisões vencidas e, se faltar, acertadas há dias na mesma trilha.
+export async function fetchRevisoesParaSessao(trilhaId: number, limite: number, excluir: string[]): Promise<Questao[]> {
+  if (limite <= 0) return [];
+  const { data, error } = await supabase.rpc('get_revisoes_para_sessao', { p_trilha_id: trilhaId, p_limite: limite, p_excluir: excluir });
+  if (error) throw error;
+  return (data ?? []).map((row) => ({ ...mapQuestaoRow(row), motivo: comoMotivo(row.motivo) }));
+}
+
+// Sessão montada pelo algoritmo para uma etapa de trilha inteligente.
+export async function fetchSessaoInteligente(moduloId: number): Promise<Questao[]> {
+  const { data, error } = await supabase.rpc('montar_sessao_inteligente', { p_modulo_id: moduloId });
+  if (error) throw error;
+  return (data ?? []).map((row) => ({ ...mapQuestaoRow(row), motivo: comoMotivo(row.motivo) }));
+}
+
+export interface AvaliacaoEtapa extends EtapaProgresso {
+  acertos: number;
+  concluida: boolean;
+  concluiu_agora: boolean;
+}
+
+// Depois de cada sessão: domínio atualizado e se a etapa foi concluída.
+export async function avaliarEtapa(moduloId: number): Promise<AvaliacaoEtapa> {
+  const { data, error } = await supabase.rpc('avaliar_etapa', { p_modulo_id: moduloId }).single<AvaliacaoEtapa>();
+  if (error) throw error;
+  return data;
+}
+
+export async function fetchProgressoTrilhaInteligente(trilhaId: number): Promise<Map<number, EtapaProgresso>> {
+  const { data, error } = await supabase.rpc('progresso_trilha_inteligente', { p_trilha_id: trilhaId });
+  if (error) throw error;
+  return new Map((data ?? []).map((r) => [r.modulo_id, { dominio: r.dominio, respondidas: r.respondidas, meta: r.meta, alvo: r.alvo, estoque: r.estoque }]));
+}
+
+export interface DominioAssunto {
+  disciplina: string;
+  assunto: string;
+  dominio: number;
+  respostas: number;
+  acertos: number;
+}
+
+export async function fetchMeuDominio(): Promise<DominioAssunto[]> {
+  const { data, error } = await supabase.rpc('meu_dominio');
+  if (error) throw error;
+  return data ?? [];
 }
 
 // Tutor de IA: manda a questão atual (via edge function, que busca o
@@ -210,9 +271,10 @@ export async function fetchMinhaAssinatura(usuarioId: string): Promise<MinhaAssi
   };
 }
 
-// Resposta do aluno (trilha e caderno de erros). O servidor confere o
-// gabarito, grava, dá o XP (10 por questão, uma vez) e atualiza a ofensiva
-// (migration 027) — o navegador não escolhe mais esses valores.
+// Resposta do aluno (trilha, caderno, trilha inteligente). O servidor
+// confere o gabarito, grava, dá o XP (10 por questão, uma vez), atualiza a
+// ofensiva (migration 027), a fila de revisão e a nota do aluno no assunto
+// (migration 028) — o navegador não escolhe mais esses valores.
 export interface RespostaServidor {
   acertou: boolean;
   xp_ganho: number;
@@ -220,10 +282,19 @@ export interface RespostaServidor {
   streak: number;
   ultimo_estudo: string;
   ofensiva_nova: number | null;
+  // fila de revisão: 0 = errou (caderno), 1–3 = volta em 1/7/30 dias, 4 = dominada
+  revisao_etapa: number | null;
+  proxima_revisao: string | null;
+  // domínio do aluno no assunto da questão, 0–100
+  dominio: number;
 }
 
-export async function responderQuestao(questaoId: string, letra: string): Promise<RespostaServidor> {
-  const { data, error } = await supabase.rpc('responder_questao', { p_questao_id: questaoId, p_letra: letra }).single<RespostaServidor>();
+export type OrigemResposta = 'trilha' | 'caderno' | 'revisao' | 'inteligente';
+
+export async function responderQuestao(questaoId: string, letra: string, origem: OrigemResposta = 'trilha'): Promise<RespostaServidor> {
+  const { data, error } = await supabase
+    .rpc('responder_questao', { p_questao_id: questaoId, p_letra: letra, p_origem: origem })
+    .single<RespostaServidor>();
   if (error) throw error;
   return data;
 }
@@ -266,18 +337,21 @@ export async function criarTicket(input: {
 
 // ---- Caderno de erros (por trilha, com "responder de novo") ----
 
-export async function fetchContagemErros(trilhaId: number): Promise<number> {
-  const { data, error } = await supabase.rpc('contar_minhas_questoes_erradas', { p_trilha_id: trilhaId });
+// Caderno = erros + revisões programadas que venceram (1, 7 e 30 dias
+// depois de acertar), de qualquer trilha — o aprendizado é do aluno.
+export async function fetchContagemErros(): Promise<number> {
+  const { data, error } = await supabase.rpc('contar_revisoes_pendentes');
   if (error) throw error;
   return data ?? 0;
 }
 
-export async function fetchQuestoesErradas(trilhaId: number): Promise<Questao[]> {
-  const { data, error } = await supabase.rpc('get_minhas_questoes_erradas', { p_trilha_id: trilhaId });
+export async function fetchQuestoesErradas(): Promise<Questao[]> {
+  const { data, error } = await supabase.rpc('get_revisoes_pendentes', { p_limite: 50 });
   if (error) throw error;
   return (data ?? []).map((row) => ({
     ...mapQuestaoRow(row),
     aula: row.aula_video_url ? { titulo: row.aula_titulo ?? 'Aula', video_url: row.aula_video_url } : undefined,
+    revisaoEtapa: row.revisao_etapa,
   }));
 }
 
@@ -288,12 +362,13 @@ export async function fetchDiasDeEstudo(usuarioId: string, dias = 7): Promise<Se
   const desde = new Date();
   desde.setHours(0, 0, 0, 0);
   desde.setDate(desde.getDate() - (dias - 1));
+  // histórico completo de respostas (migration 028)
   const { data, error } = await supabase
-    .from('progresso_questoes')
+    .from('respostas')
     .select('respondido_em')
     .eq('usuario_id', usuarioId)
     .gte('respondido_em', desde.toISOString())
-    .limit(2000);
+    .limit(5000);
   if (error) throw error;
   return new Set((data ?? []).map((r) => new Date(r.respondido_em).toLocaleDateString('en-CA')));
 }
@@ -301,8 +376,9 @@ export async function fetchDiasDeEstudo(usuarioId: string, dias = 7): Promise<Se
 export async function fetchDailyDone(usuarioId: string): Promise<number> {
   const startOfDay = new Date();
   startOfDay.setHours(0, 0, 0, 0);
+  // conta toda resposta do dia, inclusive refazer no caderno (migration 028)
   const { count, error } = await supabase
-    .from('progresso_questoes')
+    .from('respostas')
     .select('id', { count: 'exact', head: true })
     .eq('usuario_id', usuarioId)
     .gte('respondido_em', startOfDay.toISOString());

@@ -13,8 +13,20 @@ import Confetti from '../components/Confetti';
 import { som } from '../lib/efeitos';
 import { logClientError } from '../lib/errorLog';
 
+// Escada da revisão espaçada (migration 028): errou → caderno; acertou →
+// volta em 1 dia → 7 dias → 30 dias → dominada.
+const ROTULO_ETAPA: Record<number, string> = { 1: 'depois de 1 dia', 2: 'depois de 7 dias', 3: 'depois de 30 dias' };
+
+function textoProximaRevisao(etapa: number | null): string {
+  if (etapa === 1) return 'Volta amanhã pra fixar';
+  if (etapa === 2) return 'Próxima revisão em 7 dias';
+  if (etapa === 3) return 'Próxima revisão em 30 dias';
+  if (etapa != null && etapa >= 4) return 'Dominada! Não volta mais 🎉';
+  return 'Saiu do caderno';
+}
+
 export default function CadernoErros() {
-  const { usuario, activeTrilha, aplicarResposta, refreshDailyDone, refreshErrosCount } = useAppData();
+  const { usuario, aplicarResposta, refreshDailyDone, refreshErrosCount } = useAppData();
   const navigate = useNavigate();
 
   const [questoes, setQuestoes] = useState<Questao[] | null>(null);
@@ -27,13 +39,15 @@ export default function CadernoErros() {
   const [aulaAberta, setAulaAberta] = useState(false);
   const [ofensivaNova, setOfensivaNova] = useState<number | null>(null);
   const [xpGanho, setXpGanho] = useState(0);
+  // o que o servidor decidiu: volta em 1/7/30 dias ou dominada (4)
+  const [proximaEtapa, setProximaEtapa] = useState<number | null>(null);
 
+  // erros + revisões programadas vencidas, de todas as trilhas (migration 028)
   useEffect(() => {
-    if (!activeTrilha) return;
-    fetchQuestoesErradas(activeTrilha.id)
+    fetchQuestoesErradas()
       .then(setQuestoes)
       .catch(() => setLoadError(true));
-  }, [activeTrilha]);
+  }, []);
 
   if (loadError) {
     return (
@@ -63,8 +77,8 @@ export default function CadernoErros() {
         </div>
         <div className="max-w-[300px] font-sans text-[13.5px] font-semibold leading-[1.5] text-text2">
           {finalizado
-            ? `Você acertou ${acertosNestaSessao} de ${total} desta vez.${acertosNestaSessao > 0 ? ' As que acertou saíram do caderno.' : ' Elas continuam aqui para a próxima revisão.'}`
-            : 'Nenhuma questão errada para revisar nesta trilha. Continue avançando!'}
+            ? `Você acertou ${acertosNestaSessao} de ${total} desta vez.${acertosNestaSessao > 0 ? ' As que acertou voltam para uma revisão rápida daqui a alguns dias, pra fixar de vez.' : ' Elas continuam aqui para a próxima revisão.'}`
+            : 'Nenhum erro ou revisão pendente agora. As questões voltam aqui no dia certo de revisar. Continue avançando!'}
         </div>
         {ofensivaNova && (
           <div className="ofensiva-chip">
@@ -90,6 +104,7 @@ export default function CadernoErros() {
     const correct = selected === q.gabarito_letra;
     setAnswered(true);
     setXpGanho(0);
+    setProximaEtapa(null);
     if (correct) {
       som.acerto();
       setAcertosNestaSessao((n) => n + 1);
@@ -98,9 +113,10 @@ export default function CadernoErros() {
     }
     try {
       // o servidor confere o gabarito e decide XP e ofensiva
-      const r = await responderQuestao(q.id, selected);
+      const r = await responderQuestao(q.id, selected, 'caderno');
       aplicarResposta(r);
       setXpGanho(r.xp_ganho);
+      setProximaEtapa(r.revisao_etapa);
       if (r.ofensiva_nova) setOfensivaNova(r.ofensiva_nova);
       await Promise.all([refreshDailyDone(), refreshErrosCount()]);
     } catch (err) {
@@ -147,7 +163,13 @@ export default function CadernoErros() {
 
       <PatternBackground scrollClassName="p-[18px_18px_230px]">
         <div className="mb-3.5 flex flex-wrap gap-1.5">
-          <span className="rounded-lg bg-error-tint px-2.5 py-1 font-sans text-[11px] font-bold text-error">Caderno de erros</span>
+          {(q.revisaoEtapa ?? 0) > 0 ? (
+            <span className="rounded-lg bg-[#fff1e0] px-2.5 py-1 font-sans text-[11px] font-bold text-[#b33d00]">
+              🔁 Revisão programada · {ROTULO_ETAPA[q.revisaoEtapa ?? 1] ?? 'revisão'}
+            </span>
+          ) : (
+            <span className="rounded-lg bg-error-tint px-2.5 py-1 font-sans text-[11px] font-bold text-error">Você errou esta</span>
+          )}
           <span className="rounded-lg bg-blue-tint px-2.5 py-1 font-sans text-[11px] font-bold text-blue">
             {q.banca} · {q.ano}
           </span>
@@ -267,7 +289,14 @@ export default function CadernoErros() {
             <div className="min-w-0 flex-1">
               <div className="feedback-title">{isCorrect ? 'Agora foi!' : 'Ainda não'}</div>
               <div className="feedback-sub">
-                {isCorrect ? <span className="xp-pill">{xpGanho > 0 ? `+${xpGanho} XP · saiu do caderno` : 'Saiu do caderno'}</span> : <span>Ela continua no caderno para revisar depois</span>}
+                {isCorrect ? (
+                  <>
+                    {xpGanho > 0 && <span className="xp-pill">+{xpGanho} XP</span>}
+                    <span>{textoProximaRevisao(proximaEtapa)}</span>
+                  </>
+                ) : (
+                  <span>Ela continua no caderno para revisar depois</span>
+                )}
               </div>
             </div>
           </div>

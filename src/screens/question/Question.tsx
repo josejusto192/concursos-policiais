@@ -2,11 +2,21 @@ import { ArrowClockwise, ArrowRight, CircleNotch, Fire, X } from '@phosphor-icon
 import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAppData } from '../../contexts/AppDataContext';
-import { criarTicket, fetchQuestoesDoModulo, fetchRespostas, responderQuestao, upsertProgressoModulo } from '../../lib/queries';
+import {
+  avaliarEtapa,
+  criarTicket,
+  fetchQuestoesDoModulo,
+  fetchRespostas,
+  fetchRevisoesParaSessao,
+  fetchSessaoInteligente,
+  responderQuestao,
+  upsertProgressoModulo,
+  type OrigemResposta,
+} from '../../lib/queries';
 import { formatTimer } from '../../lib/format';
 import { sanitizeHtml } from '../../lib/sanitizeHtml';
 import { useAppState } from '../../state/AppStateContext';
-import type { Questao } from '../../data/types';
+import type { MotivoQuestao, Questao } from '../../data/types';
 import PatternBackground from '../../components/PatternBackground';
 import ReportSheet from './ReportSheet';
 import AiTutorSheet from './AiTutorSheet';
@@ -23,6 +33,25 @@ const FRASES_ACERTO = ['Mandou bem!', 'Isso aí!', 'Excelente!', 'Na mosca!', 'P
 const FRASES_ERRO = ['Quase lá!', 'Não foi dessa vez', 'Errar faz parte!', 'Bora aprender com essa', 'Tudo bem, respira'];
 // Comemora 3 acertos seguidos e depois a cada 5 (5, 10, 15…).
 const ehMarcoDeCombo = (combo: number) => combo === 3 || (combo >= 5 && combo % 5 === 0);
+
+// Selo de por que a questão apareceu (revisão espaçada / algoritmo).
+const SELO_MOTIVO: Partial<Record<MotivoQuestao, string>> = {
+  revisao: '🔁 Revisão',
+  relembrar: '🔁 Relembrando',
+  reforco: '💪 Reforço',
+  repeticao: '↺ Refazendo',
+};
+
+// Intercala as questões de revisão nas que ainda faltam do módulo (a 1ª
+// depois de 2 questões, a próxima 3 depois), nunca como última.
+function intercalar(base: Questao[], inicio: number, extras: Questao[]): Questao[] {
+  const out = [...base];
+  extras.forEach((extra, i) => {
+    const pos = Math.min(out.length - 1, inicio + 2 + i * 4);
+    if (pos > inicio) out.splice(pos, 0, extra);
+  });
+  return out;
+}
 
 export default function Question() {
   const { state, dispatch } = useAppState();
@@ -41,6 +70,8 @@ export default function Question() {
   const savingRef = useRef(false);
   const explicacaoRef = useRef<HTMLDivElement>(null);
   const [ultimoGanho, setUltimoGanho] = useState(0);
+  // trilha inteligente: domínio no assunto depois da última resposta
+  const [ultimoDominio, setUltimoDominio] = useState<number | null>(null);
   // Retomada: módulo não concluído continua da 1ª questão sem resposta.
   // Só na entrada (sessão zerada) — nunca no meio de uma sessão em curso.
   const sessaoNovaRef = useRef(state.session.qIndex === 0 && state.session.sessionAnswered === 0);
@@ -72,6 +103,8 @@ export default function Question() {
 
   const currentModulo = modules.find((m) => m.status === 'current') ?? null;
   const currentModuloId = currentModulo?.id;
+  const ehInteligente = currentModulo?.tipo === 'inteligente';
+  const trilhaId = activeTrilha?.id;
   const precisaAssinar = !!currentModulo?.premium;
   const usuarioId = usuario?.id;
 
@@ -83,17 +116,38 @@ export default function Question() {
     if (!currentModuloId || precisaAssinar) return;
     setQuestoes(null);
     setLoadError(false);
+
+    const falhou = (err: { message?: string } | null, contexto: string) => {
+      // O banco também barra módulo pago sem assinatura (migration 022).
+      if (err?.message?.includes('ASSINATURA_NECESSARIA')) {
+        navigate('/assinar', { replace: true });
+        return;
+      }
+      logClientError(err, contexto);
+      setLoadError(true);
+    };
+
+    // Trilha inteligente: o servidor monta a sessão (revisões, reforço e
+    // questões novas no nível do aluno) — não existe "retomar".
+    if (ehInteligente) {
+      sessaoNovaRef.current = false;
+      fetchSessaoInteligente(currentModuloId)
+        .then(setQuestoes)
+        .catch((err) => falhou(err, 'fetchSessaoInteligente'));
+      return;
+    }
+
     fetchQuestoesDoModulo(currentModuloId)
       .then(async (qs) => {
         if (sessaoNovaRef.current && usuarioId && qs.length) {
           sessaoNovaRef.current = false;
+          let feitas = 0;
           try {
             // As respostas ficam gravadas a cada questão; o módulo só é
             // marcado como concluído no fim. Então, se o aluno saiu no meio,
             // as questões do começo já têm resposta: pula elas e soma os
             // acertos no resultado.
             const respostas = await fetchRespostas(usuarioId, qs.map((q) => q.id));
-            let feitas = 0;
             let corretas = 0;
             while (feitas < qs.length && respostas.has(qs[feitas].id)) {
               if (respostas.get(qs[feitas].id)) corretas += 1;
@@ -108,19 +162,23 @@ export default function Question() {
             // sem as respostas anteriores, começa do início (como antes)
             logClientError(err, 'fetchRespostas');
           }
+          // Revisão espaçada: 1–2 questões antigas no meio do que falta.
+          const restantes = qs.length - feitas;
+          const limite = restantes >= 5 ? 2 : restantes >= 3 ? 1 : 0;
+          if (trilhaId && limite > 0) {
+            try {
+              const extras = await fetchRevisoesParaSessao(trilhaId, limite, qs.map((q) => q.id));
+              setQuestoes(intercalar(qs, feitas, extras));
+              return;
+            } catch (err) {
+              logClientError(err, 'fetchRevisoesParaSessao');
+            }
+          }
         }
         setQuestoes(qs);
       })
-      .catch((err) => {
-        // O banco também barra módulo pago sem assinatura (migration 022).
-        if (err?.message?.includes('ASSINATURA_NECESSARIA')) {
-          navigate('/assinar', { replace: true });
-          return;
-        }
-        logClientError(err, 'fetchQuestoesDoModulo');
-        setLoadError(true);
-      });
-  }, [currentModuloId, precisaAssinar, navigate, usuarioId, dispatch]);
+      .catch((err) => falhou(err, 'fetchQuestoesDoModulo'));
+  }, [currentModuloId, precisaAssinar, navigate, usuarioId, dispatch, ehInteligente, trilhaId]);
 
   if (!currentModulo) {
     return (
@@ -209,9 +267,12 @@ export default function Question() {
     setSaving(true);
     setSaveError('');
     try {
-      // o servidor confere o gabarito e decide XP e ofensiva
-      const r = await responderQuestao(q.id, selected ?? '');
+      // o servidor confere o gabarito e decide XP, ofensiva, revisão e domínio
+      const origem: OrigemResposta =
+        q.motivo === 'revisao' || q.motivo === 'relembrar' || q.motivo === 'reforco' ? 'revisao' : ehInteligente ? 'inteligente' : 'trilha';
+      const r = await responderQuestao(q.id, selected ?? '', origem);
       aplicarResposta(r);
+      setUltimoDominio(ehInteligente ? r.dominio : null);
       const correct = r.acertou;
       const gained = r.xp_ganho;
       dispatch({ type: 'MARK_ANSWERED', correct, gained });
@@ -249,6 +310,31 @@ export default function Question() {
   }
 
   async function concluirModulo(acertos: number, respondidas: number) {
+    // Etapa inteligente: o servidor avalia domínio e meta e decide se conclui.
+    if (ehInteligente && currentModuloId) {
+      if (finalizing) return;
+      savingRef.current = true;
+      setFinalizing(true);
+      const antes = currentModulo?.etapa?.dominio ?? 0;
+      try {
+        const av = await avaliarEtapa(currentModuloId);
+        await refreshModules();
+        navigate('/resultado', {
+          state: {
+            moduloId: currentModuloId,
+            moduloTitulo: currentModulo?.titulo,
+            trilhaNome: activeTrilha?.nome,
+            etapa: { ...av, antes },
+          },
+        });
+      } catch (err) {
+        logClientError(err, 'avaliarEtapa');
+        setSaveError('Não foi possível salvar o resultado da sessão. Tente novamente.');
+        setFinalizing(false);
+        savingRef.current = false;
+      }
+      return;
+    }
     if (usuario && currentModuloId && !finalizing) {
       savingRef.current = true;
       setFinalizing(true);
@@ -362,6 +448,9 @@ export default function Question() {
           <span className="rounded-lg bg-app-bg px-2.5 py-1 font-sans text-[11px] font-bold text-text2">
             Questão {state.session.qIndex + 1} / {total}
           </span>
+          {q.motivo && SELO_MOTIVO[q.motivo] && (
+            <span className="rounded-lg bg-[#fff1e0] px-2.5 py-1 font-sans text-[11px] font-bold text-[#b33d00]">{SELO_MOTIVO[q.motivo]}</span>
+          )}
           {retomadaDe !== null && state.session.qIndex === retomadaDe && !answered && (
             <span className="flex items-center gap-1 rounded-lg bg-success-tint px-2.5 py-1 font-sans text-[11px] font-bold text-success" role="status">
               <ArrowClockwise size={12} weight="bold" />
@@ -528,6 +617,11 @@ export default function Question() {
                   ultimoGanho > 0 ? <span className="xp-pill">+{ultimoGanho} XP</span> : <span>Resposta certa!</span>
                 ) : (
                   <span>Resposta certa: {q.gabarito_letra}</span>
+                )}
+                {ultimoDominio !== null && (
+                  <span className="dominio-pill" title="Chance de acertar uma questão média deste assunto">
+                    Domínio {ultimoDominio}%
+                  </span>
                 )}
                 {isCorrect && ehMarcoDeCombo(combo) && (
                   <span className="combo-pill">

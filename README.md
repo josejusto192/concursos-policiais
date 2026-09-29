@@ -239,3 +239,21 @@ com cadeado e levam para `/assinar` (escolha do plano + CPF → fatura).
 Eventos recebidos ficam em `asaas_webhook_eventos` (status `PROCESSADO` /
 `ERRO`). Erros também aparecem em "Saúde do app". Para reprocessar um
 evento: `select asaas_processar_evento(<id>);`.
+
+## Revisão espaçada e Trilha Inteligente (migration 028)
+
+**Revisão espaçada (todas as trilhas).** Toda resposta passa por `responder_questao` e fica no histórico (`respostas`). Errou → a questão vai para o caderno na hora (`revisoes`, etapa 0). Acertou a revisão → volta em 1 dia, depois 7, depois 30, e então fica dominada. O caderno mostra erros + revisões vencidas de todas as trilhas. Nos módulos manuais, 1–2 questões antigas (revisões vencidas ou acertadas há 3+ dias) entram no meio da sessão com o selo "Revisão".
+
+**Algoritmo (cálculo, sem IA).** A cada resposta o banco atualiza a nota do aluno por disciplina e assunto (`proficiencia`) e a dificuldade da questão (`questao_stats`), num modelo tipo Elo com chance de chute (1/nº de alternativas; Certo/Errado = 50%). Domínio exibido = chance de acertar uma questão média. A tela Evolução mostra o domínio por assunto.
+
+**Trilha inteligente (admin → Trilhas → Nova trilha → Inteligente).** O admin define:
+- concurso/cargo, filtros do banco (bancas, órgãos, cargos, escolaridade, anos, só Certo/Errado);
+- banca-alvo e % de prioridade;
+- questões por sessão e revisões por sessão;
+- etapas (disciplina + assuntos, meta de questões, domínio-alvo), com estoque ao vivo e avisos;
+- questões obrigatórias (por etapa) e excluídas;
+- "Simular uma sessão" mostra o que o algoritmo montaria.
+
+Cada sessão (`montar_sessao_inteligente`) traz revisões vencidas, obrigatórias, 1 reforço da etapa anterior mais fraca e questões novas perto do nível do aluno (~70% de chance de acerto), priorizando a banca-alvo. `avaliar_etapa` conclui a etapa quando o aluno responde a meta **e** atinge o domínio-alvo (com limite de segurança). Só questões revisadas, não anuladas e não desatualizadas entram. A 1ª etapa é grátis.
+
+**Ordem de publicação:** rode a migration 028 no Supabase **antes** de promover a versão do app no Vercel.

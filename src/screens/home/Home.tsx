@@ -90,6 +90,7 @@ export default function Home() {
             </span>
           </span>
           <strong>{activeTrilha?.nome || 'Escolha sua trilha'}</strong>
+          {activeTrilha?.tipo === 'inteligente' && <span className="trilha-inteligente-selo">✨ TRILHA INTELIGENTE · se adapta a você</span>}
           {activeTrilha?.descricao && <small>{activeTrilha.descricao}</small>}
         </button>
 

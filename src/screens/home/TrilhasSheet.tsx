@@ -34,7 +34,7 @@ export default function TrilhasSheet({ onClose }: { onClose: () => void }) {
             <Path size={23} />
           </span>
           <div>
-            <strong>{t.nome}</strong>
+            <strong>{t.nome}{t.tipo === 'inteligente' && <span className="ml-1.5 align-middle text-[11px] font-extrabold text-[#6d3fd8]">✨ Inteligente</span>}</strong>
             <p>{t.descricao}</p>
           </div>
           <span className="pill">

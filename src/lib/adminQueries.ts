@@ -1,12 +1,19 @@
 import { supabase } from './supabase';
 import { invokeEdgeFunction } from './edgeFunctions';
-import type { Database, QuestaoRow } from './database.types';
+import type { Database, QuestaoRow, TrilhaConfigRow } from './database.types';
 import type { ModuloRow, TrilhaRow } from './queries';
 import type { Usuario } from '../hooks/useUsuario';
 
 // ---- Trilhas ----
 
-export async function createTrilha(input: { nome: string; slug: string; descricao: string; ativa: boolean; ordem: number }) {
+export async function createTrilha(input: {
+  nome: string;
+  slug: string;
+  descricao: string;
+  ativa: boolean;
+  ordem: number;
+  tipo?: 'manual' | 'inteligente';
+}) {
   const { data, error } = await supabase.from('trilhas').insert(input).select().single();
   if (error) throw error;
   return data as TrilhaRow;
@@ -29,7 +36,17 @@ export async function deleteTrilha(id: number) {
 
 export async function createModulo(
   trilhaId: number,
-  input: { titulo: string; ordem: number; tipo?: 'questoes' | 'aula'; video_url?: string | null; aula_id?: number | null }
+  input: {
+    titulo: string;
+    ordem: number;
+    tipo?: 'questoes' | 'aula' | 'inteligente';
+    video_url?: string | null;
+    aula_id?: number | null;
+    disciplina?: string | null;
+    assuntos?: string[];
+    meta_questoes?: number;
+    dominio_alvo?: number;
+  }
 ) {
   const { data, error } = await supabase.from('modulos').insert({ trilha_id: trilhaId, ...input }).select().single();
   if (error) throw error;
@@ -38,7 +55,17 @@ export async function createModulo(
 
 export async function updateModulo(
   id: number,
-  patch: Partial<{ titulo: string; ordem: number; tipo: 'questoes' | 'aula'; video_url: string | null; aula_id: number | null }>
+  patch: Partial<{
+    titulo: string;
+    ordem: number;
+    tipo: 'questoes' | 'aula' | 'inteligente';
+    video_url: string | null;
+    aula_id: number | null;
+    disciplina: string | null;
+    assuntos: string[];
+    meta_questoes: number;
+    dominio_alvo: number;
+  }>
 ) {
   const { error } = await supabase.from('modulos').update(patch).eq('id', id);
   if (error) throw error;
@@ -473,4 +500,113 @@ export async function fetchClientErrors(page: number): Promise<{ rows: ClientErr
     .range(page * ERROS_PAGE_SIZE, page * ERROS_PAGE_SIZE + ERROS_PAGE_SIZE - 1);
   if (error) throw error;
   return { rows: data ?? [], total: count ?? 0 };
+}
+
+// ---- Trilha inteligente (migration 028) ----
+
+export type TrilhaConfig = Omit<TrilhaConfigRow, 'atualizado_em'>;
+
+export const CONFIG_PADRAO = (trilhaId: number): TrilhaConfig => ({
+  trilha_id: trilhaId,
+  concurso: null,
+  cargo_alvo: null,
+  bancas: [],
+  banca_alvo: null,
+  banca_alvo_pct: 70,
+  orgaos: [],
+  cargos: [],
+  niveis: [],
+  ano_min: null,
+  ano_max: null,
+  apenas_certo_errado: false,
+  questoes_por_sessao: 10,
+  revisoes_por_sessao: 2,
+});
+
+export async function fetchTrilhaConfig(trilhaId: number): Promise<TrilhaConfig> {
+  const { data, error } = await supabase.from('trilha_config').select('*').eq('trilha_id', trilhaId).maybeSingle();
+  if (error) throw error;
+  if (!data) return CONFIG_PADRAO(trilhaId);
+  const { atualizado_em: _ignorado, ...config } = data;
+  return config;
+}
+
+export async function saveTrilhaConfig(config: TrilhaConfig) {
+  const { error } = await supabase.from('trilha_config').upsert({ ...config, atualizado_em: new Date().toISOString() });
+  if (error) throw error;
+}
+
+export interface AssuntoEstoque {
+  assunto: string;
+  total: number;
+  revisadas: number;
+}
+
+export async function fetchAssuntos(disciplina: string): Promise<AssuntoEstoque[]> {
+  const { data, error } = await supabase.rpc('admin_assuntos', { p_disciplina: disciplina });
+  if (error) throw error;
+  return data ?? [];
+}
+
+export interface EstoqueContado {
+  total: number;
+  banca_alvo: number;
+  nao_revisadas: number;
+}
+
+// Quantas questões entram numa etapa com os filtros salvos da trilha.
+export async function contarEstoque(trilhaId: number, disciplina: string | null, assuntos: string[]): Promise<EstoqueContado> {
+  const { data, error } = await supabase
+    .rpc('admin_contar_estoque', { p_trilha_id: trilhaId, p_disciplina: disciplina ?? '', p_assuntos: assuntos })
+    .maybeSingle();
+  if (error) throw error;
+  return data ?? { total: 0, banca_alvo: 0, nao_revisadas: 0 };
+}
+
+export interface EstoqueEtapa {
+  total: number;
+  banca_alvo: number;
+  obrigatorias: number;
+}
+
+export async function fetchEstoqueTrilha(trilhaId: number): Promise<Map<number, EstoqueEtapa>> {
+  const { data, error } = await supabase.rpc('admin_estoque_trilha', { p_trilha_id: trilhaId });
+  if (error) throw error;
+  return new Map((data ?? []).map((r) => [r.modulo_id, { total: r.total, banca_alvo: r.banca_alvo, obrigatorias: r.obrigatorias }]));
+}
+
+export interface RegraQuestao {
+  questao_id: string;
+  regra: 'obrigatoria' | 'excluida';
+  modulo_id: number | null;
+  questao: Pick<QuestaoRow, 'id' | 'enunciado' | 'banca' | 'ano' | 'disciplina' | 'assunto' | 'revisado'> | null;
+}
+
+export async function fetchRegrasTrilha(trilhaId: number): Promise<RegraQuestao[]> {
+  const { data, error } = await supabase.from('trilha_questoes_regras').select('*').eq('trilha_id', trilhaId);
+  if (error) throw error;
+  const regras = data ?? [];
+  if (!regras.length) return [];
+  const { data: qs, error: qErr } = await supabase
+    .from('questoes')
+    .select('id, enunciado, banca, ano, disciplina, assunto, revisado')
+    .in(
+      'id',
+      regras.map((r) => r.questao_id),
+    );
+  if (qErr) throw qErr;
+  const porId = new Map((qs ?? []).map((q) => [q.id, q]));
+  return regras.map((r) => ({ questao_id: r.questao_id, regra: r.regra, modulo_id: r.modulo_id, questao: porId.get(r.questao_id) ?? null }));
+}
+
+export async function salvarRegra(trilhaId: number, questaoId: string, regra: 'obrigatoria' | 'excluida', moduloId: number | null) {
+  const { error } = await supabase
+    .from('trilha_questoes_regras')
+    .upsert({ trilha_id: trilhaId, questao_id: questaoId, regra, modulo_id: regra === 'obrigatoria' ? moduloId : null });
+  if (error) throw error;
+}
+
+export async function removerRegra(trilhaId: number, questaoId: string) {
+  const { error } = await supabase.from('trilha_questoes_regras').delete().eq('trilha_id', trilhaId).eq('questao_id', questaoId);
+  if (error) throw error;
 }

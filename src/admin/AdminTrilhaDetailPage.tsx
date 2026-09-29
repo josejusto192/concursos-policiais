@@ -12,6 +12,7 @@ import {
   type AulaRow,
 } from '../lib/adminQueries';
 import AdminLayout from './AdminLayout';
+import AdminTrilhaInteligente from './AdminTrilhaInteligente';
 
 export default function AdminTrilhaDetailPage() {
   const { id } = useParams();
@@ -115,6 +116,13 @@ export default function AdminTrilhaDetailPage() {
       </Link>
 
       <div className="mt-3 rounded-xl border border-gray-200 bg-white p-4">
+        <div className="mb-3 text-xs font-bold text-gray-500">
+          {trilha.tipo === 'inteligente' ? (
+            <span className="rounded-full bg-violet-100 px-2 py-0.5 text-violet-700">✨ TRILHA INTELIGENTE</span>
+          ) : (
+            <span className="rounded-full bg-gray-100 px-2 py-0.5 text-gray-600">TRILHA MANUAL</span>
+          )}
+        </div>
         <div className="grid grid-cols-2 gap-3">
           <div>
             <label className="text-xs font-bold text-gray-500">NOME</label>
@@ -166,6 +174,10 @@ export default function AdminTrilhaDetailPage() {
         </div>
       </div>
 
+      {trilha.tipo === 'inteligente' ? (
+        <AdminTrilhaInteligente trilhaId={trilhaId} />
+      ) : (
+        <>
       <div className="mt-6 flex items-center justify-between">
         <h2 className="text-lg font-extrabold text-gray-900">Módulos</h2>
       </div>
@@ -267,6 +279,8 @@ export default function AdminTrilhaDetailPage() {
         ))}
         {modulos?.length === 0 && <div className="px-4 py-6 text-center text-gray-400">Nenhum módulo ainda.</div>}
       </div>
+        </>
+      )}
     </AdminLayout>
   );
 }

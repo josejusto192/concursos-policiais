@@ -2,7 +2,7 @@ import { ChartBar, Fire, Lightning, Notebook, Target } from '@phosphor-icons/rea
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAppData } from '../contexts/AppDataContext';
-import { fetchStats, type StatsData } from '../lib/queries';
+import { fetchMeuDominio, fetchStats, type DominioAssunto, type StatsData } from '../lib/queries';
 import { levelFromXp } from '../lib/format';
 import { ErrorState, LoadingCards } from '../components/Feedback';
 
@@ -12,6 +12,18 @@ export default function Stats() {
   const [stats, setStats] = useState<StatsData | null>(null);
   const [error, setError] = useState('');
   const [tick, setTick] = useState(0);
+  // domínio por assunto calculado pelo algoritmo (migration 028)
+  const [dominio, setDominio] = useState<DominioAssunto[] | null>(null);
+  useEffect(() => {
+    if (!usuarioId) return;
+    fetchMeuDominio()
+      .then(setDominio)
+      .catch(() => setDominio([]));
+  }, [usuarioId, tick]);
+  const assuntos = (dominio ?? []).filter((d) => d.assunto !== '' && d.respostas >= 3);
+  const listaDominio = (assuntos.length ? assuntos : (dominio ?? []).filter((d) => d.respostas >= 3))
+    .sort((a, b) => a.dominio - b.dominio)
+    .slice(0, 6);
   useEffect(() => {
     if (!usuarioId) return;
     let alive = true;
@@ -148,6 +160,37 @@ export default function Stats() {
                           style={{
                             width: `${d.pct}%`,
                             background: d.pct >= 75 ? '#22a06b' : d.pct >= 50 ? '#1557e6' : '#e4ad18',
+                          }}
+                        />
+                      </div>
+                    </div>
+                  ))
+                )}
+              </section>
+              <section className="panel">
+                <div className="section-heading">
+                  <div>
+                    <h2>Seu domínio por assunto</h2>
+                    <p>Chance de acertar uma questão média · os mais fracos primeiro</p>
+                  </div>
+                </div>
+                {!listaDominio.length ? (
+                  <p className="empty-state">Responda pelo menos 3 questões de um assunto para o Foco calcular seu domínio.</p>
+                ) : (
+                  listaDominio.map((d) => (
+                    <div key={`${d.disciplina}|${d.assunto}`} className="discipline-item">
+                      <div>
+                        <span>
+                          {d.assunto || d.disciplina}
+                          {d.assunto && <small className="ml-1.5 font-semibold text-text3">{d.disciplina}</small>}
+                        </span>
+                        <strong>{d.dominio}%</strong>
+                      </div>
+                      <div className="progress-track">
+                        <span
+                          style={{
+                            width: `${d.dominio}%`,
+                            background: d.dominio >= 75 ? '#22a06b' : d.dominio >= 50 ? '#8b5cf6' : '#e4ad18',
                           }}
                         />
                       </div>

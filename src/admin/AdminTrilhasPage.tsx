@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { fetchTrilhas, type TrilhaRow } from '../lib/queries';
-import { createTrilha, fetchDashboardTrilhas, type DashboardTrilha } from '../lib/adminQueries';
+import { CONFIG_PADRAO, createTrilha, fetchDashboardTrilhas, saveTrilhaConfig, type DashboardTrilha } from '../lib/adminQueries';
 import AdminLayout from './AdminLayout';
 
 export default function AdminTrilhasPage() {
@@ -11,6 +11,8 @@ export default function AdminTrilhasPage() {
   const [nome, setNome] = useState('');
   const [slug, setSlug] = useState('');
   const [descricao, setDescricao] = useState('');
+  const [tipo, setTipo] = useState<'manual' | 'inteligente'>('manual');
+  const navigate = useNavigate();
   const [error, setError] = useState<string | null>(null);
 
   function refresh() {
@@ -27,7 +29,12 @@ export default function AdminTrilhasPage() {
     }
     setError(null);
     try {
-      await createTrilha({ nome: nome.trim(), slug: slug.trim(), descricao: descricao.trim(), ativa: false, ordem: trilhas?.length ?? 0 });
+      const nova = await createTrilha({ nome: nome.trim(), slug: slug.trim(), descricao: descricao.trim(), ativa: false, ordem: trilhas?.length ?? 0, tipo });
+      if (tipo === 'inteligente') {
+        await saveTrilhaConfig(CONFIG_PADRAO(nova.id));
+        navigate(`/admin/trilhas/${nova.id}`);
+        return;
+      }
       setNome('');
       setSlug('');
       setDescricao('');
@@ -62,6 +69,24 @@ export default function AdminTrilhasPage() {
               <input value={slug} onChange={(e) => setSlug(e.target.value)} className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm" />
             </div>
           </div>
+          <div className="mt-3 grid grid-cols-2 gap-3">
+            {(
+              [
+                ['manual', 'Manual', 'Você monta cada módulo escolhendo as questões a dedo.'],
+                ['inteligente', '✨ Inteligente', 'Você define concurso, filtros, etapas e regras; o algoritmo monta as sessões de cada aluno.'],
+              ] as const
+            ).map(([valor, titulo, texto]) => (
+              <button
+                key={valor}
+                type="button"
+                onClick={() => setTipo(valor)}
+                className={`rounded-lg border-2 p-3 text-left ${tipo === valor ? 'border-blue-600 bg-blue-50' : 'border-gray-200 bg-white'}`}
+              >
+                <div className="text-sm font-extrabold text-gray-900">{titulo}</div>
+                <div className="mt-0.5 text-xs text-gray-500">{texto}</div>
+              </button>
+            ))}
+          </div>
           <div className="mt-3">
             <label className="text-xs font-bold text-gray-500">DESCRIÇÃO</label>
             <textarea
@@ -95,7 +120,12 @@ export default function AdminTrilhasPage() {
               const c = contagens.get(t.id);
               return (
                 <tr key={t.id} className="border-t border-gray-100">
-                  <td className="px-4 py-3 font-semibold text-gray-900">{t.nome}</td>
+                  <td className="px-4 py-3 font-semibold text-gray-900">
+                    {t.nome}
+                    {t.tipo === 'inteligente' && (
+                      <span className="ml-2 rounded-full bg-violet-100 px-2 py-0.5 text-xs font-bold text-violet-700">✨ Inteligente</span>
+                    )}
+                  </td>
                   <td className="px-4 py-3 text-gray-500">{t.slug}</td>
                   <td className="px-4 py-3">
                     <span

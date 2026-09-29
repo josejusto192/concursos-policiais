@@ -45,6 +45,24 @@ export type QuestaoRow = {
 
 // Shape explícita retornada por get_modulo_questoes() — só o que o app do
 // aluno precisa (nunca inclui os campos internos de revisão/admin).
+export type TrilhaConfigRow = {
+  trilha_id: number;
+  concurso: string | null;
+  cargo_alvo: string | null;
+  bancas: string[];
+  banca_alvo: string | null;
+  banca_alvo_pct: number;
+  orgaos: string[];
+  cargos: string[];
+  niveis: string[];
+  ano_min: number | null;
+  ano_max: number | null;
+  apenas_certo_errado: boolean;
+  questoes_por_sessao: number;
+  revisoes_por_sessao: number;
+  atualizado_em: string;
+};
+
 export type ModuloQuestaoRow = {
   id: string;
   enunciado: string | null;
@@ -183,24 +201,36 @@ export type Database = {
           trilha_id: number;
           titulo: string;
           ordem: number;
-          tipo: 'questoes' | 'aula';
+          tipo: 'questoes' | 'aula' | 'inteligente';
           video_url: string | null;
           aula_id: number | null;
+          disciplina: string | null;
+          assuntos: string[];
+          meta_questoes: number;
+          dominio_alvo: number;
         };
         Insert: {
           trilha_id: number;
           titulo: string;
           ordem?: number;
-          tipo?: 'questoes' | 'aula';
+          tipo?: 'questoes' | 'aula' | 'inteligente';
           video_url?: string | null;
           aula_id?: number | null;
+          disciplina?: string | null;
+          assuntos?: string[];
+          meta_questoes?: number;
+          dominio_alvo?: number;
         };
         Update: {
           titulo?: string;
           ordem?: number;
-          tipo?: 'questoes' | 'aula';
+          tipo?: 'questoes' | 'aula' | 'inteligente';
           video_url?: string | null;
           aula_id?: number | null;
+          disciplina?: string | null;
+          assuntos?: string[];
+          meta_questoes?: number;
+          dominio_alvo?: number;
         };
         Relationships: [];
       };
@@ -363,6 +393,33 @@ export type Database = {
         };
         Relationships: [];
       };
+      // Revisão espaçada e trilha inteligente (migration 028).
+      respostas: {
+        Row: {
+          id: number;
+          usuario_id: string;
+          questao_id: string;
+          letra: string | null;
+          acertou: boolean;
+          origem: string;
+          respondido_em: string;
+        };
+        Insert: never;
+        Update: never;
+        Relationships: [];
+      };
+      trilha_config: {
+        Row: TrilhaConfigRow;
+        Insert: Partial<TrilhaConfigRow> & { trilha_id: number };
+        Update: Partial<TrilhaConfigRow>;
+        Relationships: [];
+      };
+      trilha_questoes_regras: {
+        Row: { trilha_id: number; questao_id: string; regra: 'obrigatoria' | 'excluida'; modulo_id: number | null };
+        Insert: { trilha_id: number; questao_id: string; regra: 'obrigatoria' | 'excluida'; modulo_id?: number | null };
+        Update: { regra?: 'obrigatoria' | 'excluida'; modulo_id?: number | null };
+        Relationships: [];
+      };
       trilhas: {
         Row: {
           id: number;
@@ -372,6 +429,7 @@ export type Database = {
           ativa: boolean;
           ordem: number;
           secao_nome: string | null;
+          tipo: 'manual' | 'inteligente';
         };
         Insert: {
           nome: string;
@@ -380,6 +438,7 @@ export type Database = {
           ativa?: boolean;
           ordem?: number;
           secao_nome?: string | null;
+          tipo?: 'manual' | 'inteligente';
         };
         Update: {
           nome?: string;
@@ -388,6 +447,7 @@ export type Database = {
           ativa?: boolean;
           ordem?: number;
           secao_nome?: string | null;
+          tipo?: 'manual' | 'inteligente';
         };
         Relationships: [];
       };
@@ -516,7 +576,7 @@ export type Database = {
         }[];
       };
       responder_questao: {
-        Args: { p_questao_id: string; p_letra: string };
+        Args: { p_questao_id: string; p_letra: string; p_origem?: string };
         Returns: {
           acertou: boolean;
           xp_ganho: number;
@@ -524,6 +584,9 @@ export type Database = {
           streak: number;
           ultimo_estudo: string;
           ofensiva_nova: number | null;
+          revisao_etapa: number | null;
+          proxima_revisao: string | null;
+          dominio: number;
         }[];
       };
       meus_creditos_tutor: {
@@ -563,6 +626,55 @@ export type Database = {
       get_minhas_questoes_erradas: {
         Args: { p_trilha_id: number };
         Returns: (ModuloQuestaoRow & { aula_titulo: string | null; aula_video_url: string | null })[];
+      };
+      contar_revisoes_pendentes: {
+        Args: Record<string, never>;
+        Returns: number;
+      };
+      get_revisoes_pendentes: {
+        Args: { p_limite?: number };
+        Returns: (ModuloQuestaoRow & { aula_titulo: string | null; aula_video_url: string | null; revisao_etapa: number })[];
+      };
+      get_revisoes_para_sessao: {
+        Args: { p_trilha_id: number; p_limite: number; p_excluir?: string[] };
+        Returns: (ModuloQuestaoRow & { motivo: string })[];
+      };
+      montar_sessao_inteligente: {
+        Args: { p_modulo_id: number };
+        Returns: (ModuloQuestaoRow & { motivo: string })[];
+      };
+      avaliar_etapa: {
+        Args: { p_modulo_id: number };
+        Returns: {
+          dominio: number;
+          respondidas: number;
+          acertos: number;
+          meta: number;
+          alvo: number;
+          estoque: number;
+          concluida: boolean;
+          concluiu_agora: boolean;
+        }[];
+      };
+      progresso_trilha_inteligente: {
+        Args: { p_trilha_id: number };
+        Returns: { modulo_id: number; dominio: number; respondidas: number; meta: number; alvo: number; estoque: number }[];
+      };
+      meu_dominio: {
+        Args: Record<string, never>;
+        Returns: { disciplina: string; assunto: string; dominio: number; respostas: number; acertos: number }[];
+      };
+      admin_assuntos: {
+        Args: { p_disciplina: string };
+        Returns: { assunto: string; total: number; revisadas: number }[];
+      };
+      admin_contar_estoque: {
+        Args: { p_trilha_id: number; p_disciplina: string; p_assuntos: string[] };
+        Returns: { total: number; banca_alvo: number; nao_revisadas: number }[];
+      };
+      admin_estoque_trilha: {
+        Args: { p_trilha_id: number };
+        Returns: { modulo_id: number; total: number; banca_alvo: number; obrigatorias: number }[];
       };
     };
     Enums: Record<string, never>;

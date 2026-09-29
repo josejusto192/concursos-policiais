@@ -31,11 +31,18 @@ export interface Questao {
   alternativas: Alternativa[];
   // Aula de apoio vinculada pelo admin — só preenchida no caderno de erros.
   aula?: { titulo: string; video_url: string };
+  // Por que o algoritmo colocou esta questão na sessão (migration 028):
+  // revisão vencida, questão antiga pra relembrar, reforço de etapa fraca…
+  motivo?: MotivoQuestao;
+  // Caderno: 0 = errou; 1–3 = revisão programada (1, 7 ou 30 dias).
+  revisaoEtapa?: number;
 }
+
+export type MotivoQuestao = 'nova' | 'obrigatoria' | 'revisao' | 'relembrar' | 'reforco' | 'repeticao';
 
 export type ModuloStatus = 'locked' | 'current' | 'done' | 'aula';
 
-export type ModuloTipo = 'questoes' | 'aula';
+export type ModuloTipo = 'questoes' | 'aula' | 'inteligente';
 
 // Um "módulo" é um nó do caminho da trilha, curado pelo admin: título livre
 // e uma lista de questões escolhidas a dedo (modulo_questoes), não mais uma
@@ -53,6 +60,16 @@ export interface Modulo {
   total: number;
   // Exige assinatura e o aluno não tem (só o 1º módulo de questões é grátis).
   premium: boolean;
+  // Etapa de trilha inteligente: domínio do aluno e meta (migration 028).
+  etapa?: EtapaProgresso;
+}
+
+export interface EtapaProgresso {
+  dominio: number;
+  respondidas: number;
+  meta: number;
+  alvo: number;
+  estoque: number;
 }
 
 export type ConquistaCategoria = 'consistencia' | 'volume' | 'desempenho' | 'trilha' | 'indicacoes';

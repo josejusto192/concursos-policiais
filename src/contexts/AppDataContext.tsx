@@ -5,19 +5,24 @@ import {
   fetchDailyDone,
   fetchModulos,
   fetchProgressoModulos,
+  fetchProgressoTrilhaInteligente,
   fetchTrilhas,
   type ModuloRow,
   type RespostaServidor,
   type TrilhaRow,
 } from '../lib/queries';
 import type { Database } from '../lib/database.types';
-import type { Modulo, ModuloStatus } from '../data/types';
+import type { EtapaProgresso, Modulo, ModuloStatus } from '../data/types';
 import { logClientError } from '../lib/errorLog';
 import { diaLocal, diaLocalDeslocado } from '../lib/datas';
 
 type UsuarioUpdate = Database['public']['Tables']['usuarios']['Update'];
 
-function computeModules(modulos: ModuloRow[], progresso: Map<number, { acertos: number; total: number }>): Omit<Modulo, 'premium'>[] {
+function computeModules(
+  modulos: ModuloRow[],
+  progresso: Map<number, { acertos: number; total: number }>,
+  etapas: Map<number, EtapaProgresso>,
+): Omit<Modulo, 'premium'>[] {
   let foundCurrent = false;
   return modulos.map((m) => {
     if (m.tipo === 'aula') {
@@ -52,6 +57,8 @@ function computeModules(modulos: ModuloRow[], progresso: Map<number, { acertos: 
       status,
       acertos: prog?.acertos ?? 0,
       total: prog?.total ?? 0,
+      // etapa de trilha inteligente: domínio e meta (migration 028)
+      etapa: etapas.get(m.id),
     };
   });
 }
@@ -121,12 +128,15 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     const scope = `${usuario.id}:${activeTrilha.id}`;
     try {
       const modulos = await fetchModulos(activeTrilha.id);
-      const progresso = await fetchProgressoModulos(
-        usuario.id,
-        modulos.map((m) => m.id),
-      );
+      const [progresso, etapas] = await Promise.all([
+        fetchProgressoModulos(
+          usuario.id,
+          modulos.map((m) => m.id),
+        ),
+        activeTrilha.tipo === 'inteligente' ? fetchProgressoTrilhaInteligente(activeTrilha.id) : Promise.resolve(new Map<number, EtapaProgresso>()),
+      ]);
       if (request !== moduleRequest.current) return;
-      setModules(computeModules(modulos, progresso));
+      setModules(computeModules(modulos, progresso, etapas));
       setLoadError(null);
     } catch (err) {
       if (request !== moduleRequest.current) return;
@@ -154,14 +164,15 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     refreshDailyDone();
   }, [refreshDailyDone]);
 
+  // Caderno: erros + revisões programadas vencidas, de todas as trilhas.
   const refreshErrosCount = useCallback(async () => {
-    if (!activeTrilha) return;
+    if (!usuario) return;
     try {
-      setErrosCount(await fetchContagemErros(activeTrilha.id));
+      setErrosCount(await fetchContagemErros());
     } catch (err) {
       logClientError(err, 'refreshErrosCount');
     }
-  }, [activeTrilha]);
+  }, [usuario]);
 
   useEffect(() => {
     refreshErrosCount();
@@ -198,7 +209,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     [usuario],
   );
   const modules = useMemo<Modulo[]>(() => {
-    const gratisId = baseModules.find((m) => m.tipo === 'questoes')?.id;
+    const gratisId = baseModules.find((m) => m.tipo === 'questoes' || m.tipo === 'inteligente')?.id;
     return baseModules.map((m) => ({ ...m, premium: !temAcesso && m.id !== gratisId }));
   }, [baseModules, temAcesso]);
 

@@ -157,7 +157,9 @@ export default function TrilhaPath() {
               <div className="map-caption">
                 <h3>{m.titulo}</h3>
                 <p>
-                  {done
+                  {m.etapa && !premium && (done || current)
+                    ? `Domínio ${m.etapa.dominio}% · ${done ? 'concluída' : `meta ${m.etapa.alvo}%`}`
+                    : done
                     ? `${m.acertos}/${m.total} acertos · concluído`
                     : premium
                       ? 'EXCLUSIVO PARA ASSINANTES'
@@ -169,6 +171,11 @@ export default function TrilhaPath() {
                           ? 'Conclua a etapa anterior'
                           : 'Próxima conquista'}
                 </p>
+                {m.etapa && !premium && (done || current) && (
+                  <span className="map-dominio" aria-hidden="true">
+                    <span style={{ width: `${Math.min(100, m.etapa.dominio)}%` }} className={m.etapa.dominio >= m.etapa.alvo ? 'ok' : ''} />
+                  </span>
+                )}
               </div>
             </div>
           );
