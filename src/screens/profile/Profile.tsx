@@ -14,7 +14,8 @@ import { desbloquearAudio, setSonsAtivos, som, sonsAtivos } from '../../lib/efei
 export default function Profile() {
   const navigate = useNavigate();
   const { signOut } = useAuth();
-  const { usuario, activeTrilha, modules, ofensiva } = useAppData();
+  const { usuario, activeTrilha, modules, ofensiva, updateUsuario } = useAppData();
+  const [editandoMeta, setEditandoMeta] = useState(false);
   const assinaturaPaga = !!usuario?.acesso_ate && new Date(usuario.acesso_ate) > new Date();
   const [referralOpen, setReferralOpen] = useState(false);
   const [legalDoc, setLegalDoc] = useState<LegalDoc | null>(null);
@@ -103,8 +104,39 @@ export default function Profile() {
                 <span className="h-[9px] w-[9px] rounded-[3px]" style={{ background: p.dot }} />
                 <span className="flex-1 font-sans text-[14px] font-bold text-ink">{p.label}</span>
                 <span className="font-sans text-[13px] font-bold text-text2">{p.value}</span>
+                {p.label === 'Meta diária' && (
+                  <button
+                    onClick={() => setEditandoMeta(!editandoMeta)}
+                    className="border-none bg-transparent p-0 font-sans text-[12.5px] font-extrabold text-blue"
+                    aria-expanded={editandoMeta}
+                  >
+                    {editandoMeta ? 'Fechar' : 'Alterar'}
+                  </button>
+                )}
               </div>
             ))}
+            {editandoMeta && (
+              <div className="flex flex-wrap gap-2 p-[4px_16px_16px]">
+                {[10, 20, 30, 40].map((m) => (
+                  <button
+                    key={m}
+                    onClick={async () => {
+                      som.toque();
+                      await updateUsuario({ meta_diaria: m }).catch(() => undefined);
+                      setEditandoMeta(false);
+                    }}
+                    className="rounded-xl border-[1.5px] px-3 py-2 font-sans text-[12.5px] font-extrabold"
+                    style={{
+                      borderColor: usuario?.meta_diaria === m ? '#1557E6' : '#E3E8F4',
+                      background: usuario?.meta_diaria === m ? '#EEF3FF' : '#fff',
+                      color: usuario?.meta_diaria === m ? '#1557E6' : '#0B1F4D',
+                    }}
+                  >
+                    {m} questões
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
           <button

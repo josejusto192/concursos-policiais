@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import type { Icon } from '@phosphor-icons/react';
-import { ArrowUpRight, Bug, CaretRight, CurrencyCircleDollar, Eye, Flag, GearSix, House, List, Path, PlayCircle, SignOut, Stack, Users, X } from '@phosphor-icons/react';
+import { ArrowUpRight, Bug, ChartPieSlice, CaretRight, CurrencyCircleDollar, Eye, Flag, GearSix, House, List, Path, PlayCircle, SignOut, Stack, Users, X } from '@phosphor-icons/react';
 import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useUsuario } from '../hooks/useUsuario';
@@ -21,6 +21,7 @@ const NAV_ITEMS: NavItem[] = [
   { to: '/admin/reportes', label: 'Reportes', icon: Flag },
   { to: '/admin/planos', label: 'Planos', icon: CurrencyCircleDollar, adminOnly: true },
   { to: '/admin/usuarios', label: 'Alunos e equipe', icon: Users, adminOnly: true },
+  { to: '/admin/publico', label: 'Público', icon: ChartPieSlice, adminOnly: true },
   { to: '/admin/erros', label: 'Saúde do app', icon: Bug, adminOnly: true },
   { to: '/admin/configuracoes', label: 'Configurações', icon: GearSix, adminOnly: true },
 ];

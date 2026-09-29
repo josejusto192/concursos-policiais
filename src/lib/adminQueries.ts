@@ -648,3 +648,20 @@ export async function sugerirEstrutura(trilhaId: number): Promise<EstoqueAssunto
   if (error) throw error;
   return data ?? [];
 }
+
+// ---- Painel "Público" (migration 031) ----
+
+export interface Publico {
+  total: number;
+  assinantes: number;
+  ativos_7d: number;
+  contagens: Array<{ campo: string; valor: string; total: number }>;
+  metas: Array<{ meta: number; alunos: number; media_real: number; batem_meta: number }>;
+  funil: Array<{ etapa: string; sessoes: number }>;
+}
+
+export async function fetchPublico(dias: number): Promise<Publico> {
+  const { data, error } = await supabase.rpc('admin_publico', { p_dias: dias });
+  if (error) throw error;
+  return data as unknown as Publico;
+}

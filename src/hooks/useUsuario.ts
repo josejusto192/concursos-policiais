@@ -53,6 +53,7 @@ export function useUsuario() {
             id: user.id,
             email: user.email!,
             nome: user.user_metadata?.full_name ?? null,
+            ...perfilDaConta(user.user_metadata?.onboarding),
             streak: 0,
             ultimo_acesso: today,
           })
@@ -96,4 +97,23 @@ export function useUsuario() {
   }, [user])
 
   return { usuario, loading, updateUsuario, aplicarDoServidor, recarregarUsuario }
+}
+
+// Respostas do onboarding guardadas na conta no cadastro (quando o projeto
+// exige confirmação de e-mail, o perfil só é criado no 1º login).
+function perfilDaConta(o: unknown) {
+  if (!o || typeof o !== 'object') return {}
+  const d = o as Record<string, unknown>
+  const texto = (v: unknown) => (typeof v === 'string' && v.trim() ? v.trim().slice(0, 120) : null)
+  const numero = (v: unknown) => (typeof v === 'number' && Number.isFinite(v) ? v : null)
+  return {
+    whatsapp: texto(d.whatsapp),
+    faixa_etaria: texto(d.faixa_etaria),
+    ja_prestou_concurso: typeof d.ja_prestou_concurso === 'boolean' ? d.ja_prestou_concurso : null,
+    nivel_preparo: texto(d.nivel_preparo),
+    prazo_prova: texto(d.prazo_prova),
+    meta_diaria: numero(d.meta_diaria) ?? 20,
+    trilha_ativa_id: numero(d.trilha_ativa_id),
+    termos_aceitos_em: texto(d.termos_aceitos_em),
+  }
 }

@@ -32,6 +32,7 @@ import AdminQuestoesBancoPage from './admin/AdminQuestoesBancoPage';
 import AdminQuestaoReviewPage from './admin/AdminQuestaoReviewPage';
 import AdminUsuariosPage from './admin/AdminUsuariosPage';
 import AdminErrosPage from './admin/AdminErrosPage';
+import AdminPublicoPage from './admin/AdminPublicoPage';
 import AdminConfiguracoesPage from './admin/AdminConfiguracoesPage';
 
 function PrivateRoute({ children }: { children: ReactNode }) {
@@ -242,6 +243,14 @@ function AdminRoutes() {
         element={
           <AdminGuard adminOnly>
             <AdminUsuariosPage />
+          </AdminGuard>
+        }
+      />
+      <Route
+        path="publico"
+        element={
+          <AdminGuard adminOnly>
+            <AdminPublicoPage />
           </AdminGuard>
         }
       />

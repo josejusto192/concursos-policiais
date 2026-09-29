@@ -257,5 +257,15 @@ Cada lição (`montar_sessao_inteligente`) traz revisões vencidas, obrigatória
 
 **Ordem de publicação:** rode as migrations 028, 029 e 030 no Supabase **antes** de promover a versão do app no Vercel.
 
+## Onboarding, público e nível inicial (migration 031)
+
+- **Nível inicial:** a resposta "Como está seu preparo hoje?" vira o ponto de partida do algoritmo (começando do zero → questões mais fáceis; reta final → mais difíceis). Depois das primeiras respostas o algoritmo corrige sozinho.
+- **Funil do cadastro:** cada tela do onboarding vista é registrada (`onboarding_eventos`, sem login) para saber onde as pessoas desistem.
+- **Admin → Público:** faixa etária, concurso, nível, prazo da prova, se já prestou, meta escolhida × estudo real e o funil do cadastro, com filtro de período.
+- **Plano real:** a tela "Seu plano está pronto" usa o tamanho real da trilha (`plano_onboarding`) para calcular as semanas no ritmo escolhido.
+- Se o projeto exigir confirmação de e-mail, as respostas do onboarding ficam guardadas na conta e o perfil é criado no 1º login.
+
+**Ordem de publicação:** rode a migration 031 no Supabase **antes** de promover a versão do app no Vercel.
+
 ### ⚠️ Checklist antes do lançamento
 - [ ] Remover a opção **"Usar também questões ainda não revisadas"** da trilha inteligente (temporária, migration 029): nova migration apagando `trilha_config.permitir_nao_revisadas` e voltando `questoes_filtradas`/`questoes_da_etapa`/`admin_contar_estoque` à versão da 028; no app, procurar `permitir_nao_revisadas`.

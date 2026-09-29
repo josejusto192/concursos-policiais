@@ -3,7 +3,7 @@
 export default function PrivacidadeConteudo() {
   return (
     <div className="flex-1 space-y-4 p-[18px_20px_36px] font-sans text-[13.5px] leading-[1.6] text-ink-soft">
-      <p className="text-[12px] font-semibold text-text3">Última atualização: julho de 2026</p>
+      <p className="text-[12px] font-semibold text-text3">Última atualização: setembro de 2026</p>
 
       <p>
         Esta política explica quais dados o Foco coleta, para quê, e quais são seus direitos, em conformidade com a Lei Geral de
@@ -13,14 +13,17 @@ export default function PrivacidadeConteudo() {
       <h2 className="font-display text-[15px] font-extrabold text-ink">1. Dados que coletamos</h2>
       <p>
         Nome, e-mail, WhatsApp, faixa etária, e informações do seu objetivo de estudo (se já prestou concurso, nível de preparo,
-        prazo da prova), fornecidos no cadastro. Também registramos seu progresso de estudo (respostas, acertos, XP, streak) e, se
-        você conversar com o tutor com inteligência artificial (o mascote do app), o conteúdo das suas dúvidas digitadas.
+        prazo da prova), fornecidos no cadastro. Também registramos seu progresso de estudo (respostas, acertos, XP, streak), quais
+        telas do cadastro foram vistas (sem identificar você antes de criar a conta) e, se você conversar com o tutor com
+        inteligência artificial (o mascote do app), o conteúdo das suas dúvidas digitadas.
       </p>
 
       <h2 className="font-display text-[15px] font-extrabold text-ink">2. Para que usamos</h2>
       <p>
-        Para operar sua conta e o acompanhamento da trilha de estudos, personalizar sua experiência (meta diária, ranking),
-        contatar você sobre o serviço, e, quando aplicável, processar indicações e cobrança de assinatura.
+        Para operar sua conta e o acompanhamento da trilha de estudos, personalizar sua experiência (meta diária, ranking e o
+        nível inicial das questões), contatar você sobre o serviço, e, quando aplicável, processar indicações e cobrança de
+        assinatura. Também usamos esses dados de forma agregada (em números e percentuais, sem expor pessoas) para entender o
+        público do Foco e melhorar o app, as trilhas e o cadastro.
       </p>
 
       <h2 className="font-display text-[15px] font-extrabold text-ink">3. Com quem compartilhamos</h2>

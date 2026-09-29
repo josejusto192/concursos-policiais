@@ -1,30 +1,22 @@
-import { ArrowRight, ChatCircleText, Path, ShieldCheck, Target } from '@phosphor-icons/react';
+import { ArrowRight, ChatCircleText, Path, Target } from '@phosphor-icons/react';
 import { Link } from 'react-router-dom';
 import { useAppState } from '../../../state/AppStateContext';
-import Brand from '../../../components/Brand';
-import { PathIllustration } from '../../home/Home';
+import AuthStory from '../../../components/AuthStory';
 
 export default function WelcomeStep() {
   const { dispatch } = useAppState();
   return (
     <div className="auth-page">
-      <section className="auth-story">
-        <Brand light caption="UM POUCO TODO DIA" />
-        <div>
-          <h1>
+      <AuthStory
+        titulo={
+          <>
             O próximo passo
             <br />é o seu <em>começo.</em>
-          </h1>
-          <p>Transforme a preparação para o concurso em um hábito. Uma trilha, uma questão, uma conquista por vez.</p>
-          <div className="auth-art">
-            <PathIllustration />
-          </div>
-        </div>
-        <footer>
-          <ShieldCheck size={20} />
-          No seu ritmo. Com direção.
-        </footer>
-      </section>
+          </>
+        }
+        texto="Transforme a preparação para o concurso em um hábito. Uma trilha, uma questão, uma conquista por vez."
+        rodape="No seu ritmo. Com direção."
+      />
       <div className="auth-form-wrap">
         <div className="auth-form">
           <span className="eyebrow">SUA PREPARAÇÃO, COM FOCO</span>
@@ -33,18 +25,18 @@ export default function WelcomeStep() {
             <br />
             na sua rotina.
           </h2>
-          <p>Conte um pouco sobre seu objetivo. A gente organiza os próximos passos.</p>
+          <p>Responda algumas perguntas rápidas. Eu, o Foco, organizo os próximos passos para você.</p>
           <div className="welcome-features">
-            <div>
+            <div style={{ '--i': 0 } as React.CSSProperties}>
               <span className="metric-icon">
                 <Path size={23} weight="duotone" />
               </span>
               <span>
                 <strong>Saiba o que estudar</strong>
-                <small>Trilhas organizadas em pequenas etapas.</small>
+                <small>Trilhas organizadas em lições curtas.</small>
               </span>
             </div>
-            <div>
+            <div style={{ '--i': 1 } as React.CSSProperties}>
               <span className="metric-icon yellow">
                 <ChatCircleText size={23} weight="duotone" />
               </span>
@@ -53,13 +45,13 @@ export default function WelcomeStep() {
                 <small>Questões com comentários revisados.</small>
               </span>
             </div>
-            <div>
+            <div style={{ '--i': 2 } as React.CSSProperties}>
               <span className="metric-icon green">
                 <Target size={23} weight="duotone" />
               </span>
               <span>
-                <strong>Veja sua evolução</strong>
-                <small>Metas diárias e progresso de verdade.</small>
+                <strong>Não esqueça o que aprendeu</strong>
+                <small>O que você erra volta para revisão na hora certa.</small>
               </span>
             </div>
           </div>

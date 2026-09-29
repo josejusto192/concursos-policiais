@@ -1,9 +1,8 @@
-import { ArrowRight, CircleNotch, Eye, EyeSlash, ShieldCheck } from '@phosphor-icons/react';
+import { ArrowRight, CircleNotch, Eye, EyeSlash } from '@phosphor-icons/react';
 import { useState, type FormEvent } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
-import Brand from '../components/Brand';
-import { PathIllustration } from './home/Home';
+import AuthStory from '../components/AuthStory';
 
 export default function LoginScreen() {
   const navigate = useNavigate();
@@ -13,15 +12,33 @@ export default function LoginScreen() {
   const [visible, setVisible] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [naoConfirmado, setNaoConfirmado] = useState(false);
+  const [reenvio, setReenvio] = useState<'idle' | 'enviando' | 'enviado'>('idle');
+
+  async function reenviarConfirmacao() {
+    setReenvio('enviando');
+    await supabase.auth.resend({ type: 'signup', email: email.trim().toLowerCase() }).catch(() => undefined);
+    setReenvio('enviado');
+  }
+
   async function handleLogin(event: FormEvent) {
     event.preventDefault();
     if (loading) return;
     setError('');
+    setNaoConfirmado(false);
+    setReenvio('idle');
     setLoading(true);
     try {
-      const { error: authError } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
+      const { error: authError } = await supabase.auth.signInWithPassword({ email: email.trim().toLowerCase(), password });
       if (authError) {
-        setError('Não foi possível entrar. Confira seu e-mail e sua senha.');
+        if (/not confirmed/i.test(authError.message)) {
+          setNaoConfirmado(true);
+          setError('Falta confirmar seu e-mail. Abra o link que mandamos no cadastro.');
+        } else if (/rate|too many/i.test(authError.message)) {
+          setError('Muitas tentativas seguidas. Espere um minuto e tente de novo.');
+        } else {
+          setError('E-mail ou senha não conferem. Confira e tente de novo.');
+        }
         return;
       }
       const next = params.get('next');
@@ -34,24 +51,17 @@ export default function LoginScreen() {
   }
   return (
     <div className="auth-page">
-      <section className="auth-story">
-        <Brand light caption="UM POUCO TODO DIA" />
-        <div>
-          <h1>
+      <AuthStory
+        humor={error ? 'encourage' : 'wave'}
+        titulo={
+          <>
             Pequenos passos.
             <br />
             <em>Grandes conquistas.</em>
-          </h1>
-          <p>Sua preparação para concursos, com direção. Questões comentadas, trilhas e um ritmo que cabe na sua vida.</p>
-          <div className="auth-art">
-            <PathIllustration />
-          </div>
-        </div>
-        <footer>
-          <ShieldCheck size={19} />
-          Seu progresso acompanha você.
-        </footer>
-      </section>
+          </>
+        }
+        texto="Sua preparação para concursos, com direção. Questões comentadas, trilhas e um ritmo que cabe na sua vida."
+      />
       <div className="auth-form-wrap">
         <form className="auth-form" onSubmit={handleLogin}>
           <span className="eyebrow">BOM TER VOCÊ DE VOLTA</span>
@@ -99,9 +109,19 @@ export default function LoginScreen() {
             </div>
           </div>
           {error && (
-            <p className="mt-4 text-error text-sm" role="alert">
-              {error}
-            </p>
+            <div className="auth-aviso" role="alert">
+              <span>
+                {error}
+                {naoConfirmado && (
+                  <>
+                    {' '}
+                    <button type="button" className="auth-link" onClick={reenviarConfirmacao} disabled={reenvio !== 'idle'}>
+                      {reenvio === 'enviado' ? 'E-mail reenviado ✓' : reenvio === 'enviando' ? 'Reenviando…' : 'Reenviar e-mail'}
+                    </button>
+                  </>
+                )}
+              </span>
+            </div>
           )}
           <button type="submit" className="button button-primary" disabled={loading}>
             {loading ? 'Entrando…' : 'Entrar na minha conta'}

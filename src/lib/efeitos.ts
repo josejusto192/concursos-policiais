@@ -117,6 +117,11 @@ export function vibrar(padrao: number | number[]) {
 }
 
 export const som = {
+  // "tic" curtinho ao escolher uma opção (onboarding)
+  toque: () => {
+    tocar((c) => nota(c, 1174.7, 0, 0.08, 'sine', 0.07));
+    vibrar(8);
+  },
   // "plim" ascendente (Lá5 → Mi6)
   acerto: () => {
     tocar((c) => {

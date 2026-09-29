@@ -1,90 +1,111 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import PrimaryButton from '../components/PrimaryButton';
+import { ArrowLeft, ArrowRight, CircleNotch, EnvelopeSimple } from '@phosphor-icons/react';
+import { useState, type FormEvent } from 'react';
+import { Link } from 'react-router-dom';
+import AuthStory from '../components/AuthStory';
+import Mascot from '../components/Mascot';
 import { supabase } from '../lib/supabase';
 
 export default function ForgotPasswordScreen() {
-  const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [sent, setSent] = useState(false);
 
-  async function handleSend() {
-    if (loading || !email.trim()) return;
-    setLoading(true);
-    setError(null);
-    const { error: resetError } = await supabase.auth.resetPasswordForEmail(email.trim(), {
-      redirectTo: `${window.location.origin}/redefinir-senha`,
-    });
-    setLoading(false);
-    if (resetError) {
-      setError('Não foi possível enviar o link agora. Tente de novo em instantes.');
+  async function handleSend(e: FormEvent) {
+    e.preventDefault();
+    if (loading) return;
+    const limpo = email.trim().toLowerCase();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(limpo)) {
+      setError('Digite um e-mail válido.');
       return;
     }
-    setSent(true);
+    setLoading(true);
+    setError(null);
+    try {
+      const { error: resetError } = await supabase.auth.resetPasswordForEmail(limpo, {
+        redirectTo: `${window.location.origin}/redefinir-senha`,
+      });
+      if (resetError) {
+        setError(
+          /rate|limit|seconds/i.test(resetError.message)
+            ? 'Você pediu vários links seguidos. Espere um minuto e tente de novo.'
+            : 'Não foi possível enviar o link agora. Tente de novo em instantes.',
+        );
+        return;
+      }
+      setSent(true);
+    } catch {
+      setError('Não conseguimos conectar. Verifique sua internet e tente de novo.');
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
-    <div className="scr relative flex flex-1 flex-col overflow-y-auto bg-app-bg p-[0_26px_32px]">
-      <div
-        className="absolute inset-x-0 top-0 z-0"
-        style={{ height: '42%', backgroundImage: "url('/assets/bg-blue-texture.jpg')", backgroundSize: 'cover', backgroundPosition: 'center top' }}
-      />
-      <div className="relative z-10 animate-slide-up pt-16 text-center">
-        <div
-          className="mx-auto flex h-[78px] w-[78px] items-center justify-center rounded-[22px] bg-yellow"
-          style={{ boxShadow: '0 10px 0 #E0A800', transform: 'rotate(-6deg)' }}
-        >
-          <span className="font-display text-[40px] font-extrabold text-ink" style={{ transform: 'rotate(6deg)' }}>
-            F
-          </span>
-        </div>
-        <div className="mt-5.5 font-display text-[30px] font-extrabold tracking-[-0.5px] text-white">
-          Foco<span className="text-yellow">.</span>
-        </div>
-      </div>
-
-      <div
-        className="relative z-10 mt-11 animate-slide-up rounded-3xl bg-surface p-[22px_20px]"
-        style={{ boxShadow: '0 18px 40px -18px rgba(11,31,77,.35)', animationDelay: '.05s' }}
-      >
-        {sent ? (
+    <div className="auth-page">
+      <AuthStory
+        humor={sent ? 'happy' : 'thinking'}
+        titulo={
           <>
-            <div className="font-sans text-[18px] font-extrabold text-ink">Verifique seu e-mail 📩</div>
-            <div className="mt-1 font-sans text-[13px] font-medium text-text2">
-              Se <strong>{email}</strong> tiver uma conta, mandamos um link de redefinição pra ele. Abra o e-mail e escolha uma nova
-              senha.
-            </div>
+            Acontece com
+            <br />
+            <em>todo mundo.</em>
           </>
+        }
+        texto="Em um minuto você cria uma senha nova e volta de onde parou. Seu progresso fica guardado."
+      />
+      <div className="auth-form-wrap">
+        {sent ? (
+          <div className="auth-form auth-sucesso">
+            <Mascot mood="happy" size={104} />
+            <h2>Confira seu e-mail</h2>
+            <p>
+              Se <b>{email.trim()}</b> tiver uma conta, mandei um link para criar uma senha nova. Ele vale por pouco tempo.
+            </p>
+            <p className="ob-nota">Não chegou? Veja a caixa de spam ou promoções.</p>
+            <button type="button" className="button button-primary" onClick={() => setSent(false)}>
+              <EnvelopeSimple size={19} />
+              Enviar de novo
+            </button>
+            <Link to="/login" className="signup-link">
+              <strong>Voltar para o login</strong>
+            </Link>
+          </div>
         ) : (
-          <>
-            <div className="font-sans text-[18px] font-extrabold text-ink">Esqueceu sua senha?</div>
-            <div className="mt-1 font-sans text-[13px] font-medium text-text2">Informe seu e-mail e mandamos um link pra redefinir.</div>
-
-            <div className="mt-5">
-              <div className="mb-1.5 font-sans text-[12px] font-bold text-text2">E-MAIL</div>
+          <form className="auth-form" onSubmit={handleSend} noValidate>
+            <Link to="/login" className="auth-voltar">
+              <ArrowLeft size={16} weight="bold" /> Voltar
+            </Link>
+            <span className="eyebrow">RECUPERAR ACESSO</span>
+            <h2>Esqueceu sua senha?</h2>
+            <p>Informe o e-mail da sua conta. Eu mando um link para você criar uma senha nova.</p>
+            <div className="form-field">
+              <label htmlFor="esqueci-email">E-mail</label>
               <input
+                id="esqueci-email"
+                type="email"
+                inputMode="email"
+                autoComplete="email"
+                autoCapitalize="none"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="voce@email.com"
-                onKeyDown={(e) => e.key === 'Enter' && handleSend()}
-                className="h-[50px] w-full rounded-2xl border-[1.5px] border-border bg-[#F8FAFF] px-3.5 font-sans text-[14px] font-semibold text-ink outline-none"
               />
             </div>
-
-            {error && <div className="mt-3 font-sans text-[12.5px] font-bold text-error">{error}</div>}
-
-            <div className="mt-5.5">
-              <PrimaryButton onClick={handleSend} disabled={loading || !email.trim()} variant={loading ? 'disabled' : 'blue'}>
-                {loading ? 'Enviando...' : 'Enviar link'}
-              </PrimaryButton>
-            </div>
-          </>
+            {error && (
+              <p className="auth-aviso" role="alert">
+                {error}
+              </p>
+            )}
+            <button type="submit" className="button button-primary" disabled={loading}>
+              {loading ? 'Enviando…' : 'Enviar link'}
+              {loading ? <CircleNotch className="busy-icon" size={19} /> : <ArrowRight size={19} />}
+            </button>
+            <Link to="/onboarding" className="signup-link">
+              Ainda não tem conta? <strong>Comece por aqui</strong>
+            </Link>
+          </form>
         )}
-        <div onClick={() => navigate('/login')} className="mt-3.5 cursor-pointer text-center font-sans text-[13px] font-semibold text-text2">
-          <span className="font-extrabold text-blue">Voltar para o login</span>
-        </div>
       </div>
     </div>
   );

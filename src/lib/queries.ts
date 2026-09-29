@@ -52,6 +52,47 @@ export async function fetchSecoes(trilhaId: number): Promise<SecaoRow[]> {
   return data ?? [];
 }
 
+// ---- Onboarding (migration 031) ----
+
+const CHAVE_SESSAO_OB = 'foco:ob-sessao';
+
+// Identifica a passagem pelo cadastro (sem login) para o funil do admin.
+function sessaoOnboarding(): string {
+  try {
+    const salva = localStorage.getItem(CHAVE_SESSAO_OB);
+    if (salva) return salva;
+    const nova = crypto.randomUUID();
+    localStorage.setItem(CHAVE_SESSAO_OB, nova);
+    return nova;
+  } catch {
+    return crypto.randomUUID();
+  }
+}
+
+// Registra a tela do onboarding vista. Nunca atrapalha o cadastro.
+export function registrarOnboarding(etapa: string) {
+  try {
+    void supabase
+      .rpc('registrar_onboarding', { p_sessao: sessaoOnboarding(), p_etapa: etapa })
+      .then(() => undefined, () => undefined);
+  } catch {
+    // sem crypto/rede: só não registra
+  }
+}
+
+export interface PlanoOnboarding {
+  unidades: number;
+  licoes: number;
+  questoes: number;
+}
+
+// Tamanho real da trilha escolhida, para o "Seu plano está pronto".
+export async function fetchPlanoOnboarding(trilhaId: number): Promise<PlanoOnboarding | null> {
+  const { data, error } = await supabase.rpc('plano_onboarding', { p_trilha_id: trilhaId }).maybeSingle<PlanoOnboarding>();
+  if (error) throw error;
+  return data;
+}
+
 // Módulos tipo 'aula' apontam para a biblioteca de aulas (aula_id): o vídeo
 // vem da aula, e modulos.video_url fica só como fallback legado.
 export async function fetchModulos(trilhaId: number): Promise<ModuloRow[]> {

@@ -683,6 +683,19 @@ export type Database = {
         Args: { p_trilha_id: number };
         Returns: { disciplina: string; assunto: string; estoque: number; banca_alvo: number }[];
       };
+      // Onboarding e painel Público (migration 031)
+      registrar_onboarding: {
+        Args: { p_sessao: string; p_etapa: string };
+        Returns: undefined;
+      };
+      plano_onboarding: {
+        Args: { p_trilha_id: number };
+        Returns: { unidades: number; licoes: number; questoes: number }[];
+      };
+      admin_publico: {
+        Args: { p_dias?: number };
+        Returns: Json;
+      };
       meu_dominio: {
         Args: Record<string, never>;
         Returns: { disciplina: string; assunto: string; dominio: number; respostas: number; acertos: number }[];

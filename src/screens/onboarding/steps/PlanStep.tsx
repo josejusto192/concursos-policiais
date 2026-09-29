@@ -1,209 +1,239 @@
-import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import PrimaryButton from '../../../components/PrimaryButton';
+import { ArrowRight, CalendarCheck, CircleNotch, Eye, EyeSlash, Lightning, Path } from '@phosphor-icons/react';
+import { useEffect, useState, type FormEvent } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import Confetti from '../../../components/Confetti';
 import LegalSheet, { type LegalDoc } from '../../../components/sheets/LegalSheet';
 import { useAppState } from '../../../state/AppStateContext';
 import { supabase } from '../../../lib/supabase';
-import { fetchModulos, registerReferral, resolveReferralCode } from '../../../lib/queries';
+import { fetchPlanoOnboarding, registerReferral, registrarOnboarding, resolveReferralCode, type PlanoOnboarding } from '../../../lib/queries';
+import { som } from '../../../lib/efeitos';
+import type { OnboardingState } from '../../../state/types';
+import FocoFala from './FocoFala';
 
 interface PlanStepProps {
   planConcurso: string;
   planMeta: number;
-  planWeeks: number;
+  prazoDias: number | null;
   refCode: string | null;
 }
 
-export default function PlanStep({ planConcurso, planMeta, planWeeks, refCode }: PlanStepProps) {
+// Mesmos campos que o perfil guarda; vão também nos dados da conta para o
+// caso de o projeto exigir confirmação de e-mail (o perfil é criado no 1º login).
+function perfilDoOnboarding(ob: OnboardingState, meta: number) {
+  return {
+    nome: ob.nome.trim(),
+    whatsapp: ob.whats.trim(),
+    faixa_etaria: ob.faixa,
+    ja_prestou_concurso: ob.prestou == null ? null : ob.prestou === 'sim',
+    nivel_preparo: ob.nivel,
+    prazo_prova: ob.prazo,
+    meta_diaria: meta,
+    trilha_ativa_id: ob.concurso,
+    termos_aceitos_em: new Date().toISOString(),
+  };
+}
+
+export default function PlanStep({ planConcurso, planMeta, prazoDias, refCode }: PlanStepProps) {
   const { state, dispatch } = useAppState();
   const { ob } = state;
   const navigate = useNavigate();
   const [password, setPassword] = useState('');
+  const [verSenha, setVerSenha] = useState(false);
   const [aceitouTermos, setAceitouTermos] = useState(false);
   const [legalDoc, setLegalDoc] = useState<LegalDoc | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [jaTemConta, setJaTemConta] = useState(false);
   const [awaitingConfirmation, setAwaitingConfirmation] = useState(false);
-  const [modulos, setModulos] = useState<number | null>(null);
+  const [plano, setPlano] = useState<PlanoOnboarding | null>(null);
+
+  useEffect(() => {
+    som.conclusao();
+  }, []);
 
   useEffect(() => {
     if (ob.concurso == null) return;
-    fetchModulos(ob.concurso).then((d) => setModulos(d.length));
+    fetchPlanoOnboarding(ob.concurso)
+      .then(setPlano)
+      .catch(() => setPlano(null));
   }, [ob.concurso]);
 
-  async function finish() {
-    if (password.trim().length < 6) {
+  // Semanas para concluir a trilha no ritmo escolhido (com o tamanho real dela).
+  const semanas = plano && plano.questoes > 0 ? Math.max(1, Math.ceil(plano.questoes / planMeta / 7)) : null;
+  const cabeNoPrazo = semanas != null && prazoDias != null ? semanas * 7 <= prazoDias : null;
+  const primeiroNome = ob.nome.trim().split(/\s+/)[0];
+
+  async function finish(e: FormEvent) {
+    e.preventDefault();
+    if (ob.submitting) return;
+    if (password.length < 6) {
       setError('A senha precisa ter pelo menos 6 caracteres.');
       return;
     }
     if (!aceitouTermos) {
-      setError('Você precisa aceitar os Termos de Uso e a Política de Privacidade para continuar.');
+      setError('Para continuar, aceite os Termos de Uso e a Política de Privacidade.');
       return;
     }
     setError(null);
+    setJaTemConta(false);
     dispatch({ type: 'OB_SET_FIELD', key: 'submitting', value: true });
 
-    const { data, error: signUpError } = await supabase.auth.signUp({
-      email: ob.email.trim().toLowerCase(),
-      password,
-      options: { data: { full_name: ob.nome } },
-    });
+    const perfil = perfilDoOnboarding(ob, planMeta);
+    try {
+      const { data, error: signUpError } = await supabase.auth.signUp({
+        email: ob.email.trim().toLowerCase(),
+        password,
+        options: { data: { full_name: perfil.nome, onboarding: perfil } },
+      });
 
-    if (signUpError) {
-      dispatch({ type: 'OB_SET_FIELD', key: 'submitting', value: false });
-      setError(signUpError.message.includes('already registered') ? 'Esse e-mail já tem conta. Faça login.' : 'Não foi possível criar a conta. Tente de novo.');
-      return;
-    }
-
-    if (!data.session || !data.user) {
-      // Confirmação de e-mail está ativa no projeto: não há sessão ainda,
-      // então não dá pra gravar o perfil (RLS exige auth.uid()). O usuário
-      // confirma o e-mail e completa o perfil no primeiro login.
-      setAwaitingConfirmation(true);
-      dispatch({ type: 'OB_SET_FIELD', key: 'submitting', value: false });
-      return;
-    }
-
-    const today = new Date().toISOString().split('T')[0];
-    await supabase.from('usuarios').upsert({
-      id: data.user.id,
-      email: ob.email.trim().toLowerCase(),
-      nome: ob.nome.trim(),
-      whatsapp: ob.whats.trim(),
-      faixa_etaria: ob.faixa,
-      ja_prestou_concurso: ob.prestou === 'sim',
-      nivel_preparo: ob.nivel,
-      prazo_prova: ob.prazo,
-      meta_diaria: planMeta,
-      trilha_ativa_id: ob.concurso,
-      streak: 0,
-      ultimo_acesso: today,
-      termos_aceitos_em: new Date().toISOString(),
-    });
-
-    if (refCode) {
-      try {
-        const indicadorId = await resolveReferralCode(refCode);
-        if (indicadorId && indicadorId !== data.user.id) await registerReferral(indicadorId, data.user.id);
-      } catch {
-        // indicação é um bônus, não deve travar o cadastro se falhar
+      if (signUpError) {
+        const existe = /already registered|already exists/i.test(signUpError.message);
+        setJaTemConta(existe);
+        setError(existe ? 'Esse e-mail já tem uma conta.' : 'Não foi possível criar a conta. Tente de novo.');
+        return;
       }
-    }
 
-    navigate('/trilha');
+      if (!data.session || !data.user) {
+        // Confirmação de e-mail ativa: o perfil é criado no primeiro login
+        // com os dados guardados na conta (useUsuario).
+        setAwaitingConfirmation(true);
+        return;
+      }
+
+      await supabase.from('usuarios').upsert({
+        id: data.user.id,
+        email: ob.email.trim().toLowerCase(),
+        ...perfil,
+        streak: 0,
+        ultimo_acesso: new Date().toISOString().split('T')[0],
+      });
+      registrarOnboarding('conta_criada');
+
+      if (refCode) {
+        try {
+          const indicadorId = await resolveReferralCode(refCode);
+          if (indicadorId && indicadorId !== data.user.id) await registerReferral(indicadorId, data.user.id);
+        } catch {
+          // indicação é um bônus, não deve travar o cadastro se falhar
+        }
+      }
+
+      navigate('/trilha');
+    } catch {
+      setError('Não conseguimos conectar. Verifique sua internet e tente de novo.');
+    } finally {
+      dispatch({ type: 'OB_SET_FIELD', key: 'submitting', value: false });
+    }
   }
 
   if (awaitingConfirmation) {
     return (
-      <div className="flex flex-1 flex-col items-center justify-center p-[14px_22px_30px] text-center animate-slide-up">
-        <div
-          className="flex h-[72px] w-[72px] items-center justify-center rounded-[22px] bg-yellow"
-          style={{ boxShadow: '0 9px 0 #E0A800', transform: 'rotate(-6deg)' }}
-        >
-          <span className="font-display text-[34px] font-extrabold text-ink" style={{ transform: 'rotate(6deg)' }}>
-            ✓
-          </span>
-        </div>
-        <div className="mt-5 font-display text-[22px] font-extrabold text-ink">Confirme seu e-mail</div>
-        <div className="mt-2 font-sans text-[13.5px] font-semibold leading-[1.5] text-text2">
-          Enviamos um link de confirmação para <b>{ob.email}</b>. Depois de confirmar, faça login para completar seu plano.
-        </div>
-        <div className="mt-6 w-full">
-          <PrimaryButton onClick={() => navigate('/login')}>Ir para o login</PrimaryButton>
-        </div>
+      <div className="ob-tela ob-centro">
+        <FocoFala
+          humor="happy"
+          titulo="Falta só confirmar seu e-mail 📩"
+          subtitulo={
+            <>
+              Mandei um link para <b>{ob.email}</b>. Abra, confirme e depois entre com seu e-mail e senha. Seu plano já fica salvo.
+            </>
+          }
+        />
+        <button type="button" className="button button-primary ob-botao" onClick={() => navigate('/login')}>
+          Ir para o login
+          <ArrowRight size={19} />
+        </button>
+        <p className="ob-nota">Não chegou? Confira a caixa de spam ou promoções.</p>
       </div>
     );
   }
 
   return (
-    <div className="animate-slide-up p-[14px_22px_30px]">
-      <div className="text-center">
-        <div
-          className="mx-auto mt-2 flex h-[72px] w-[72px] animate-pop-in items-center justify-center rounded-[22px] bg-yellow"
-          style={{ boxShadow: '0 9px 0 #E0A800', transform: 'rotate(-6deg)' }}
-        >
-          <span className="font-display text-[34px] font-extrabold text-ink" style={{ transform: 'rotate(6deg)' }}>
-            ★
-          </span>
-        </div>
-        <div className="mt-5 font-display text-[24px] font-extrabold text-ink">Seu plano está pronto!</div>
-        <div className="mt-1.5 font-sans text-[13.5px] font-semibold text-text2">Feito sob medida para o seu objetivo.</div>
-      </div>
+    <form className="ob-tela" onSubmit={finish} noValidate>
+      <Confetti disparo={1} quantidade={80} origemY={0.22} />
+      <FocoFala
+        humor="celebrate"
+        titulo={primeiroNome ? `${primeiroNome}, seu plano está pronto!` : 'Seu plano está pronto!'}
+        subtitulo="Feito com as suas respostas. Crie sua senha para começar."
+      />
 
-      <div
-        className="mt-5.5 rounded-[20px] p-5"
-        style={{ background: 'linear-gradient(135deg,#1557E6,#2f6bf0)', boxShadow: '0 14px 30px -14px rgba(21,87,230,.7)' }}
-      >
-        <div className="font-sans text-[11px] font-bold tracking-[0.5px] text-[#bcd0fb]">TRILHA</div>
-        <div className="mt-0.5 font-sans text-[18px] font-extrabold text-white">{planConcurso}</div>
-        <div className="mt-4 flex gap-2.5">
-          <div className="flex-1 rounded-[13px] bg-white/[.14] p-3">
-            <div className="font-display text-[19px] font-extrabold text-yellow">{planMeta}</div>
-            <div className="font-sans text-[10.5px] font-bold text-[#c9d7fb]">questões/dia</div>
+      <div className="ob-plano">
+        <span className="ob-plano-rotulo">SUA TRILHA</span>
+        <strong className="ob-plano-nome">{planConcurso}</strong>
+        <div className="ob-plano-numeros">
+          <div>
+            <Lightning size={17} weight="fill" />
+            <b>{planMeta}</b>
+            <small>questões por dia</small>
           </div>
-          <div className="flex-1 rounded-[13px] bg-white/[.14] p-3">
-            <div className="font-display text-[19px] font-extrabold text-yellow">~{planWeeks}</div>
-            <div className="font-sans text-[10.5px] font-bold text-[#c9d7fb]">semanas p/ concluir</div>
+          <div>
+            <Path size={17} weight="fill" />
+            <b>{plano ? plano.licoes : '—'}</b>
+            <small>{plano && plano.licoes !== plano.unidades ? 'lições no caminho' : 'etapas'}</small>
           </div>
-          <div className="flex-1 rounded-[13px] bg-white/[.14] p-3">
-            <div className="font-display text-[19px] font-extrabold text-yellow">{modulos ?? '—'}</div>
-            <div className="font-sans text-[10.5px] font-bold text-[#c9d7fb]">módulos</div>
+          <div>
+            <CalendarCheck size={17} weight="fill" />
+            <b>{semanas != null ? `~${semanas}` : '—'}</b>
+            <small>semanas no seu ritmo</small>
           </div>
         </div>
+        {cabeNoPrazo != null && (
+          <p className={`ob-plano-prazo${cabeNoPrazo ? ' ok' : ''}`}>
+            {cabeNoPrazo
+              ? '✓ Nesse ritmo você termina a trilha antes da prova.'
+              : 'Dica: para terminar antes da prova, aumente um pouco o tempo por dia depois (no Perfil).'}
+          </p>
+        )}
       </div>
 
-      <div className="mt-4 flex items-center gap-2.5 rounded-2xl border-[1.5px] border-border2 bg-surface p-[14px_16px]">
-        <span className="flex h-9 w-9 flex-none items-center justify-center rounded-[10px] bg-yellow-tint font-sans text-[16px] font-extrabold text-yellow-deep">
-          1
-        </span>
-        <div className="font-sans text-[13px] font-bold leading-[1.45] text-ink-soft">
-          Sua primeira meta já vale <b className="text-blue">+50 XP</b>. Comece agora para não perder o embalo.
+      <div className="form-field">
+        <label htmlFor="ob-senha">Crie uma senha</label>
+        <div className="password-field">
+          <input
+            id="ob-senha"
+            type={verSenha ? 'text' : 'password'}
+            autoComplete="new-password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder="Mínimo 6 caracteres"
+          />
+          <button type="button" className="icon-button" aria-label={verSenha ? 'Ocultar senha' : 'Mostrar senha'} onClick={() => setVerSenha(!verSenha)}>
+            {verSenha ? <EyeSlash size={20} /> : <Eye size={20} />}
+          </button>
         </div>
       </div>
 
-      <div className="mt-4">
-        <div className="mb-1.5 font-sans text-[12px] font-bold text-text2">CRIE UMA SENHA</div>
-        <input
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          type="password"
-          placeholder="Mínimo 6 caracteres"
-          className="h-[50px] w-full rounded-2xl border-[1.5px] border-border bg-[#F8FAFF] px-3.5 font-sans text-[14px] font-semibold text-ink outline-none"
-        />
-      </div>
-
-      <label className="mt-4 flex items-start gap-2.5">
-        <input
-          type="checkbox"
-          checked={aceitouTermos}
-          onChange={(e) => setAceitouTermos(e.target.checked)}
-          className="mt-0.5 h-4 w-4 flex-none"
-        />
-        <span className="font-sans text-[12.5px] font-semibold leading-[1.45] text-text2">
+      <label className="ob-termos">
+        <input type="checkbox" checked={aceitouTermos} onChange={(e) => setAceitouTermos(e.target.checked)} />
+        <span>
           Li e aceito os{' '}
-          <button type="button" onClick={() => setLegalDoc('termos')} className="border-none bg-transparent p-0 font-extrabold text-blue underline">
+          <button type="button" onClick={() => setLegalDoc('termos')}>
             Termos de Uso
           </button>{' '}
           e a{' '}
-          <button
-            type="button"
-            onClick={() => setLegalDoc('privacidade')}
-            className="border-none bg-transparent p-0 font-extrabold text-blue underline"
-          >
+          <button type="button" onClick={() => setLegalDoc('privacidade')}>
             Política de Privacidade
           </button>
           .
         </span>
       </label>
 
-      {error && <div className="mt-2.5 font-sans text-[12.5px] font-bold text-error">{error}</div>}
+      {error && (
+        <p className="ob-erro" role="alert">
+          {error}{' '}
+          {jaTemConta && (
+            <Link to="/login" className="font-extrabold text-blue underline">
+              Entrar
+            </Link>
+          )}
+        </p>
+      )}
 
-      <div className="mt-5.5">
-        <PrimaryButton onClick={finish} variant={ob.submitting ? 'disabled' : 'blue'} disabled={ob.submitting || !aceitouTermos}>
-          {ob.submitting ? 'Criando conta...' : 'Criar conta e começar'}
-        </PrimaryButton>
-      </div>
-      <div className="mt-3 text-center font-sans text-[12px] font-semibold text-text3">Grátis para começar · sem cartão</div>
+      <button type="submit" className="button button-primary ob-botao" disabled={ob.submitting}>
+        {ob.submitting ? 'Criando sua conta…' : 'Criar conta e começar'}
+        {ob.submitting ? <CircleNotch className="busy-icon" size={19} /> : <ArrowRight size={19} />}
+      </button>
+      <p className="ob-nota">Grátis para começar · sem cartão</p>
 
       {legalDoc && <LegalSheet doc={legalDoc} onClose={() => setLegalDoc(null)} />}
-    </div>
+    </form>
   );
 }

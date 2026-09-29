@@ -1,74 +1,93 @@
-import PrimaryButton from '../../../components/PrimaryButton';
+import { ArrowRight } from '@phosphor-icons/react';
+import type { FormEvent } from 'react';
 import { useAppState } from '../../../state/AppStateContext';
+import FocoFala from './FocoFala';
 
-const inputClass =
-  'w-full h-[50px] px-3.5 rounded-2xl border-[1.5px] border-border bg-[#F8FAFF] font-sans text-[14px] font-semibold text-ink outline-none';
+// (11) 98765-4321 enquanto digita
+function mascaraWhats(valor: string) {
+  const d = valor.replace(/\D/g, '').slice(0, 11);
+  if (d.length <= 2) return d.length ? `(${d}` : '';
+  if (d.length <= 6) return `(${d.slice(0, 2)}) ${d.slice(2)}`;
+  if (d.length <= 10) return `(${d.slice(0, 2)}) ${d.slice(2, 6)}-${d.slice(6)}`;
+  return `(${d.slice(0, 2)}) ${d.slice(2, 7)}-${d.slice(7)}`;
+}
 
 export default function ContactStep() {
   const { state, dispatch } = useAppState();
   const { ob } = state;
+  const primeiroNome = ob.nome.trim().split(/\s+/)[0];
 
-  function next() {
+  function erro(msg: string) {
+    dispatch({ type: 'OB_SET_FIELD', key: 'contactError', value: msg });
+  }
+
+  function next(e: FormEvent) {
+    e.preventDefault();
     const nome = ob.nome.trim();
     const email = ob.email.trim();
     const whatsDigits = ob.whats.replace(/\D/g, '');
-    if (!nome) {
-      dispatch({ type: 'OB_SET_FIELD', key: 'contactError', value: 'Digite seu nome.' });
-      return;
-    }
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      dispatch({ type: 'OB_SET_FIELD', key: 'contactError', value: 'Digite um e-mail válido.' });
-      return;
-    }
-    if (whatsDigits.length < 10) {
-      dispatch({ type: 'OB_SET_FIELD', key: 'contactError', value: 'Digite um WhatsApp válido, com DDD.' });
-      return;
-    }
+    if (!nome) return erro('Digite seu nome.');
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return erro('Digite um e-mail válido.');
+    if (whatsDigits.length < 10) return erro('Digite um WhatsApp válido, com DDD.');
+    erro('');
     dispatch({ type: 'OB_SET_STEP', step: ob.step + 1 });
   }
 
   return (
-    <div className="animate-slide-up p-[20px_22px_30px]">
-      <div className="font-display text-[23px] font-extrabold leading-[1.25] tracking-[-0.3px] text-ink">Vamos te conhecer</div>
-      <div className="mt-2 font-sans text-[13.5px] font-semibold leading-[1.5] text-text2">
-        Pra personalizar seu plano e te avisar na hora certa de estudar.
-      </div>
-      <div className="mt-5.5 flex flex-col gap-3.5">
-        <div>
-          <div className="mb-1.5 font-sans text-[12px] font-bold text-text2">NOME</div>
+    <form className="ob-tela" onSubmit={next} noValidate>
+      <FocoFala
+        humor="wave"
+        titulo={primeiroNome ? `Prazer, ${primeiroNome}! 👋` : 'Oi! Eu sou o Foco 👋'}
+        subtitulo="Vou te acompanhar nos estudos. Primeiro, me conta como te chamar e onde te encontrar."
+      />
+      <div className="ob-campos">
+        <div className="form-field ob-campo" style={{ '--i': 0 } as React.CSSProperties}>
+          <label htmlFor="ob-nome">Nome</label>
           <input
+            id="ob-nome"
+            autoComplete="name"
+            autoCapitalize="words"
             value={ob.nome}
             onChange={(e) => dispatch({ type: 'OB_SET_FIELD', key: 'nome', value: e.target.value })}
             placeholder="Seu nome"
-            className={inputClass}
           />
         </div>
-        <div>
-          <div className="mb-1.5 font-sans text-[12px] font-bold text-text2">E-MAIL</div>
+        <div className="form-field ob-campo" style={{ '--i': 1 } as React.CSSProperties}>
+          <label htmlFor="ob-email">E-mail</label>
           <input
+            id="ob-email"
+            type="email"
+            inputMode="email"
+            autoComplete="email"
+            autoCapitalize="none"
             value={ob.email}
             onChange={(e) => dispatch({ type: 'OB_SET_FIELD', key: 'email', value: e.target.value })}
             placeholder="voce@email.com"
-            className={inputClass}
           />
         </div>
-        <div>
-          <div className="mb-1.5 font-sans text-[12px] font-bold text-text2">WHATSAPP</div>
+        <div className="form-field ob-campo" style={{ '--i': 2 } as React.CSSProperties}>
+          <label htmlFor="ob-whats">WhatsApp</label>
           <input
+            id="ob-whats"
+            type="tel"
+            inputMode="tel"
+            autoComplete="tel-national"
             value={ob.whats}
-            onChange={(e) => dispatch({ type: 'OB_SET_FIELD', key: 'whats', value: e.target.value })}
+            onChange={(e) => dispatch({ type: 'OB_SET_FIELD', key: 'whats', value: mascaraWhats(e.target.value) })}
             placeholder="(00) 00000-0000"
-            className={inputClass}
           />
         </div>
       </div>
-      {ob.contactError && <div className="mt-3 font-sans text-[12.5px] font-bold text-error">{ob.contactError}</div>}
-      <div className="mt-5.5">
-        <PrimaryButton onClick={next}>Continuar</PrimaryButton>
-      </div>
-      <div className="mt-3 text-center font-sans text-[12px] font-semibold text-text3">
-        Usamos isso só para o seu plano de estudos e lembretes.
-      </div>
-    </div>
+      {ob.contactError && (
+        <p className="ob-erro" role="alert">
+          {ob.contactError}
+        </p>
+      )}
+      <button type="submit" className="button button-primary ob-botao">
+        Continuar
+        <ArrowRight size={19} />
+      </button>
+      <p className="ob-nota">Usamos seus dados para o seu plano, lembretes de estudo e para entender quem estuda com o Foco. Nada de spam.</p>
+    </form>
   );
 }
