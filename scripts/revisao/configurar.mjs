@@ -87,4 +87,4 @@ if (!data?.length && total === 0) {
 } else {
   console.log(`✓ Tudo certo! Faltam ${total} questões para revisar.`);
 }
-console.log('\nPróximo passo: no Claude Code, digite  /revisar-questoes\n');
+console.log('\nPróximo passo: no Claude Code, digite  /revisar-questoes-scripts\n');

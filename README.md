@@ -277,7 +277,7 @@ Cada lição (`montar_sessao_inteligente`) traz revisões vencidas, obrigatória
 
 ## Revisão de comentários em lote
 
-- **Claude Code no VS Code (mais rápido):** `/revisar-questoes`. Veja `docs/REVISAO-CLAUDE-CODE.md` (migration 037).
+- **Claude Code (mais rápido):** `/revisar-questoes` (Supabase conectado, sem chaves) ou `/revisar-questoes-scripts`. Veja `docs/REVISAO-CLAUDE-CODE.md` (migration 037).
 - **Claude Cowork com o Supabase conectado:** veja `docs/REVISAO-COWORK.md` (migrations 033 a 036).
 
 ### ⚠️ Checklist antes do lançamento

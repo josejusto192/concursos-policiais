@@ -1,37 +1,42 @@
 ---
-description: Revisa em lote os comentários das questões do Foco (baixa, revisa em paralelo e envia)
+description: Revisa em lote os comentários das questões do Foco usando o Supabase conectado (MCP), com revisores em paralelo
 argument-hint: "[quantidade] [disciplina] [banca]"
 ---
 
-Você vai coordenar a revisão em lote dos comentários de questões do app Foco. O guia completo está em docs/REVISAO-CLAUDE-CODE.md.
+Você vai coordenar a revisão em lote dos comentários de questões do app Foco, usando o Supabase conectado (MCP, ferramenta execute_sql). Guia: docs/REVISAO-CLAUDE-CODE.md.
 
 Argumentos recebidos: $ARGUMENTS
 
+## 0. Conferir a conexão
+Se a ferramenta execute_sql do Supabase não estiver disponível, pare e diga ao usuário, em português simples:
+"Digite /mcp, escolha **supabase**, clique em autenticar e entre com sua conta do Supabase no navegador. Depois digite /revisar-questoes de novo."
+
 ## 1. Combinar a rodada
-- Rode `node scripts/revisao/resumo.mjs` e mostre a tabela do que falta revisar.
-- Se os argumentos acima já disserem quantidade, disciplina e banca, use-os. Senão, pergunte numa mensagem só:
-  qual disciplina (ou "todas"), qual banca (ou "todas") e quantas questões nesta rodada (sugira 50).
-  Espere a resposta antes de continuar.
-- Use o nome da disciplina e da banca exatamente como aparece na tabela.
+- Rode `select * from public.cowork_resumo_pendentes();` e mostre uma tabela simples (disciplina, banca, pendentes, com imagem, puladas) e o total.
+- Se os argumentos já disserem quantidade, disciplina e banca, use-os. Senão, pergunte numa mensagem só: qual disciplina (ou "todas"), qual banca (ou "todas") e quantas questões nesta rodada (sugira 50). Espere a resposta.
 
-## 2. Revisar em ciclos de até 50 questões
-Repita até completar a quantidade combinada (ou até acabar o que falta):
+## 2. Revisar em ciclos de até 50
+Repita até completar a quantidade combinada (ou até acabar):
 
-1. Baixe o ciclo:
-   `node scripts/revisao/baixar.mjs --quantidade N --disciplina "DISCIPLINA" --banca "BANCA"`
-   (N = o que falta, no máximo 50; omita --disciplina/--banca quando for "todas").
-   Se ele avisar que ainda há questões no lote, rode primeiro `node scripts/revisao/enviar.mjs`.
-2. Divida as pastas listadas em grupos de 5 e dispare os subagentes `revisor-questoes` EM PARALELO (vários na mesma mensagem, até 10 de uma vez), passando a cada um os caminhos das pastas do seu grupo.
-3. Quando todos terminarem, rode `node scripts/revisao/enviar.mjs`.
-4. Se alguma pasta foi recusada (ficou no lote com erro.txt), dispare um subagente `revisor-questoes` só para essas pastas (ele corrige ou pula) e rode `node scripts/revisao/enviar.mjs` de novo. Se ainda sobrar recusada, crie você mesmo o `pular.txt` com o motivo do erro.txt e envie.
-5. **Só no primeiro ciclo:** antes do passo 3, mostre 2 exemplos (trecho do comentário original → revisado.html) e pergunte se pode enviar e continuar. Só siga com a aprovação. Nos ciclos seguintes, não pare.
+1. Pegue os IDs do ciclo (N = o que falta, no máximo 50; use null para "todas", nomes exatamente como na tabela). Questões com imagem embutida ficam de fora (elas são feitas pelo modo scripts):
+   ```sql
+   select p.questao_id
+   from public.cowork_proximas_questoes(N, 'DISCIPLINA' ou null, 'BANCA' ou null) p
+   join public.questoes q on q.id = p.questao_id
+   where coalesce(q.comentario_html, '') !~* '<img[^>]*src=.?data:';
+   ```
+   Se não vier nenhum ID, a rodada acabou.
+2. Divida os IDs em grupos de 5 e dispare os subagentes `revisor-questoes-mcp` EM PARALELO (vários na mesma mensagem, até 10 de uma vez), passando a cada um a lista de IDs do seu grupo.
+3. **Só no primeiro ciclo:** dispare primeiro UM subagente com 2 IDs, mostre os exemplos que ele devolver (original → revisado) e pergunte se pode continuar. Só siga com a aprovação. Nos ciclos seguintes, não pare.
+4. Some quantas foram salvas e puladas.
 
 ## Regras
-- Use apenas os scripts de scripts/revisao para falar com o banco. Não use outras ferramentas de banco, não edite migrations nem o código do app.
-- Não leia nem mostre o conteúdo de scripts/revisao/.env.
-- Não faça commit de nada desta tarefa (revisao-trabalho/ fica fora do git).
+- Você (coordenador) só roda os dois SELECTs acima. Quem busca, salva e pula são os subagentes.
+- Nunca rode comandos que alterem o banco além das funções cowork_* usadas pelos subagentes.
+- Não faça commit de nada desta tarefa.
 
 ## 3. Relatório final
 - Quantas questões foram salvas e quantas puladas nesta rodada.
-- Tabela das puladas: pasta, disciplina e motivo.
-- Rode `node scripts/revisao/resumo.mjs` de novo e mostre quanto ainda falta.
+- Tabela das puladas: ID e motivo.
+- Rode de novo `select * from public.cowork_resumo_pendentes();` e mostre quanto ainda falta.
+- Se houver questões com imagem embutida pendentes, avise que elas ficam para o modo scripts (/revisar-questoes-scripts).

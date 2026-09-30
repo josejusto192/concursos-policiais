@@ -1,4 +1,26 @@
-# Revisão de comentários com o Claude Code (VS Code)
+# Revisão de comentários com o Claude Code
+
+Há dois modos:
+
+- **`/revisar-questoes` (recomendado, mais fácil):** usa o Supabase conectado ao Claude Code (MCP). Não precisa de chave nem de senha: você entra no Supabase pelo navegador uma vez. Revisores trabalham em paralelo e salvam direto no banco, com as mesmas travas. As questões com **imagem embutida** (poucas) ficam para o modo scripts.
+- **`/revisar-questoes-scripts`:** usa os scripts e o login de admin (o `.env` criado por `node scripts/revisao/configurar.mjs`). Faz também as questões com imagem embutida.
+
+## Modo fácil: /revisar-questoes (MCP)
+
+No terminal (PowerShell), dentro da pasta do projeto:
+
+1. `git checkout main` e `git pull`, para ter a versão mais nova.
+2. Se ainda não tiver o Claude Code no terminal: `npm install -g @anthropic-ai/claude-code`.
+3. `claude`, para abrir o Claude Code no terminal.
+4. Se ele perguntar se confia na pasta ou no servidor "supabase" deste projeto, confirme.
+5. Digite `/mcp` → escolha **supabase** → **Authenticate**. O navegador abre: entre com a sua conta do Supabase e autorize. Isso é feito uma vez só.
+6. Digite `/revisar-questoes`. Ele mostra o que falta, pergunta a disciplina, a banca e a quantidade, mostra 2 exemplos para você aprovar e depois segue sozinho.
+
+O arquivo `.mcp.json` já aponta para o projeto do Foco, só com as ferramentas de banco de dados. As permissões em `.claude/settings.json` deixam ele rodar SQL sem pedir confirmação a cada passo. As regras do revisor (`.claude/agents/revisor-questoes-mcp.md`) proíbem alterar qualquer coisa além das funções de revisão.
+
+---
+
+## Modo scripts: /revisar-questoes-scripts
 
 É o jeito mais rápido de revisar muitas questões. O Claude Code baixa um lote (até 50 por ciclo), revisa **várias questões em paralelo** com o revisor `revisor-questoes` e envia de volta. O banco confere cada revisão antes de gravar, com as mesmas travas do Cowork: imagens, tamanho mínimo, HTML seguro e nunca sobrescrever questão já revisada.
 
@@ -39,13 +61,13 @@ Para trocar algum dado depois, rode `node scripts/revisao/configurar.mjs` de nov
 No Claude Code (dentro do VS Code), digite:
 
 ```
-/revisar-questoes
+/revisar-questoes-scripts
 ```
 
 Ele mostra o que falta, pergunta a disciplina, a banca e a quantidade, e começa. Também dá para passar direto:
 
 ```
-/revisar-questoes 200 Matemática FGV
+/revisar-questoes-scripts 200 Matemática FGV
 ```
 
 - No **primeiro ciclo** ele para, mostra 2 exemplos e pede a sua aprovação antes de enviar. Depois segue sozinho, de 50 em 50.
