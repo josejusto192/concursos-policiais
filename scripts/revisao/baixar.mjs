@@ -5,6 +5,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { args, conectar, LOTE, pastasDoLote } from './comum.mjs';
+import { baixarImagem } from './baixarImagem.mjs';
 
 const opcoes = args();
 const quantidade = Math.min(50, Math.max(1, Number(opcoes.quantidade) || 10));
@@ -46,11 +47,9 @@ async function salvarImagem(src, destinoSemExt) {
       fs.writeFileSync(`${destinoSemExt}.${ext}`, buf);
       return path.basename(`${destinoSemExt}.${ext}`);
     }
-    const res = await fetch(src);
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const tipo = (res.headers.get('content-type') ?? '').split(';')[0].toLowerCase();
-    const ext = EXT[tipo] ?? (src.split('?')[0].split('.').pop()?.toLowerCase() || 'png');
-    fs.writeFileSync(`${destinoSemExt}.${ext}`, Buffer.from(await res.arrayBuffer()));
+    const { buffer, tipo } = await baixarImagem(src);
+    const ext = EXT[tipo] ?? (src.split('?')[0].split('.').pop()?.toLowerCase().slice(0, 4) || 'png');
+    fs.writeFileSync(`${destinoSemExt}.${ext}`, buffer);
     return path.basename(`${destinoSemExt}.${ext}`);
   } catch (err) {
     return `NÃO ABRIU (${err instanceof Error ? err.message : err})`;

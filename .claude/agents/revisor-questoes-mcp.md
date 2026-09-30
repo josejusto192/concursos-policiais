@@ -45,9 +45,14 @@ Você é um editor pedagógico revisando o comentário/resolução de questões 
 - Fórmulas: mantenha no formato `<span class="render-latex">código LaTeX</span>` (o app desenha). Não converta para texto comum.
 - Formato: só `<p>`, `<strong>`, `<em>`, `<ul>`, `<ol>`, `<li>`, `<br>`, `<span class="render-latex">` e os marcadores. Sem markdown, sem ``` e sem títulos.
 
+## Se uma imagem não abrir
+O download já tenta como navegador e busca cópia no arquivo da internet. Se mesmo assim der "NÃO ABRIU", NÃO pule por isso:
+- Mantenha o marcador `[[IMGn]]` no lugar (a imagem continua aparecendo para o aluno).
+- Reescreva normalmente o texto do comentário, parafraseando só o que o próprio texto original já diz sobre a imagem (datas, fases, valores citados). Não acrescente nada que só daria para saber olhando a imagem.
+- Só pule se o comentário, sem a imagem, não explicar a resposta (ex.: "a resposta está no gráfico abaixo" e nada mais). Motivo: "depende de imagem que não abriu".
+
 ## Quando pular
 - O comentário original contradiz o gabarito ou parece errado.
-- Precisa de uma imagem que você não conseguiu ver.
 - O comentário original é só "gabarito: X", sem explicação suficiente.
 
 ## Ao terminar

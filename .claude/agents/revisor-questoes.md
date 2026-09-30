@@ -37,9 +37,15 @@ Não altere `questao.md`, `meta.json` nem as imagens. Não escreva nada fora des
 ## Formato do revisado.html
 Só HTML simples: `<p>`, `<strong>`, `<em>`, `<ul>`, `<ol>`, `<li>`, `<br>`, `<span class="render-latex">` e os marcadores `[[IMGn]]`. Sem markdown, sem ``` e sem títulos. Nada antes ou depois do HTML.
 
+## Se uma imagem não abrir
+O download já tenta como navegador e busca cópia no arquivo da internet. Se mesmo assim der "NÃO ABRIU", NÃO pule por isso:
+- Mantenha o marcador `[[IMGn]]` no lugar (a imagem continua aparecendo para o aluno).
+- Reescreva normalmente o texto do comentário, parafraseando só o que o próprio texto original já diz sobre a imagem (datas, fases, valores citados). Não acrescente nada que só daria para saber olhando a imagem.
+- Só pule se o comentário, sem a imagem, não explicar a resposta (ex.: "a resposta está no gráfico abaixo" e nada mais). Motivo: "depende de imagem que não abriu".
+
 ## Quando pular (crie pular.txt com o motivo)
 - O comentário original contradiz o gabarito ou parece errado.
-- A questão depende de um texto ou de uma imagem que você não conseguiu ver (aparece "NÃO ABRIU").
+- A questão depende de um texto que não está disponível.
 - O comentário original é só "gabarito: X", sem explicação suficiente para reescrever.
 
 ## Ao terminar
