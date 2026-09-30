@@ -12,7 +12,9 @@ Se a ferramenta execute_sql do Supabase não estiver disponível, pare e diga ao
 "Digite /mcp, escolha **supabase**, clique em autenticar e entre com sua conta do Supabase no navegador. Depois digite /revisar-questoes de novo."
 
 ## 1. Combinar a rodada
-- Rode `select * from public.cowork_resumo_pendentes();` e mostre uma tabela simples (disciplina, banca, pendentes, com imagem, puladas) e o total.
+- Rode `select * from public.cowork_resumo_pendentes();` e mostre uma tabela simples (disciplina, banca, pendentes, puladas) e o total.
+- Rode também `select count(*) as embutidas from public.questoes q where not coalesce(q.revisado, false) and coalesce(q.comentario_html, '') ~* '<img[^>]*src=.?data:';`
+  Atenção: a coluna "com_imagem" conta QUALQUER imagem (a maioria é link, que este modo revisa normalmente). Só as "embutidas" ficam de fora deste modo. Diga isso ao usuário com esses números (ex.: "X pendentes; só Y têm imagem embutida e ficam para o modo scripts").
 - Se os argumentos já disserem quantidade, disciplina e banca, use-os. Senão, pergunte numa mensagem só: qual disciplina (ou "todas"), qual banca (ou "todas") e quantas questões nesta rodada (sugira 50). Espere a resposta.
 
 ## 2. Revisar em ciclos de até 50
