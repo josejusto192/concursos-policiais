@@ -275,5 +275,10 @@ Cada lição (`montar_sessao_inteligente`) traz revisões vencidas, obrigatória
 
 **Ordem de publicação:** rode a migration 032 no Supabase **antes** de promover a versão do app no Vercel.
 
+## Revisão de comentários em lote
+
+- **Claude Code no VS Code (mais rápido):** `/revisar-questoes`. Veja `docs/REVISAO-CLAUDE-CODE.md` (migration 037).
+- **Claude Cowork com o Supabase conectado:** veja `docs/REVISAO-COWORK.md` (migrations 033 a 036).
+
 ### ⚠️ Checklist antes do lançamento
 - [ ] Remover a opção **"Usar também questões ainda não revisadas"** da trilha inteligente (temporária, migration 029): nova migration apagando `trilha_config.permitir_nao_revisadas` e voltando `questoes_filtradas`/`questoes_da_etapa`/`admin_contar_estoque` à versão da 028; no app, procurar `permitir_nao_revisadas`.

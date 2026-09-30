@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(node scripts/revisao/resumo.mjs)",
+      "Bash(node scripts/revisao/baixar.mjs:*)",
+      "Bash(node scripts/revisao/enviar.mjs)",
+      "Read(revisao-trabalho/**)",
+      "Write(revisao-trabalho/**)",
+      "Edit(revisao-trabalho/**)"
+    ],
+    "deny": [
+      "Read(scripts/revisao/.env)"
+    ]
+  }
+}
