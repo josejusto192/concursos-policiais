@@ -2,7 +2,7 @@
 
 Há dois modos:
 
-- **`/revisar-questoes` (recomendado, mais fácil):** usa o Supabase conectado ao Claude Code (MCP). Não precisa de chave nem de senha: você entra no Supabase pelo navegador uma vez. Revisores trabalham em paralelo e salvam direto no banco, com as mesmas travas. As questões com **imagem embutida** (poucas) ficam para o modo scripts.
+- **`/revisar-questoes` (recomendado, mais fácil):** usa o Supabase conectado ao Claude Code (MCP). Não precisa de chave nem de senha: você entra no Supabase pelo navegador uma vez. Até 20 revisores trabalham em paralelo (ciclos de 100 questões) e salvam direto no banco, com as mesmas travas. As questões com **imagem embutida** (poucas) ficam para o modo scripts.
 - **`/revisar-questoes-scripts`:** usa os scripts e o login de admin (o `.env` criado por `node scripts/revisao/configurar.mjs`). Faz também as questões com imagem embutida.
 
 ## Modo fácil: /revisar-questoes (MCP)
