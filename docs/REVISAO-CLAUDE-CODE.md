@@ -16,16 +16,23 @@ As questões aparecem no painel como **"Revisada (cowork)"**, com o seu usuário
 
 A pasta `revisao-trabalho/` fica só no seu computador (fora do git). Ela serve de histórico do que foi feito.
 
-## Preparar (uma vez)
+## Preparar (uma vez, só no terminal)
 
-1. **Banco:** a migration `037_revisao_por_script_com_login_admin.sql` precisa estar aplicada (além da 033 a 036). Ela deixa os scripts usarem o seu login de admin. Quem não é admin/editor continua sem acesso.
-2. **Projeto no computador:** abra a pasta do projeto no VS Code, com a extensão do Claude Code, e rode `npm install` no terminal.
-3. **Login:** copie `scripts/revisao/.env.exemplo` para `scripts/revisao/.env` e preencha:
-   - `SUPABASE_URL` e `SUPABASE_ANON_KEY`: os mesmos do app, a chave **pública**, a mesma que está no Vercel como `VITE_SUPABASE_ANON_KEY`;
-   - `REVISOR_EMAIL` e `REVISOR_SENHA`: o seu login de admin ou editor no app.
+1. **Banco:** a migration `037_revisao_por_script_com_login_admin.sql` precisa estar aplicada (além da 033 a 036). Já está.
+2. No VS Code, abra o projeto e o terminal (menu **Terminal → Novo Terminal**). Rode, um de cada vez:
+   ```
+   git pull
+   npm install
+   node scripts/revisao/configurar.mjs
+   ```
+3. O último comando **pergunta tudo e cria o arquivo sozinho**:
+   - o endereço do Supabase: Supabase → Project Settings → API → *Project URL*;
+   - a chave **pública** "anon", na mesma tela. É a mesma `VITE_SUPABASE_ANON_KEY` do Vercel. **Não use a "service_role"**: se colar essa, o assistente recusa;
+   - o seu e-mail e a sua senha de admin do app. A senha não aparece enquanto você digita.
 
-   Esse arquivo não vai para o GitHub. **Não use a chave secreta (service_role).**
-4. Teste no terminal: `node scripts/revisao/resumo.mjs`. Ele deve mostrar a tabela do que falta revisar.
+   No fim ele testa o login e diz quantas questões faltam. O arquivo criado (`scripts/revisao/.env`) não vai para o GitHub.
+
+Para trocar algum dado depois, rode `node scripts/revisao/configurar.mjs` de novo e aperte Enter no que quiser manter.
 
 ## Usar
 
