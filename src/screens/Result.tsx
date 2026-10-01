@@ -41,7 +41,7 @@ const MARCOS: Record<number, string> = {
 };
 
 // A meta diária é comemorada uma vez por dia (guardado no aparelho).
-const CHAVE_META = 'foco:meta-comemorada';
+const CHAVE_META = 'tacta:meta-comemorada';
 
 function metaJaComemorada(dia: string): boolean {
   try {
@@ -137,7 +137,7 @@ function Resultado() {
       <div className="flex flex-1 flex-col items-center overflow-y-auto p-[30px_20px_16px] text-center">
         <div className={`resultado-halo ${pct >= 80 ? 'dourado' : ''}`} aria-hidden="true">
           <span className="resultado-mascote">
-            <Mascot mood={d.humor} size={148} />
+            <Mascot mood={d.humor} size={124} />
           </span>
         </div>
         <h1 className="resultado-titulo">{d.titulo}</h1>
@@ -159,14 +159,14 @@ function Resultado() {
               <Target size={17} weight="fill" />
             </span>
             {/* nota baixa em cor neutra: o resultado avisa sem punir */}
-            <strong className={pct >= 70 ? 'text-success' : pct >= 50 ? 'text-[#d99a00]' : 'text-ink-soft'}>{pctAnimado}%</strong>
+            <strong className={pct >= 70 ? 'text-success' : pct >= 50 ? 'text-gold-shadow' : 'text-ink-soft'}>{pctAnimado}%</strong>
             <small>ACERTOS</small>
           </div>
           <div className="resultado-card" style={{ animationDelay: '370ms' }}>
             <span className="resultado-card-icone xp" aria-hidden="true">
               <Lightning size={17} weight="fill" />
             </span>
-            <strong className="text-blue">+{xpAnimado}</strong>
+            <strong className="text-gold-text">+{xpAnimado}</strong>
             <small>XP GANHO</small>
           </div>
           <div className="resultado-card" style={{ animationDelay: '490ms' }}>
@@ -174,7 +174,7 @@ function Resultado() {
             <span className="resultado-card-icone fogo" aria-hidden="true">
               <Fire size={17} weight="fill" />
             </span>
-            <strong className="text-[#ff7a00]">{ofensivaAnimada}</strong>
+            <strong className="text-brand">{ofensivaAnimada}</strong>
             <small>{ofensiva === 1 ? 'DIA SEGUIDO' : 'DIAS SEGUIDOS'}</small>
           </div>
         </div>
@@ -198,14 +198,14 @@ function Resultado() {
         <div
           onClick={() => dispatch({ type: 'SET_MENTOR_OPEN', open: true })}
           className="mt-3.5 flex w-full cursor-pointer items-center gap-3.5 rounded-2xl p-4 text-left"
-          style={{ background: 'linear-gradient(135deg,#FFCB2D,#F5B301)', boxShadow: '0 12px 26px -16px rgba(245,179,1,.9)' }}
+          style={{ background: 'linear-gradient(135deg,var(--ink-2),var(--ink))', boxShadow: '0 12px 26px -16px rgba(0,0,0,.5)' }}
         >
           <div className="flex-1">
-            <div className="font-sans text-[9px] font-extrabold tracking-[1px] text-[#7a5900]">MENTORIA APROVAÇÃO</div>
-            <div className="mt-1 font-sans text-[15px] font-extrabold text-ink">Quer acelerar sua aprovação?</div>
-            <div className="mt-0.5 font-sans text-[12px] font-bold text-[#7a5900]">Um mentor monta seu cronograma. Ver como funciona ›</div>
+            <div className="font-sans text-[9px] font-extrabold tracking-[1px] text-gold">MENTORIA APROVAÇÃO</div>
+            <div className="mt-1 font-sans text-[15px] font-extrabold text-white">Quer acelerar sua aprovação?</div>
+            <div className="mt-0.5 font-sans text-[12px] font-bold text-text6">Um mentor monta seu cronograma. Ver como funciona ›</div>
           </div>
-          <div className="flex h-11 w-11 flex-none items-center justify-center rounded-[13px] bg-[rgba(11,31,77,.12)] text-ink">
+          <div className="flex h-11 w-11 flex-none items-center justify-center rounded-[13px] bg-white/10 text-white">
             <ArrowUpRight weight="bold" size={20} />
           </div>
         </div>

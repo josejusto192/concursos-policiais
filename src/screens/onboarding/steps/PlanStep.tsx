@@ -9,7 +9,7 @@ import { fetchPlanoOnboarding, registerReferral, registrarOnboarding, resolveRef
 import { som } from '../../../lib/efeitos';
 import { lerOrigem } from '../../../lib/origem';
 import type { OnboardingState } from '../../../state/types';
-import FocoFala from './FocoFala';
+import MascoteFala from './MascoteFala';
 
 interface PlanStepProps {
   planConcurso: string;
@@ -154,7 +154,7 @@ export default function PlanStep({ planConcurso, planMeta, prazoDias, refCode }:
   if (awaitingConfirmation) {
     return (
       <div className="ob-tela ob-centro">
-        <FocoFala
+        <MascoteFala
           humor="happy"
           titulo="Falta só confirmar seu e-mail 📩"
           subtitulo={
@@ -175,7 +175,7 @@ export default function PlanStep({ planConcurso, planMeta, prazoDias, refCode }:
   return (
     <form className="ob-tela" onSubmit={finish} noValidate>
       <Confetti disparo={1} quantidade={80} origemY={0.22} />
-      <FocoFala
+      <MascoteFala
         humor="celebrate"
         titulo={primeiroNome ? `${primeiroNome}, seu plano está pronto!` : 'Seu plano está pronto!'}
         subtitulo="Feito com as suas respostas. Crie sua senha para começar."
@@ -252,7 +252,7 @@ export default function PlanStep({ planConcurso, planMeta, prazoDias, refCode }:
         <p className="ob-erro" role="alert">
           {error}{' '}
           {jaTemConta && (
-            <Link to="/login" className="font-extrabold text-blue underline">
+            <Link to="/login" className="font-extrabold text-brand underline">
               Entrar
             </Link>
           )}

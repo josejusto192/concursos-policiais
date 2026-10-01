@@ -51,7 +51,7 @@ export default function AdminTrilhasPage() {
         <h1 className="text-xl font-extrabold text-gray-900">Trilhas</h1>
         <button
           onClick={() => setCreating((v) => !v)}
-          className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-bold text-white hover:bg-blue-700"
+          className="rounded-lg bg-brand px-4 py-2 text-sm font-bold text-white hover:bg-brand-hover"
         >
           {creating ? 'Cancelar' : 'Nova trilha'}
         </button>
@@ -80,7 +80,7 @@ export default function AdminTrilhasPage() {
                 key={valor}
                 type="button"
                 onClick={() => setTipo(valor)}
-                className={`rounded-lg border-2 p-3 text-left ${tipo === valor ? 'border-blue-600 bg-blue-50' : 'border-gray-200 bg-white'}`}
+                className={`rounded-lg border-2 p-3 text-left ${tipo === valor ? 'border-brand bg-brand-tint' : 'border-gray-200 bg-white'}`}
               >
                 <div className="text-sm font-extrabold text-gray-900">{titulo}</div>
                 <div className="mt-0.5 text-xs text-gray-500">{texto}</div>
@@ -97,7 +97,7 @@ export default function AdminTrilhasPage() {
             />
           </div>
           {error && <div className="mt-2 text-sm font-semibold text-red-600">{error}</div>}
-          <button onClick={handleCreate} className="mt-3 rounded-lg bg-blue-600 px-4 py-2 text-sm font-bold text-white hover:bg-blue-700">
+          <button onClick={handleCreate} className="mt-3 rounded-lg bg-brand px-4 py-2 text-sm font-bold text-white hover:bg-brand-hover">
             Criar trilha
           </button>
         </div>
@@ -123,7 +123,7 @@ export default function AdminTrilhasPage() {
                   <td className="px-4 py-3 font-semibold text-gray-900">
                     {t.nome}
                     {t.tipo === 'inteligente' && (
-                      <span className="ml-2 rounded-full bg-violet-100 px-2 py-0.5 text-xs font-bold text-violet-700">✨ Inteligente</span>
+                      <span className="ml-2 rounded-full bg-ink px-2 py-0.5 text-xs font-bold text-white">✨ Inteligente</span>
                     )}
                   </td>
                   <td className="px-4 py-3 text-gray-500">{t.slug}</td>
@@ -144,7 +144,7 @@ export default function AdminTrilhasPage() {
                   </td>
                   <td className="px-4 py-3 text-gray-600">{c?.questoes ?? '—'}</td>
                   <td className="px-4 py-3 text-right">
-                    <Link to={`/admin/trilhas/${t.id}`} className="font-bold text-blue-600 hover:underline">
+                    <Link to={`/admin/trilhas/${t.id}`} className="font-bold text-brand hover:underline">
                       Editar ›
                     </Link>
                   </td>

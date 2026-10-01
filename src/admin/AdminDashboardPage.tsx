@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import { fetchDashboardStats, fetchDashboardTrilhas, type DashboardStats, type DashboardTrilha } from '../lib/adminQueries';
 import { ErrorState, LoadingCards } from '../components/Feedback';
 import AdminLayout from './AdminLayout';
+import { MARCA } from '../lib/marca';
 
 export default function AdminDashboardPage() {
   const [stats, setStats] = useState<DashboardStats | null>(null);
@@ -39,7 +40,7 @@ export default function AdminDashboardPage() {
       <div className="admin-intro">
         <div>
           <span className="eyebrow">TUDO PRONTO PARA EVOLUIR</span>
-          <h1>Uma visão de todo o Foco.</h1>
+          <h1>Uma visão de todo o {MARCA.nome}.</h1>
           <p>Acompanhe o conteúdo, encontre prioridades e cuide da experiência dos alunos.</p>
         </div>
         <Link to="/admin/trilhas" className="button button-primary">
@@ -57,7 +58,7 @@ export default function AdminDashboardPage() {
             <div className="admin-stat">
               <div className="admin-stat-top">
                 Questões no banco
-                <Stack size={20} className="text-blue" />
+                <Stack size={20} className="text-brand" />
               </div>
               <strong>{stats?.total_questoes.toLocaleString('pt-BR') ?? '—'}</strong>
               <small>Conteúdo disponível para curadoria</small>
@@ -75,7 +76,7 @@ export default function AdminDashboardPage() {
                 <div className="admin-stat">
                   <div className="admin-stat-top">
                     Alunos cadastrados
-                    <Users size={20} className="text-blue" />
+                    <Users size={20} className="text-brand" />
                   </div>
                   <strong>{stats.total_alunos.toLocaleString('pt-BR')}</strong>
                   <small>{stats.alunos_ativos_hoje ?? 0} ativos hoje</small>
@@ -87,7 +88,7 @@ export default function AdminDashboardPage() {
                   </div>
                   <strong>{stats.erros_7d ?? 0}</strong>
                   <small>
-                    <Link to="/admin/erros" className="text-blue">
+                    <Link to="/admin/erros" className="text-brand">
                       Ver saúde do aplicativo →
                     </Link>
                   </small>
@@ -153,7 +154,7 @@ export default function AdminDashboardPage() {
                     </td>
                     <td data-label="Questões">{t.questoes}</td>
                     <td>
-                      <Link to={`/admin/trilhas/${t.id}`} className="text-blue font-bold">
+                      <Link to={`/admin/trilhas/${t.id}`} className="text-brand font-bold">
                         Gerenciar →
                       </Link>
                     </td>

@@ -103,7 +103,7 @@ export default function AdminTrilhaInteligente({ trilhaId }: { trilhaId: number 
 
   return (
     <div className="mt-6 space-y-6">
-      <div className="rounded-xl border border-violet-200 bg-violet-50 p-4 text-sm text-violet-900">
+      <div className="rounded-xl border border-border bg-muted p-4 text-sm text-ink">
         <strong>✨ Trilha inteligente.</strong> O aluno vê um caminho como o do Duolingo: <b>seções</b> (blocos grandes, ex.: uma
         disciplina) → <b>unidades</b> (um tema) → <b>bolinhas</b> (lições). Cada unidade tem N lições e, no fim, uma bolinha de{' '}
         <b>revisão da unidade</b>. Terminou a lição, a próxima libera — sem nota mínima. Por trás, o algoritmo escolhe as questões
@@ -236,7 +236,7 @@ export default function AdminTrilhaInteligente({ trilhaId }: { trilhaId: number 
           <button
             onClick={salvarConfig}
             disabled={!configMudou || salvando}
-            className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-bold text-white hover:bg-blue-700 disabled:bg-gray-300"
+            className="rounded-lg bg-brand px-4 py-2 text-sm font-bold text-white hover:bg-brand-hover disabled:bg-gray-300"
           >
             {salvando ? 'Salvando…' : 'Salvar filtros'}
           </button>
@@ -401,7 +401,7 @@ function CabecalhoSecao({
           ▼
         </button>
       </div>
-      <span className="rounded bg-violet-100 px-2 py-0.5 text-xs font-extrabold text-violet-700">SEÇÃO {indice + 1}</span>
+      <span className="rounded bg-ink px-2 py-0.5 text-xs font-extrabold text-white">SEÇÃO {indice + 1}</span>
       <input value={titulo} onChange={(e) => setTitulo(e.target.value)} className="min-w-[200px] flex-1 rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-sm font-bold" />
       {mudou && (
         <button
@@ -409,7 +409,7 @@ function CabecalhoSecao({
             await updateSecao(secao.id, { titulo: titulo.trim() });
             onMudou();
           }}
-          className="rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-bold text-white hover:bg-blue-700"
+          className="rounded-lg bg-brand px-3 py-1.5 text-xs font-bold text-white hover:bg-brand-hover"
         >
           Salvar nome
         </button>
@@ -454,7 +454,7 @@ function NovaSecao({ trilhaId, ordem, onCriada }: { trilhaId: number; ordem: num
           placeholder="Ex.: Língua Portuguesa"
           className="min-w-0 flex-1 rounded-lg border border-gray-300 px-3 py-2 text-sm"
         />
-        <button onClick={criar} className="rounded-lg bg-violet-600 px-3 py-2 text-sm font-bold text-white hover:bg-violet-700">
+        <button onClick={criar} className="rounded-lg bg-ink px-3 py-2 text-sm font-bold text-white hover:bg-ink-soft">
           Criar
         </button>
       </div>
@@ -603,9 +603,9 @@ function SugerirEstrutura({
   const licoesTotal = escolhidas.reduce((t, u) => t + u.licoes + 1, 0);
 
   return (
-    <div className="rounded-xl border border-blue-200 bg-blue-50 p-3">
+    <div className="rounded-xl border border-brand-border bg-brand-tint p-3">
       <div className="flex flex-wrap items-center gap-3">
-        <div className="min-w-0 flex-1 text-sm text-blue-900">
+        <div className="min-w-0 flex-1 text-sm text-brand-dark">
           <strong>💡 Não sabe o que colocar?</strong> Eu olho o banco com os filtros salvos e sugiro uma seção por disciplina e uma
           unidade por assunto (com as lições calculadas pelo estoque). Você marca o que quer e cria tudo de uma vez.
         </div>
@@ -613,16 +613,16 @@ function SugerirEstrutura({
           onClick={sugestao ? () => setSugestao(null) : sugerir}
           disabled={carregando || configMudou}
           title={configMudou ? 'Salve os filtros antes' : ''}
-          className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-bold text-white hover:bg-blue-700 disabled:bg-gray-300"
+          className="rounded-lg bg-brand px-4 py-2 text-sm font-bold text-white hover:bg-brand-hover disabled:bg-gray-300"
         >
           {carregando ? 'Analisando o banco…' : sugestao ? 'Fechar sugestão' : 'Sugerir estrutura'}
         </button>
       </div>
-      {aviso && <div className="mt-2 text-xs font-semibold text-blue-900">{aviso}</div>}
+      {aviso && <div className="mt-2 text-xs font-semibold text-brand-dark">{aviso}</div>}
       {sugestao && sugestao.length > 0 && (
         <div className="mt-3 space-y-3">
           {sugestao.map((sec) => (
-            <div key={sec.disciplina} className="rounded-lg border border-blue-100 bg-white p-3">
+            <div key={sec.disciplina} className="rounded-lg border border-brand-tint bg-white p-3">
               <div className="flex items-center gap-2 text-sm font-extrabold text-gray-900">
                 Seção: {sec.disciplina}
                 <span className="text-xs font-semibold text-gray-400">{sec.estoque} questões</span>
@@ -637,7 +637,7 @@ function SugerirEstrutura({
                     </span>
                     {u.jaExiste && <span className="rounded bg-gray-100 px-1.5 font-bold">já tem na trilha</span>}
                     <span className="w-24 text-right">{u.estoque} questões</span>
-                    <span className="w-16 text-right font-bold text-blue-700">{u.licoes} lições</span>
+                    <span className="w-16 text-right font-bold text-brand-hover">{u.licoes} lições</span>
                   </label>
                 ))}
               </div>
@@ -691,9 +691,9 @@ function MultiEscolha({
       <label className={rotulo}>{titulo}</label>
       <div className="mt-1 flex min-h-[40px] flex-wrap items-center gap-1.5 rounded-lg border border-gray-300 p-1.5">
         {valor.map((v) => (
-          <span key={v} className="flex items-center gap-1 rounded-full bg-blue-50 px-2 py-0.5 text-xs font-bold text-blue-700">
+          <span key={v} className="flex items-center gap-1 rounded-full bg-brand-tint px-2 py-0.5 text-xs font-bold text-brand-hover">
             {v}
-            <button type="button" onClick={() => onChange(valor.filter((x) => x !== v))} className="text-blue-400 hover:text-blue-800" aria-label={`Remover ${v}`}>
+            <button type="button" onClick={() => onChange(valor.filter((x) => x !== v))} className="text-brand-light hover:text-brand-dark" aria-label={`Remover ${v}`}>
               ×
             </button>
           </span>
@@ -898,7 +898,7 @@ function EtapaEditor({
               <label className={rotulo} title="Bolinhas desta unidade (fora a revisão final)">LIÇÕES (1–20)</label>
               <input type="number" min={1} max={20} value={licoes} onChange={(e) => setLicoes(Number(e.target.value))} className={input} />
               {totalEstoque > 0 && sugeridas !== licoes && (
-                <button type="button" onClick={() => setLicoes(sugeridas)} className="mt-1 text-[11px] font-bold text-blue-600 hover:underline">
+                <button type="button" onClick={() => setLicoes(sugeridas)} className="mt-1 text-[11px] font-bold text-brand hover:underline">
                   Sugerido: {sugeridas}
                 </button>
               )}
@@ -922,18 +922,18 @@ function EtapaEditor({
             naoRevisadas={contagem?.nao_revisadas}
             bancaAlvo={bancaAlvo}
           />
-          {!!estoque?.obrigatorias && <div className="mt-1 text-xs font-semibold text-violet-700">★ {estoque.obrigatorias} questões obrigatórias nesta unidade</div>}
+          {!!estoque?.obrigatorias && <div className="mt-1 text-xs font-semibold text-ink">★ {estoque.obrigatorias} questões obrigatórias nesta unidade</div>}
 
           <div className="mt-3 flex flex-wrap items-center gap-3">
             <button
               onClick={salvar}
               disabled={!mudou || salvando}
-              className="rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-bold text-white hover:bg-blue-700 disabled:bg-gray-300"
+              className="rounded-lg bg-brand px-3 py-1.5 text-xs font-bold text-white hover:bg-brand-hover disabled:bg-gray-300"
             >
               {salvando ? 'Salvando…' : 'Salvar unidade'}
             </button>
             {mudou && <span className="text-xs font-bold text-amber-600">Alterações não salvas</span>}
-            <button onClick={simulacao ? () => setSimulacao(null) : simular} className="text-xs font-bold text-violet-700 hover:underline">
+            <button onClick={simulacao ? () => setSimulacao(null) : simular} className="text-xs font-bold text-brand hover:underline">
               {simulacao ? 'Fechar simulação' : 'Simular uma lição (como se fosse você)'}
             </button>
             <button onClick={onExcluir} className="ml-auto text-xs font-bold text-red-600 hover:underline">
@@ -947,7 +947,7 @@ function EtapaEditor({
               {simulacao.map((q, i) => (
                 <li key={`${q.id}-${i}`} className="flex gap-2">
                   <span className="w-5 flex-none text-right font-bold text-gray-400">{i + 1}.</span>
-                  <span className="w-20 flex-none font-bold text-violet-700">{MOTIVO_ROTULO[q.motivo ?? 'nova'] ?? q.motivo}</span>
+                  <span className="w-20 flex-none font-bold text-ink">{MOTIVO_ROTULO[q.motivo ?? 'nova'] ?? q.motivo}</span>
                   <span className="w-24 flex-none text-gray-500">
                     {q.banca} {q.ano || ''}
                   </span>
@@ -1039,7 +1039,7 @@ function NovaEtapa({
             </option>
           ))}
         </select>
-        <button onClick={criar} className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-bold text-white hover:bg-blue-700">
+        <button onClick={criar} className="rounded-lg bg-brand px-4 py-2 text-sm font-bold text-white hover:bg-brand-hover">
           Adicionar
         </button>
       </div>
@@ -1178,7 +1178,7 @@ function QuestoesFixas({
                               ? 'Escolha a unidade acima'
                               : ''
                         }
-                        className="flex-none rounded-lg bg-violet-600 px-2.5 py-1 font-bold text-white hover:bg-violet-700 disabled:bg-gray-300"
+                        className="flex-none rounded-lg bg-ink px-2.5 py-1 font-bold text-white hover:bg-ink-soft disabled:bg-gray-300"
                       >
                         Obrigatória
                       </button>

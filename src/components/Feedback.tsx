@@ -55,7 +55,7 @@ export function TrailLoading() {
           <path
             d="M160 45 C160 150 225 115 225 205 C225 300 95 260 95 380"
             fill="none"
-            stroke="#D8E2F5"
+            stroke="#DCDCD7"
             strokeWidth="5"
             strokeDasharray="3 12"
             strokeLinecap="round"

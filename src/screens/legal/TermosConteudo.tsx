@@ -1,18 +1,20 @@
+import { MARCA } from '../../lib/marca';
+
 // Texto compartilhado entre a página /termos e o LegalSheet (modal usado
 // dentro do app — link em nova aba trava o PWA no iOS).
 export default function TermosConteudo() {
   return (
     <div className="flex-1 space-y-4 p-[18px_20px_36px] font-sans text-[13.5px] leading-[1.6] text-ink-soft">
-      <p className="text-[12px] font-semibold text-text3">Última atualização: julho de 2026</p>
+      <p className="text-[12px] font-semibold text-text3">Última atualização: outubro de 2026</p>
 
       <p>
-        Estes Termos de Uso regulam o acesso e uso do Foco ("app", "plataforma"), um serviço de preparação para concursos públicos
-        por trilhas de questões. Ao criar uma conta, você concorda com estes termos.
+        Estes Termos de Uso regulam o acesso e uso do {MARCA.nomeCompleto} ("app", "plataforma"), um serviço de preparação para
+        concursos públicos da área policial por trilhas de questões. Ao criar uma conta, você concorda com estes termos.
       </p>
 
       <h2 className="font-display text-[15px] font-extrabold text-ink">1. Cadastro e conta</h2>
       <p>
-        Para usar o Foco você precisa criar uma conta com e-mail e senha. Você é responsável por manter a confidencialidade da sua
+        Para usar o {MARCA.nomeCompleto} você precisa criar uma conta com e-mail e senha. Você é responsável por manter a confidencialidade da sua
         senha e por todas as atividades realizadas na sua conta. Informe dados verdadeiros no cadastro.
       </p>
 

@@ -1,7 +1,8 @@
 import { ArrowRight } from '@phosphor-icons/react';
 import type { FormEvent } from 'react';
 import { useAppState } from '../../../state/AppStateContext';
-import FocoFala from './FocoFala';
+import MascoteFala from './MascoteFala';
+import { MARCA, NOME_MASCOTE } from '../../../lib/marca';
 
 // (11) 98765-4321 enquanto digita
 function mascaraWhats(valor: string) {
@@ -35,10 +36,10 @@ export default function ContactStep() {
 
   return (
     <form className="ob-tela" onSubmit={next} noValidate>
-      <FocoFala
+      <MascoteFala
         humor="wave"
-        titulo={primeiroNome ? `Prazer, ${primeiroNome}! 👋` : 'Oi! Eu sou o Foco 👋'}
-        subtitulo="Vou te acompanhar nos estudos. Primeiro, me conta como te chamar e onde te encontrar."
+        titulo={primeiroNome ? `Prazer, ${primeiroNome}!` : `Oi! Eu sou o ${NOME_MASCOTE}.`}
+        subtitulo="Vou te acompanhar até a aprovação. Primeiro, me diz como te chamar e onde te encontrar."
       />
       <div className="ob-campos">
         <div className="form-field ob-campo" style={{ '--i': 0 } as React.CSSProperties}>
@@ -87,7 +88,7 @@ export default function ContactStep() {
         Continuar
         <ArrowRight size={19} />
       </button>
-      <p className="ob-nota">Usamos seus dados para o seu plano, lembretes de estudo e para entender quem estuda com o Foco. Nada de spam.</p>
+      <p className="ob-nota">Usamos seus dados para o seu plano, lembretes de estudo e para entender quem estuda com o {MARCA.nome}. Nada de spam.</p>
     </form>
   );
 }

@@ -162,7 +162,7 @@ export default function AdminConfiguracoesPage() {
         <button
           onClick={handleSave}
           disabled={saving}
-          className="mt-4 rounded-lg bg-blue-600 px-4 py-2 text-sm font-bold text-white hover:bg-blue-700 disabled:opacity-50"
+          className="mt-4 rounded-lg bg-brand px-4 py-2 text-sm font-bold text-white hover:bg-brand-hover disabled:opacity-50"
         >
           {saving ? 'Salvando…' : 'Salvar configurações'}
         </button>

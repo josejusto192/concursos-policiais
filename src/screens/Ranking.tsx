@@ -3,10 +3,11 @@ import { useAppData } from '../contexts/AppDataContext';
 import { fetchRanking, type RankingRow } from '../lib/queries';
 import { daysLeftInMonth } from '../lib/format';
 import PatternBackground from '../components/PatternBackground';
+import { CORES_AVATAR } from '../lib/marca';
 
-const POS_COLORS: Record<number, string> = { 1: '#F5B301', 2: '#9aa4bd', 3: '#cd7f32' };
+const POS_COLORS: Record<number, string> = { 1: 'var(--gold-deep)', 2: 'var(--text4)', 3: '#B87333' };
 const PRIZES: Record<number, string> = { 1: 'Mentoria grátis', 2: '50% off', 3: '25% off' };
-const PALETTE = ['#1557E6', '#22A06B', '#F5B301', '#9b59b6', '#e67e22', '#16a085', '#c0392b', '#2980b9'];
+const PALETTE = CORES_AVATAR;
 
 function initialsOf(nome: string) {
   const parts = nome.trim().split(/\s+/);
@@ -29,15 +30,15 @@ export default function Ranking() {
 
   return (
     <>
-      <div className="z-[3] bg-surface p-[18px_18px_14px]" style={{ borderBottom: '1px solid #EDF0F8' }}>
+      <div className="z-[3] bg-surface p-[18px_18px_14px]" style={{ borderBottom: '1px solid var(--border2)' }}>
         <div className="font-display text-[20px] font-extrabold text-ink">Ranking mensal</div>
         <div className="mt-0.5 font-sans text-[12px] font-semibold text-text2">Liga Ouro · termina em {daysLeftInMonth()} dias</div>
       </div>
       <PatternBackground scrollClassName="p-[18px_18px_30px]">
         <div className="mb-4 flex gap-2">
-          <div className="flex-1 rounded-2xl p-3 text-center" style={{ background: 'linear-gradient(135deg,#FFCB2D,#F5B301)', boxShadow: '0 10px 22px -14px rgba(245,179,1,.8)' }}>
+          <div className="flex-1 rounded-2xl p-3 text-center" style={{ background: 'linear-gradient(135deg,var(--gold),var(--gold-deep))', boxShadow: '0 10px 22px -14px rgba(201,138,18,.6)' }}>
             <div className="font-sans text-[18px] font-extrabold text-ink">🥇</div>
-            <div className="mt-1 font-sans text-[11px] font-extrabold text-[#7a5900]">Mentoria grátis</div>
+            <div className="mt-1 font-sans text-[11px] font-extrabold text-gold-text">Mentoria grátis</div>
           </div>
           <div className="flex-1 rounded-2xl border-[1.5px] border-border2 bg-surface p-3 text-center">
             <div className="font-sans text-[18px] font-extrabold text-ink">🥈</div>
@@ -57,9 +58,9 @@ export default function Ranking() {
               <div
                 key={r.id}
                 className="flex items-center gap-3 rounded-[15px] p-[11px_13px]"
-                style={{ background: me ? '#EEF3FF' : '#fff', border: `1.5px solid ${me ? '#1557E6' : '#EDF0F8'}` }}
+                style={{ background: me ? 'var(--muted)' : '#fff', border: `1.5px solid ${me ? 'var(--ink)' : 'var(--border2)'}` }}
               >
-                <div className="w-[26px] flex-none text-center font-display text-[15px] font-extrabold" style={{ color: POS_COLORS[pos] || '#8791a8' }}>
+                <div className="w-[26px] flex-none text-center font-display text-[15px] font-extrabold" style={{ color: POS_COLORS[pos] || 'var(--text3)' }}>
                   {pos}
                 </div>
                 <div
@@ -75,16 +76,13 @@ export default function Ranking() {
                   >
                     {me ? 'Você' : r.nome}
                   </div>
+                  {prize && (
+                    <div className="mt-px font-sans text-[11px] font-bold" style={{ color: pos === 1 ? 'var(--gold-text)' : 'var(--text3)' }}>
+                      {prize}
+                    </div>
+                  )}
                 </div>
-                {prize && (
-                  <span
-                    className="mr-0.5 flex-none rounded-lg px-2 py-1 font-sans text-[10.5px] font-extrabold"
-                    style={{ background: pos === 1 ? '#FFF6D6' : '#EEF3FF', color: pos === 1 ? '#7a5900' : '#1557E6' }}
-                  >
-                    {prize}
-                  </span>
-                )}
-                <div className="font-display text-[14px] font-extrabold text-blue">{r.xp}</div>
+                <div className="font-display text-[14px] font-extrabold text-gold-text">{r.xp}</div>
               </div>
             );
           })}

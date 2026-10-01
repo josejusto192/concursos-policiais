@@ -4,6 +4,7 @@ import { invokeEdgeFunction } from './edgeFunctions';
 import type { Alternativa, Database, ModuloQuestaoRow } from './database.types';
 import type { EtapaProgresso, MotivoQuestao, Questao } from '../data/types';
 import type { AiMessage } from '../state/types';
+import { MARCA } from './marca';
 
 export interface TrilhaRow {
   id: number;
@@ -55,7 +56,7 @@ export async function fetchSecoes(trilhaId: number): Promise<SecaoRow[]> {
 
 // ---- Onboarding (migration 031) ----
 
-const CHAVE_SESSAO_OB = 'foco:ob-sessao';
+const CHAVE_SESSAO_OB = 'tacta:ob-sessao';
 
 // Identifica a passagem pelo cadastro (sem login) para o funil do admin.
 function sessaoOnboarding(): string {
@@ -501,14 +502,15 @@ export async function fetchRanking(): Promise<RankingRow[]> {
   return data ?? [];
 }
 
-// Código exibido ao usuário é "FOCO-XXXXXXXX" (prefixo de exibição + os 8
+// Código exibido ao usuário é "TACTA-XXXXXXXX" (prefixo da marca + os 8
 // primeiros caracteres do uuid, ver resolveReferralCode/referralCodeFor).
 export function referralCodeFor(usuarioId: string): string {
-  return `FOCO-${usuarioId.slice(0, 8).toUpperCase()}`;
+  return `${MARCA.prefixoIndicacao}-${usuarioId.slice(0, 8).toUpperCase()}`;
 }
 
 export async function resolveReferralCode(code: string): Promise<string | null> {
-  const suffix = code.replace(/^FOCO-/i, '');
+  // aceita o código com qualquer prefixo (ou só os 8 caracteres)
+  const suffix = code.trim().replace(/^[a-z]+-/i, '');
   const { data, error } = await supabase.rpc('resolve_referral_code', { p_code: suffix });
   if (error) throw error;
   return data ?? null;

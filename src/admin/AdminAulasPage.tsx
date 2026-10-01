@@ -76,7 +76,7 @@ export default function AdminAulasPage() {
         <h1 className="text-xl font-extrabold text-gray-900">Aulas</h1>
         <button
           onClick={() => setCreating((v) => !v)}
-          className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-bold text-white hover:bg-blue-700"
+          className="rounded-lg bg-brand px-4 py-2 text-sm font-bold text-white hover:bg-brand-hover"
         >
           {creating ? 'Cancelar' : 'Nova aula'}
         </button>
@@ -112,7 +112,7 @@ export default function AdminAulasPage() {
               className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
             />
           </div>
-          <button onClick={handleCreate} className="mt-3 rounded-lg bg-blue-600 px-4 py-2 text-sm font-bold text-white hover:bg-blue-700">
+          <button onClick={handleCreate} className="mt-3 rounded-lg bg-brand px-4 py-2 text-sm font-bold text-white hover:bg-brand-hover">
             Criar aula
           </button>
         </div>

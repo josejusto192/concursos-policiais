@@ -20,7 +20,7 @@ import type { MotivoQuestao, Questao } from '../../data/types';
 import PatternBackground from '../../components/PatternBackground';
 import ReportSheet from './ReportSheet';
 import AiTutorSheet from './AiTutorSheet';
-import { NOME_MASCOTE } from '../../lib/mascote';
+import { NOME_MASCOTE } from '../../lib/marca';
 import { logClientError } from '../../lib/errorLog';
 import Dialog from '../../components/Dialog';
 import { LoadingExperience } from '../../components/Feedback';
@@ -29,8 +29,9 @@ import { som } from '../../lib/efeitos';
 import { prefereMenosMovimento } from '../../lib/movimento';
 
 // Frases do rodapé de feedback (variam por questão, como no Duolingo).
-const FRASES_ACERTO = ['Mandou bem!', 'Isso aí!', 'Excelente!', 'Na mosca!', 'Perfeito!', 'Arrasou!', 'Muito bom!'];
-const FRASES_ERRO = ['Quase lá!', 'Não foi dessa vez', 'Errar faz parte!', 'Bora aprender com essa', 'Tudo bem, respira'];
+// Voz da marca: firme e direta, sem infantilizar. Curtas para caber numa linha.
+const FRASES_ACERTO = ['Certeiro!', 'Na mira!', 'Isso é método.', 'Mais uma na conta.', 'Alvo atingido!', 'Firme assim!', 'Resposta de aprovado!'];
+const FRASES_ERRO = ['Anotado. Ela volta.', 'Melhor errar no treino.', 'Faz parte do treino.', 'Essa você não erra mais.', 'Respira e segue firme.'];
 // Comemora 3 acertos seguidos e depois a cada 5 (5, 10, 15…).
 const ehMarcoDeCombo = (combo: number) => combo === 3 || (combo >= 5 && combo % 5 === 0);
 
@@ -200,7 +201,7 @@ export default function Question() {
     return (
       <div className="flex flex-1 flex-col items-center justify-center gap-4 p-6 text-center">
         <div className="font-sans text-[13.5px] font-semibold text-text2">Não conseguimos carregar as questões agora.</div>
-        <button onClick={() => navigate('/trilha')} className="font-sans text-[13px] font-extrabold text-blue">
+        <button onClick={() => navigate('/trilha')} className="font-sans text-[13px] font-extrabold text-brand">
           Voltar para a trilha
         </button>
       </div>
@@ -215,7 +216,7 @@ export default function Question() {
     return (
       <div className="flex flex-1 flex-col items-center justify-center gap-4 p-6 text-center">
         <div className="font-sans text-[13.5px] font-semibold text-text2">Este módulo ainda não tem questões cadastradas.</div>
-        <button onClick={() => navigate('/trilha')} className="font-sans text-[13px] font-extrabold text-blue">
+        <button onClick={() => navigate('/trilha')} className="font-sans text-[13px] font-extrabold text-brand">
           Voltar para a trilha
         </button>
       </div>
@@ -373,7 +374,7 @@ export default function Question() {
   function openAi() {
     dispatch({
       type: 'AI_OPEN_SEED',
-      text: `Oi! Sou o ${NOME_MASCOTE}, seu tutor. Vi que essa questão de ${q.disciplina} te pegou. Já li o enunciado, as alternativas e o comentário — me conta o que ficou confuso que eu te explico.`,
+      text: `Aqui é o ${NOME_MASCOTE}, seu instrutor. Essa de ${q.disciplina} te pegou, então vamos destrinchar. Já li o enunciado, as alternativas e o comentário: me diz o que ficou confuso que eu explico.`,
     });
     setAiOpen(true);
   }
@@ -387,7 +388,7 @@ export default function Question() {
 
   return (
     <>
-      <div className="z-[3] bg-surface p-[14px_16px_12px]" style={{ borderBottom: '1px solid #EDF0F8' }}>
+      <div className="z-[3] bg-surface p-[14px_16px_12px]" style={{ borderBottom: '1px solid var(--border2)' }}>
         <div className="flex items-center gap-3">
           <button
             onClick={() => setQuitOpen(true)}
@@ -414,9 +415,9 @@ export default function Question() {
             onClick={() => dispatch({ type: 'TOGGLE_TIMER' })}
             className="flex h-[34px] flex-none items-center gap-1.5 rounded-[10px] border-[1.5px] px-3 font-display text-[13px] font-extrabold"
             style={{
-              borderColor: state.timerOn ? '#F5B301' : '#E6EAF5',
-              background: state.timerOn ? '#FFF6D6' : '#fff',
-              color: state.timerOn ? '#8a6400' : '#6B7488',
+              borderColor: state.timerOn ? 'var(--ink)' : 'var(--border)',
+              background: state.timerOn ? 'var(--ink)' : '#fff',
+              color: state.timerOn ? '#fff' : 'var(--text2)',
             }}
           >
             <span className="h-2 w-2 rounded-full" style={{ background: 'currentColor' }} />
@@ -443,17 +444,17 @@ export default function Question() {
           Questão {state.session.qIndex + 1}
         </div>
         <div className="mb-3.5 flex flex-wrap gap-1.5">
-          <span className="rounded-lg bg-blue-tint px-2.5 py-1 font-sans text-[11px] font-bold text-blue">
+          <span className="rounded-lg bg-muted px-2.5 py-1 font-sans text-[11px] font-bold text-ink-soft">
             {q.banca} · {q.ano}
           </span>
-          <span className="rounded-lg bg-yellow-tint px-2.5 py-1 font-sans text-[11px] font-bold text-yellow-text">
+          <span className="rounded-lg bg-ink px-2.5 py-1 font-sans text-[11px] font-bold text-white">
             {q.disciplina}
           </span>
           <span className="rounded-lg bg-app-bg px-2.5 py-1 font-sans text-[11px] font-bold text-text2">
             Questão {state.session.qIndex + 1} / {total}
           </span>
           {q.motivo && SELO_MOTIVO[q.motivo] && (
-            <span className="rounded-lg bg-[#fff1e0] px-2.5 py-1 font-sans text-[11px] font-bold text-[#b33d00]">{SELO_MOTIVO[q.motivo]}</span>
+            <span className="rounded-lg bg-brand-tint px-2.5 py-1 font-sans text-[11px] font-bold text-brand-dark">{SELO_MOTIVO[q.motivo]}</span>
           )}
           {retomadaDe !== null && state.session.qIndex === retomadaDe && !answered && (
             <span className="flex items-center gap-1 rounded-lg bg-success-tint px-2.5 py-1 font-sans text-[11px] font-bold text-success" role="status">
@@ -466,16 +467,16 @@ export default function Question() {
         {warn && (
           <div
             className="mb-4 flex items-start gap-2.5 rounded-2xl p-[12px_13px]"
-            style={{ background: q.anulada ? '#FDECEC' : '#FFF6D6', border: `1.5px solid ${q.anulada ? '#f6c9cb' : '#FFE38A'}` }}
+            style={{ background: q.anulada ? 'var(--error-tint)' : 'var(--gold-tint)', border: `1.5px solid ${q.anulada ? 'var(--error-border)' : 'var(--gold-border)'}` }}
           >
             <span
               className="flex h-5 w-5 flex-none items-center justify-center rounded-[7px] font-sans text-[13px] font-extrabold text-white"
-              style={{ background: q.anulada ? '#E5484D' : '#F5B301' }}
+              style={{ background: q.anulada ? 'var(--error)' : 'var(--gold-deep)' }}
             >
               !
             </span>
             <div>
-              <div className="font-sans text-[12.5px] font-extrabold" style={{ color: q.anulada ? '#c0392b' : '#8a6400' }}>
+              <div className="font-sans text-[12.5px] font-extrabold" style={{ color: q.anulada ? 'var(--error-dark)' : 'var(--gold-text)' }}>
                 {q.anulada ? 'Questão anulada pela banca' : 'Questão possivelmente desatualizada'}
               </div>
               <div className="mt-0.5 font-sans text-[12px] font-semibold leading-[1.45] text-text2">
@@ -502,39 +503,39 @@ export default function Question() {
           {q.alternativas.map((a) => {
             const sel = selected === a.letra;
             const corr = a.letra === q.gabarito_letra;
-            let bd = '#E6EAF5';
+            let bd = 'var(--border)';
             let bg = '#fff';
-            let color = '#0B1F4D';
-            let bBg = '#F4F6FC';
-            let bColor = '#6B7488';
-            let bBd = '#E6EAF5';
+            let color = 'var(--ink)';
+            let bBg = 'var(--muted)';
+            let bColor = 'var(--text2)';
+            let bBd = 'var(--border)';
             let mark: string = a.letra;
             const estado = !answered ? (sel ? 'alt-selected' : '') : corr ? 'alt-correct' : sel ? 'alt-wrong' : 'alt-dim';
 
             if (!answered) {
               if (sel) {
-                bd = '#1557E6';
-                bg = '#EEF3FF';
-                bBg = '#1557E6';
+                bd = 'var(--ink)';
+                bg = '#fff';
+                bBg = 'var(--ink)';
                 bColor = '#fff';
-                bBd = '#1557E6';
+                bBd = 'var(--ink)';
               }
             } else if (corr) {
-              bd = '#22A06B';
-              bg = '#E9F7F0';
-              bBg = '#22A06B';
+              bd = 'var(--success)';
+              bg = 'var(--success-tint)';
+              bBg = 'var(--success)';
               bColor = '#fff';
-              bBd = '#22A06B';
+              bBd = 'var(--success)';
               mark = '✓';
             } else if (sel) {
-              bd = '#E5484D';
-              bg = '#FDECEC';
-              bBg = '#E5484D';
+              bd = 'var(--error)';
+              bg = 'var(--error-tint)';
+              bBg = 'var(--error)';
               bColor = '#fff';
-              bBd = '#E5484D';
+              bBd = 'var(--error)';
               mark = '✕';
             } else {
-              color = '#8791a8';
+              color = 'var(--text3)';
             }
 
             return (
@@ -568,9 +569,9 @@ export default function Question() {
           <div
             ref={explicacaoRef}
             className="explicacao mt-4.5 animate-slide-up rounded-2xl p-4"
-            style={{ background: isCorrect ? '#E9F7F0' : '#FDECEC', border: `1.5px solid ${isCorrect ? '#b6e6cd' : '#f6c9cb'}` }}
+            style={{ background: isCorrect ? 'var(--success-tint)' : 'var(--error-tint)', border: `1.5px solid ${isCorrect ? 'var(--success-border)' : 'var(--error-border)'}` }}
           >
-            <div className="font-sans text-[15px] font-extrabold" style={{ color: isCorrect ? '#17784f' : '#c0392b' }}>
+            <div className="font-sans text-[15px] font-extrabold" style={{ color: isCorrect ? 'var(--success-dark)' : 'var(--error-dark)' }}>
               {isCorrect ? 'Por que está certo' : `A resposta certa é a ${q.gabarito_letra}`}
             </div>
             {q.comentario_html ? (
@@ -585,7 +586,7 @@ export default function Question() {
             {showAskAi && (
               <button
                 onClick={openAi}
-                className="mt-3.5 flex w-full items-center justify-center gap-2 rounded-2xl border-[1.5px] border-blue-border bg-blue-tint p-3 font-sans text-[13.5px] font-extrabold text-blue"
+                className="mt-3.5 flex w-full items-center justify-center gap-2 rounded-2xl border-[1.5px] border-brand-border bg-brand-tint p-3 font-sans text-[13.5px] font-extrabold text-brand"
               >
                 <Mascot mood="wave" size={34} className="-my-2" />
                 Ainda com dúvida? Chame o {NOME_MASCOTE}
@@ -599,7 +600,7 @@ export default function Question() {
             onClick={() => setReportOpen(true)}
             className="flex items-center gap-1.5 border-none bg-transparent font-sans text-[12.5px] font-bold text-text3"
           >
-            <span className="flex h-[17px] w-[17px] items-center justify-center rounded-[6px] border-[1.5px] border-[#c2c9da] font-sans text-[10px] font-extrabold text-text3">
+            <span className="flex h-[17px] w-[17px] items-center justify-center rounded-[6px] border-[1.5px] border-text7 font-sans text-[10px] font-extrabold text-text3">
               !
             </span>
             Reportar ou comentar questão
@@ -609,7 +610,7 @@ export default function Question() {
 
       <div
         className={`question-actions absolute inset-x-0 bottom-0 p-[16px_18px_22px] ${answered ? `feedback-bar ${isCorrect ? 'is-correct' : 'is-wrong'}` : ''}`}
-        style={answered ? undefined : { background: 'linear-gradient(180deg,rgba(244,246,252,0),#F4F6FC 30%)' }}
+        style={answered ? undefined : { background: 'linear-gradient(180deg,rgb(246 246 244 / 0),var(--app-bg) 30%)' }}
       >
         {answered && (
           <div className="feedback-head" role="status">
@@ -644,8 +645,8 @@ export default function Question() {
             className="btn-3d flex h-[54px] w-full items-center justify-center gap-2 rounded-2xl border-none font-sans text-[16px] font-extrabold text-white"
             style={
               (isCorrect
-                ? { background: '#22A06B', '--btn-sombra': '#17784f' }
-                : { background: '#E5484D', '--btn-sombra': '#b8343a' }) as CSSProperties
+                ? { background: 'var(--success)', '--btn-sombra': 'var(--success-dark)' }
+                : { background: 'var(--brand)', '--btn-sombra': 'var(--brand-dark)' }) as CSSProperties
             }
           >
             {finalizing ? 'Salvando resultado…' : isLast ? 'Ver resultado' : 'Próxima questão'}{' '}
@@ -658,8 +659,8 @@ export default function Question() {
             className="btn-3d flex h-[54px] w-full items-center justify-center gap-2 rounded-2xl border-none font-sans text-[16px] font-extrabold text-white"
             style={
               {
-                background: confirmReady ? '#1557E6' : '#c9d2e8',
-                '--btn-sombra': confirmReady ? '#0E3DAE' : 'transparent',
+                background: confirmReady ? 'var(--brand)' : 'var(--border-strong)',
+                '--btn-sombra': confirmReady ? 'var(--brand-dark)' : 'transparent',
                 cursor: confirmReady ? 'pointer' : 'default',
               } as CSSProperties
             }

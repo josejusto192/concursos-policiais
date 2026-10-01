@@ -1,45 +1,126 @@
 @import 'tailwindcss';
 
+/* ============================================================
+   Marca Tacta Concursos: TODAS as cores do app saem daqui.
+   Para mudar a identidade, troque só os valores deste bloco.
+   Os nomes dizem a função da cor (não a cor), e cada uma tem um papel:
+     vermelho (brand) = ação · preto (ink) = estrutura
+     dourado (gold) = recompensa · verde (success) = só acerto
+   ============================================================ */
+:root {
+  /* Ação: botão principal, lição de agora, progresso, links */
+  --brand: #d71938;
+  --brand-hover: #c0142f;
+  --brand-dark: #9b0f27; /* sombra do relevo dos botões */
+  --brand-light: #ef3c58; /* início dos gradientes */
+  --brand-tint: #fdebee; /* fundo claro de destaque */
+  --brand-border: #f6c3cd;
+  --brand-soft: #fff7f8;
+
+  /* Estrutura: texto, cartões pretos, lições concluídas */
+  --ink: #171717;
+  --ink-2: #2a2a2a; /* fim dos gradientes pretos */
+  --ink-soft: #3a3a3a;
+
+  /* Recompensa: XP, estrela, troféu, assinatura */
+  --gold: #f2b33d;
+  --gold-deep: #e39b17;
+  --gold-shadow: #c98a12;
+  --gold-tint: #fff4dc;
+  --gold-border: #f6dca0;
+  --gold-text: #8a5d00;
+
+  /* Textos secundários, do mais escuro ao mais claro */
+  --text2: #666666;
+  --text3: #7a7a7a;
+  --text4: #959595;
+  --text5: #a8a8a8;
+  --text6: #b5b5b5;
+  --text7: #c4c4c4;
+
+  /* Fundos e bordas */
+  --app-bg: #f6f6f4;
+  --surface: #ffffff;
+  --muted: #f1f1ee; /* chips, campos, ícones neutros */
+  --track: #e8e8e3; /* trilho das barras de progresso */
+  --border: #e4e4e0;
+  --border2: #ececE8;
+  --border-strong: #d6d6d1;
+
+  /* Acerto e erro (o erro usa o vermelho da marca, sempre com ✕) */
+  --success: #1fa463;
+  --success-dark: #157a49;
+  --success-tint: #e7f6ee;
+  --success-border: #b3e2c9;
+  --error: #d71938;
+  --error-dark: #b3122d;
+  --error-tint: #fdebee;
+  --error-border: #f6c3cd;
+}
+
+/* Fontes: Archivo nos títulos e números, Manrope no texto. */
 @theme {
   --font-sans: 'Manrope', system-ui, sans-serif;
-  --font-display: 'Plus Jakarta Sans', sans-serif;
+  --font-display: 'Archivo', 'Manrope', system-ui, sans-serif;
+}
 
-  --color-blue: #1557e6;
-  --color-blue-dark: #0e3dae;
-  --color-blue-tint: #eef3ff;
-  --color-blue-border: #cfe0ff;
-  --color-blue-soft: #2f6bf0;
+/* Classes do Tailwind (bg-brand, text-ink, …) apontam para as cores acima. */
+@theme inline {
 
-  --color-yellow: #ffcb2d;
-  --color-yellow-deep: #f5b301;
-  --color-yellow-shadow: #e0a800;
-  --color-yellow-tint: #fff6d6;
-  --color-yellow-border: #ffe38a;
-  --color-yellow-text: #8a6400;
+  --color-brand: var(--brand);
+  --color-brand-hover: var(--brand-hover);
+  --color-brand-dark: var(--brand-dark);
+  --color-brand-light: var(--brand-light);
+  --color-brand-tint: var(--brand-tint);
+  --color-brand-border: var(--brand-border);
+  --color-brand-soft: var(--brand-soft);
 
-  --color-ink: #0b1f4d;
-  --color-ink-soft: #3a4257;
-  --color-text2: #6b7488;
-  --color-text3: #8791a8;
-  --color-text4: #9aa4bd;
-  --color-text5: #aeb6cc;
-  --color-text6: #b4bccf;
-  --color-text7: #c2c9da;
+  --color-ink: var(--ink);
+  --color-ink-2: var(--ink-2);
+  --color-ink-soft: var(--ink-soft);
 
-  --color-app-bg: #f4f6fc;
-  --color-surface: #ffffff;
-  --color-border: #e6eaf5;
-  --color-border2: #edf0f8;
+  --color-gold: var(--gold);
+  --color-gold-deep: var(--gold-deep);
+  --color-gold-shadow: var(--gold-shadow);
+  --color-gold-tint: var(--gold-tint);
+  --color-gold-border: var(--gold-border);
+  --color-gold-text: var(--gold-text);
 
-  --color-success: #22a06b;
-  --color-success-dark: #17784f;
-  --color-success-tint: #e9f7f0;
-  --color-success-border: #b6e6cd;
+  --color-text2: var(--text2);
+  --color-text3: var(--text3);
+  --color-text4: var(--text4);
+  --color-text5: var(--text5);
+  --color-text6: var(--text6);
+  --color-text7: var(--text7);
 
-  --color-error: #e5484d;
-  --color-error-dark: #c0392b;
-  --color-error-tint: #fdecec;
-  --color-error-border: #f6c9cb;
+  --color-app-bg: var(--app-bg);
+  --color-surface: var(--surface);
+  --color-muted: var(--muted);
+  --color-track: var(--track);
+  --color-border: var(--border);
+  --color-border2: var(--border2);
+  --color-border-strong: var(--border-strong);
+
+  --color-success: var(--success);
+  --color-success-dark: var(--success-dark);
+  --color-success-tint: var(--success-tint);
+  --color-success-border: var(--success-border);
+  --color-error: var(--error);
+  --color-error-dark: var(--error-dark);
+  --color-error-tint: var(--error-tint);
+  --color-error-border: var(--error-border);
+
+  /* Cinzas do Tailwind (usados no admin) em tom neutro, sem o azulado padrão */
+  --color-gray-50: #fafaf9;
+  --color-gray-100: #f4f4f2;
+  --color-gray-200: #e6e6e3;
+  --color-gray-300: #d4d4d1;
+  --color-gray-400: #a3a3a0;
+  --color-gray-500: #737371;
+  --color-gray-600: #535351;
+  --color-gray-700: #404040;
+  --color-gray-800: #262626;
+  --color-gray-900: #171717;
 }
 
 * {
@@ -54,7 +135,7 @@ body,
 
 body {
   margin: 0;
-  background: #f4f6fc;
+  background: var(--app-bg);
   font-family: 'Manrope', system-ui, sans-serif;
   min-height: 100dvh;
 }
@@ -75,13 +156,13 @@ body {
   0%,
   100% {
     box-shadow:
-      0 6px 0 #e0a800,
-      0 0 0 0 rgba(255, 203, 45, 0.5);
+      0 6px 0 var(--brand-dark),
+      0 0 0 0 color-mix(in srgb, var(--brand) 40%, transparent);
   }
   50% {
     box-shadow:
-      0 6px 0 #e0a800,
-      0 0 0 12px rgba(255, 203, 45, 0);
+      0 6px 0 var(--brand-dark),
+      0 0 0 12px color-mix(in srgb, var(--brand) 0%, transparent);
   }
 }
 @keyframes popIn {
@@ -173,7 +254,7 @@ body {
   display: block;
 }
 .rich-content a {
-  color: #1557e6;
+  color: var(--brand);
   text-decoration: underline;
 }
 .rich-content ul,

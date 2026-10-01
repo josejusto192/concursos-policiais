@@ -119,7 +119,7 @@ export default function AdminPlanosPage() {
         <h1 className="text-xl font-extrabold text-gray-900">Planos</h1>
         <button
           onClick={() => setCreating((v) => !v)}
-          className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-bold text-white hover:bg-blue-700"
+          className="rounded-lg bg-brand px-4 py-2 text-sm font-bold text-white hover:bg-brand-hover"
         >
           {creating ? 'Cancelar' : 'Novo plano'}
         </button>
@@ -172,7 +172,7 @@ export default function AdminPlanosPage() {
               className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
             />
           </div>
-          <button onClick={handleCreate} className="mt-3 rounded-lg bg-blue-600 px-4 py-2 text-sm font-bold text-white hover:bg-blue-700">
+          <button onClick={handleCreate} className="mt-3 rounded-lg bg-brand px-4 py-2 text-sm font-bold text-white hover:bg-brand-hover">
             Criar plano
           </button>
         </div>

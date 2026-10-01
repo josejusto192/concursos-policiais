@@ -11,7 +11,7 @@
 // amostra muda. Ele também volta "interrupted" depois de ligação ou de o app
 // ir pro fundo, então cada toque retoma se precisar.
 
-const CHAVE = 'foco:sons';
+const CHAVE = 'tacta:sons';
 
 export function sonsAtivos(): boolean {
   try {

@@ -27,12 +27,12 @@ export default function CommitStep({ commitLine }: { commitLine: string }) {
       <span className="ob-rotulo">SEU COMPROMISSO</span>
       <h1 className="ob-compromisso-frase">“{commitLine}, todos os dias.”</h1>
       <div className="ob-dica">
-        Os primeiros <b>7 dias</b> são os que mais contam para criar o hábito. Eu te lembro e comemoro cada dia com você. 🔥
+        Os primeiros <b>7 dias</b> são os que mais contam para criar o hábito. Eu cobro e comemoro cada dia com você. 🔥
       </div>
       <div className="flex-1" />
       <button type="button" onClick={comprometer} className={`button button-primary ob-botao${firmou ? ' firmou' : ''}`}>
         <HandPalm weight="bold" size={19} />
-        {firmou ? 'Combinado!' : 'Eu me comprometo'}
+        {firmou ? 'Missão aceita!' : 'Eu me comprometo'}
       </button>
       <p className="ob-nota">Você pode ajustar sua meta quando quiser, no Perfil.</p>
     </div>

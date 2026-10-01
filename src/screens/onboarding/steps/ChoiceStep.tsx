@@ -2,7 +2,7 @@ import { Check } from '@phosphor-icons/react';
 import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import type { MascotMood } from '../../../components/Mascot';
 import { som } from '../../../lib/efeitos';
-import FocoFala from './FocoFala';
+import MascoteFala from './MascoteFala';
 
 export interface ChoiceOption {
   label: string;
@@ -20,7 +20,7 @@ interface ChoiceStepProps {
   humor?: MascotMood;
 }
 
-// Pergunta do onboarding: o Foco pergunta, as opções entram em cascata e a
+// Pergunta do onboarding: o mascote pergunta, as opções entram em cascata e a
 // escolhida "pula" antes de avançar sozinha.
 export default function ChoiceStep({ title, subtitle, options, humor = 'thinking' }: ChoiceStepProps) {
   const [escolhida, setEscolhida] = useState<string | null>(null);
@@ -36,7 +36,7 @@ export default function ChoiceStep({ title, subtitle, options, humor = 'thinking
 
   return (
     <div className="ob-tela">
-      <FocoFala titulo={title} subtitulo={subtitle} humor={escolhida ? 'happy' : humor} />
+      <MascoteFala titulo={title} subtitulo={subtitle} humor={escolhida ? 'happy' : humor} />
       <div className="ob-opcoes" role="list">
         {options.map((o, i) => {
           const ativa = escolhida ? escolhida === o.label : o.active;

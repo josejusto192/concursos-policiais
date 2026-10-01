@@ -183,10 +183,10 @@ export default function AdminQuestaoReviewPage() {
           <div className="mb-2 flex items-center justify-between">
             <div className="text-xs font-bold uppercase tracking-wide text-gray-400">Comentário revisado (HTML)</div>
             <div className="flex gap-3">
-              <button onClick={insertImage} className="text-xs font-bold text-blue-600 hover:underline">
+              <button onClick={insertImage} className="text-xs font-bold text-brand hover:underline">
                 + Inserir imagem
               </button>
-              <button onClick={handleReviewWithAI} disabled={aiLoading} className="text-xs font-bold text-blue-600 hover:underline disabled:opacity-50">
+              <button onClick={handleReviewWithAI} disabled={aiLoading} className="text-xs font-bold text-brand hover:underline disabled:opacity-50">
                 {aiLoading ? 'Revisando com IA…' : '✨ Revisar com IA'}
               </button>
             </div>
@@ -224,7 +224,7 @@ export default function AdminQuestaoReviewPage() {
               </option>
             ))}
           </select>
-          <Link to="/admin/aulas" className="flex-none text-xs font-bold text-blue-600 hover:underline">
+          <Link to="/admin/aulas" className="flex-none text-xs font-bold text-brand hover:underline">
             Gerenciar aulas ›
           </Link>
         </div>
@@ -237,14 +237,14 @@ export default function AdminQuestaoReviewPage() {
         <button
           onClick={() => handleSaveManual(false)}
           disabled={saving}
-          className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-bold text-white hover:bg-blue-700 disabled:opacity-50"
+          className="rounded-lg bg-brand px-4 py-2 text-sm font-bold text-white hover:bg-brand-hover disabled:opacity-50"
         >
           {saving ? 'Salvando…' : 'Salvar e marcar como revisado'}
         </button>
         <button
           onClick={() => handleSaveManual(true)}
           disabled={saving}
-          className="rounded-lg border border-blue-600 px-4 py-2 text-sm font-bold text-blue-600 hover:bg-blue-50 disabled:opacity-50"
+          className="rounded-lg border border-brand px-4 py-2 text-sm font-bold text-brand hover:bg-brand-tint disabled:opacity-50"
         >
           Salvar e revisar próxima »
         </button>
@@ -252,7 +252,7 @@ export default function AdminQuestaoReviewPage() {
           <button
             onClick={handleAddToModulo}
             disabled={addedToModulo}
-            className="rounded-lg border border-blue-600 px-4 py-2 text-sm font-bold text-blue-600 hover:bg-blue-50 disabled:opacity-50"
+            className="rounded-lg border border-brand px-4 py-2 text-sm font-bold text-brand hover:bg-brand-tint disabled:opacity-50"
           >
             {addedToModulo ? 'Adicionada ao módulo ✓' : 'Adicionar a este módulo'}
           </button>

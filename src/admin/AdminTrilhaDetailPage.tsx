@@ -118,7 +118,7 @@ export default function AdminTrilhaDetailPage() {
       <div className="mt-3 rounded-xl border border-gray-200 bg-white p-4">
         <div className="mb-3 text-xs font-bold text-gray-500">
           {trilha.tipo === 'inteligente' ? (
-            <span className="rounded-full bg-violet-100 px-2 py-0.5 text-violet-700">✨ TRILHA INTELIGENTE</span>
+            <span className="rounded-full bg-ink px-2 py-0.5 text-white">✨ TRILHA INTELIGENTE</span>
           ) : (
             <span className="rounded-full bg-gray-100 px-2 py-0.5 text-gray-600">TRILHA MANUAL</span>
           )}
@@ -212,14 +212,14 @@ export default function AdminTrilhaDetailPage() {
             ))}
           </select>
         )}
-        <button onClick={addModulo} className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-bold text-white hover:bg-blue-700">
+        <button onClick={addModulo} className="rounded-lg bg-brand px-4 py-2 text-sm font-bold text-white hover:bg-brand-hover">
           Adicionar
         </button>
       </div>
       {error && <div className="mt-2 text-sm font-semibold text-red-600">{error}</div>}
       <p className="mt-2 text-xs text-gray-400">
         Aulas são sempre opcionais: aparecem no caminho da trilha, mas não bloqueiam nem exigem conclusão para o aluno avançar. Cadastre
-        novas aulas na aba <Link to="/admin/aulas" className="font-bold text-blue-600 hover:underline">Aulas</Link>.
+        novas aulas na aba <Link to="/admin/aulas" className="font-bold text-brand hover:underline">Aulas</Link>.
       </p>
 
       <div className="mt-4 overflow-hidden rounded-xl border border-gray-200 bg-white">
@@ -241,7 +241,7 @@ export default function AdminTrilhaDetailPage() {
               <div className="flex items-center gap-2">
                 <span className="font-semibold text-gray-900">{m.titulo}</span>
                 {m.tipo === 'aula' ? (
-                  <span className="rounded-full bg-purple-100 px-2 py-0.5 text-xs font-bold text-purple-700">Aula · opcional</span>
+                  <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-bold text-ink-soft">Aula · opcional</span>
                 ) : (contagens.get(m.id) ?? 0) > 0 ? (
                   <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs font-bold text-gray-600">
                     {contagens.get(m.id)} questões
@@ -268,7 +268,7 @@ export default function AdminTrilhaDetailPage() {
               )}
             </div>
             {m.tipo === 'questoes' && (
-              <Link to={`/admin/modulos/${m.id}`} className="font-bold text-blue-600 hover:underline">
+              <Link to={`/admin/modulos/${m.id}`} className="font-bold text-brand hover:underline">
                 Editar questões ›
               </Link>
             )}

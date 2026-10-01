@@ -8,7 +8,7 @@ import { logClientError } from '../../lib/errorLog';
 import type { Questao } from '../../data/types';
 import ModalFrame from '../../components/ModalFrame';
 import Mascot from '../../components/Mascot';
-import { NOME_MASCOTE } from '../../lib/mascote';
+import { NOME_MASCOTE } from '../../lib/marca';
 
 interface AiTutorSheetProps {
   q: Questao;
@@ -63,7 +63,7 @@ export default function AiTutorSheet({ q, selected, acertou, onClose }: AiTutorS
       {(close) => (
         <div className="tutor-sheet-content bg-surface">
           <div className="flex flex-none items-center gap-3 border-b border-border2 p-[14px_18px]">
-            <div className="flex h-[46px] w-[46px] flex-none items-center justify-center rounded-[14px] bg-blue-tint">
+            <div className="flex h-[46px] w-[46px] flex-none items-center justify-center rounded-[14px] bg-brand-tint">
               <Mascot mood={state.aiTyping ? 'thinking' : 'idle'} size={44} />
             </div>
             <div className="min-w-0 flex-1">
@@ -92,8 +92,8 @@ export default function AiTutorSheet({ q, selected, acertou, onClose }: AiTutorS
                   className="max-w-[82%] p-[12px_14px] font-sans text-[13.5px] font-semibold leading-[1.5]"
                   style={{
                     borderRadius: m.role === 'user' ? '16px 16px 4px 16px' : '16px 16px 16px 4px',
-                    background: m.role === 'user' ? '#1557E6' : '#F4F6FC',
-                    color: m.role === 'user' ? '#fff' : '#0B1F4D',
+                    background: m.role === 'user' ? 'var(--ink)' : 'var(--muted)',
+                    color: m.role === 'user' ? '#fff' : 'var(--ink)',
                   }}
                 >
                   {m.text}
@@ -128,11 +128,11 @@ export default function AiTutorSheet({ q, selected, acertou, onClose }: AiTutorS
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && send()}
                                 placeholder={`Pergunte ao ${NOME_MASCOTE}...`}
-                className="h-[46px] flex-1 rounded-2xl border-[1.5px] border-border bg-[#F8FAFF] px-3.5 font-sans text-[14px] font-semibold text-ink outline-none"
+                className="h-[46px] flex-1 rounded-2xl border-[1.5px] border-border bg-surface px-3.5 font-sans text-[14px] font-semibold text-ink outline-none"
               />
               <button
                 onClick={send}
-                className="flex h-[46px] w-[46px] flex-none items-center justify-center rounded-2xl border-none bg-blue text-white"
+                className="flex h-[46px] w-[46px] flex-none items-center justify-center rounded-2xl border-none bg-brand text-white"
               >
                 <PaperPlaneRight weight="fill" size={19} />
               </button>

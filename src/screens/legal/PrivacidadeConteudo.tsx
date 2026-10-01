@@ -1,12 +1,14 @@
+import { MARCA } from '../../lib/marca';
+
 // Texto compartilhado entre a página /privacidade e o LegalSheet (modal usado
 // dentro do app — link em nova aba trava o PWA no iOS).
 export default function PrivacidadeConteudo() {
   return (
     <div className="flex-1 space-y-4 p-[18px_20px_36px] font-sans text-[13.5px] leading-[1.6] text-ink-soft">
-      <p className="text-[12px] font-semibold text-text3">Última atualização: setembro de 2026</p>
+      <p className="text-[12px] font-semibold text-text3">Última atualização: outubro de 2026</p>
 
       <p>
-        Esta política explica quais dados o Foco coleta, para quê, e quais são seus direitos, em conformidade com a Lei Geral de
+        Esta política explica quais dados o {MARCA.nomeCompleto} coleta, para quê, e quais são seus direitos, em conformidade com a Lei Geral de
         Proteção de Dados (LGPD — Lei nº 13.709/2018).
       </p>
 
@@ -23,7 +25,7 @@ export default function PrivacidadeConteudo() {
         Para operar sua conta e o acompanhamento da trilha de estudos, personalizar sua experiência (meta diária, ranking e o
         nível inicial das questões), contatar você sobre o serviço, e, quando aplicável, processar indicações e cobrança de
         assinatura. Também usamos esses dados de forma agregada (em números e percentuais, sem expor pessoas) para entender o
-        público do Foco e melhorar o app, as trilhas e o cadastro.
+        público do {MARCA.nomeCompleto} e melhorar o app, as trilhas e o cadastro.
       </p>
 
       <h2 className="font-display text-[15px] font-extrabold text-ink">3. Com quem compartilhamos</h2>

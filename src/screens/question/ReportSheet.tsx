@@ -66,7 +66,7 @@ export default function ReportSheet({ onClose, onSubmit }: ReportSheetProps) {
                     className="flex w-full items-center justify-between rounded-2xl border-[1.5px] border-border2 bg-surface p-3.5 text-left font-sans text-[13.5px] font-bold text-ink"
                   >
                     {r}
-                    <span className="text-[16px] text-[#c2c9da]">›</span>
+                    <span className="text-[16px] text-text7">›</span>
                   </button>
                 ))}
               </div>
@@ -83,7 +83,7 @@ export default function ReportSheet({ onClose, onSubmit }: ReportSheetProps) {
                 maxLength={4000}
                 rows={4}
                 placeholder="Ex.: a alternativa C também está correta porque…"
-                className="mt-2 w-full rounded-2xl border-[1.5px] border-border bg-[#F8FAFF] p-3.5 font-sans text-[16px] font-semibold text-ink outline-none"
+                className="mt-2 w-full rounded-2xl border-[1.5px] border-border bg-surface p-3.5 font-sans text-[16px] font-semibold text-ink outline-none"
               />
               {erro && (
                 <div role="alert" className="mt-2 font-sans text-[12.5px] font-bold text-error">

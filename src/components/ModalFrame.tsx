@@ -39,7 +39,7 @@ export default function ModalFrame({ title, onClose, sheet = false, className = 
   return (
     <dialog
       ref={ref}
-      className={`foco-dialog ${sheet ? 'foco-sheet' : ''} ${className}`}
+      className={`app-dialog ${sheet ? 'app-sheet' : ''} ${className}`}
       aria-label={title}
       data-closing={exiting || undefined}
       onCancel={(event) => {

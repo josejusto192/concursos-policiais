@@ -155,7 +155,7 @@ export default function Assinar() {
   const fechar = () => navigate('/trilha');
 
   const cabecalho = (
-    <div className="z-[3] flex items-center gap-3 bg-surface p-[14px_16px_12px]" style={{ borderBottom: '1px solid #EDF0F8' }}>
+    <div className="z-[3] flex items-center gap-3 bg-surface p-[14px_16px_12px]" style={{ borderBottom: '1px solid var(--border2)' }}>
       <button
         onClick={fechar}
         aria-label="Fechar"
@@ -173,7 +173,7 @@ export default function Assinar() {
         {cabecalho}
         <div className="flex flex-1 flex-col items-center justify-center gap-4 p-6 text-center">
           <div className="font-sans text-[13.5px] font-semibold text-text2">Não conseguimos carregar os planos agora.</div>
-          <button onClick={carregar} className="font-sans text-[13px] font-extrabold text-blue">
+          <button onClick={carregar} className="font-sans text-[13px] font-extrabold text-brand">
             Tentar de novo
           </button>
         </div>
@@ -189,7 +189,7 @@ export default function Assinar() {
         {cabecalho}
         <PatternBackground scrollClassName="p-[28px_20px_60px]">
           <div className="mx-auto flex max-w-[440px] flex-col items-center gap-3 text-center" role="status">
-            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-blue-tint text-blue">
+            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-brand-tint text-brand">
               <CircleNotch size={34} weight="bold" className="animate-spin" />
             </div>
             <div className="font-display text-[20px] font-extrabold text-ink">Pagamento recebido!</div>
@@ -236,7 +236,7 @@ export default function Assinar() {
                 Cancelar assinatura
               </button>
             ) : (
-              <button onClick={() => setReativando(true)} className="mt-2 font-sans text-[13px] font-extrabold text-blue">
+              <button onClick={() => setReativando(true)} className="mt-2 font-sans text-[13px] font-extrabold text-brand">
                 Reativar assinatura
               </button>
             )}
@@ -279,7 +279,7 @@ export default function Assinar() {
         {cabecalho}
         <PatternBackground scrollClassName="p-[28px_20px_60px]">
           <div className="mx-auto flex max-w-[440px] flex-col items-center gap-3 text-center">
-            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-yellow-tint text-yellow-text">
+            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-gold-tint text-gold-text">
               <Crown size={34} weight="fill" />
             </div>
             <div className="font-display text-[20px] font-extrabold text-ink">Falta só o pagamento</div>
@@ -290,7 +290,7 @@ export default function Assinar() {
             <PrimaryButton className="mt-3" icon={<ArrowSquareOut weight="bold" size={18} />} onClick={() => window.location.assign(assinatura.faturaPendente!)}>
               Abrir fatura
             </PrimaryButton>
-            <button onClick={verificarPagamento} disabled={verificando} className="mt-1 font-sans text-[13px] font-extrabold text-blue disabled:opacity-50">
+            <button onClick={verificarPagamento} disabled={verificando} className="mt-1 font-sans text-[13px] font-extrabold text-brand disabled:opacity-50">
               {verificando ? 'Verificando…' : 'Já paguei, verificar'}
             </button>
           </div>
@@ -306,7 +306,7 @@ export default function Assinar() {
       {cabecalho}
       <PatternBackground scrollClassName="p-[22px_20px_60px]">
         <div className="mx-auto max-w-[480px]">
-          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-yellow text-ink">
+          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gold text-ink">
             <Crown size={26} weight="fill" />
           </div>
           <div className="mt-3 font-display text-[23px] font-extrabold leading-[1.25] text-ink">Desbloqueie a trilha completa</div>
@@ -338,11 +338,11 @@ export default function Assinar() {
                   aria-checked={selecionado}
                   onClick={() => setPlanoId(p.id)}
                   className="relative flex w-full items-center gap-3 rounded-2xl p-[15px_16px] text-left transition-all"
-                  style={{ border: `2px solid ${selecionado ? '#1557E6' : '#E6EAF5'}`, background: selecionado ? '#EEF3FF' : '#fff' }}
+                  style={{ border: `2px solid ${selecionado ? 'var(--ink)' : 'var(--border)'}`, background: '#fff' }}
                 >
                   <span
                     className="flex h-[22px] w-[22px] flex-none items-center justify-center rounded-full"
-                    style={{ border: `2px solid ${selecionado ? '#1557E6' : '#c9d2e8'}`, background: selecionado ? '#1557E6' : '#fff' }}
+                    style={{ border: `2px solid ${selecionado ? 'var(--ink)' : 'var(--border-strong)'}`, background: selecionado ? 'var(--ink)' : '#fff' }}
                   >
                     {selecionado && <Check size={12} weight="bold" color="#fff" />}
                   </span>
@@ -380,7 +380,7 @@ export default function Assinar() {
               value={cpf}
               readOnly={!!usuario.cpf}
               onChange={(e) => setCpf(formatarCpf(e.target.value))}
-              className="h-[50px] w-full rounded-2xl border-[1.5px] border-border bg-[#F8FAFF] px-3.5 font-sans text-[16px] font-semibold text-ink outline-none read-only:text-text2"
+              className="h-[50px] w-full rounded-2xl border-[1.5px] border-border bg-surface px-3.5 font-sans text-[16px] font-semibold text-ink outline-none read-only:text-text2"
             />
             <div className="mt-1.5 font-sans text-[11.5px] font-semibold text-text3">Exigido pelo Asaas para emitir a cobrança.</div>
           </div>
@@ -392,7 +392,7 @@ export default function Assinar() {
           )}
 
           <div className="mt-5">
-            <PrimaryButton onClick={continuar} disabled={enviando || !planoId} variant={enviando || !planoId ? 'disabled' : 'blue'}>
+            <PrimaryButton onClick={continuar} disabled={enviando || !planoId} variant={enviando || !planoId ? 'disabled' : 'brand'}>
               {enviando ? 'Preparando pagamento…' : 'Continuar para o pagamento'}
             </PrimaryButton>
           </div>

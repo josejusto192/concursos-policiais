@@ -14,7 +14,7 @@ export async function asaas<T>(method: string, path: string, body?: unknown): Pr
     method,
     headers: {
       'Content-Type': 'application/json',
-      'User-Agent': 'foco-app/1.0.0',
+      'User-Agent': 'tacta-app/1.0.0',
       access_token: ASAAS_API_KEY,
     },
     body: body ? JSON.stringify(body) : undefined,

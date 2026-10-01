@@ -28,8 +28,8 @@ export default class ErrorBoundary extends Component<Props, State> {
           <div className="font-sans text-[13.5px] font-semibold text-text2">Já registramos o problema. Tenta recarregar a página.</div>
           <button
             onClick={() => window.location.reload()}
-            className="rounded-2xl bg-blue px-5 py-3 font-sans text-[14px] font-extrabold text-white"
-            style={{ boxShadow: '0 6px 0 #0E3DAE' }}
+            className="rounded-2xl bg-brand px-5 py-3 font-sans text-[14px] font-extrabold text-white"
+            style={{ boxShadow: '0 4px 0 var(--brand-dark)' }}
           >
             Recarregar
           </button>

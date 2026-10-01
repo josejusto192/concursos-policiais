@@ -2,6 +2,7 @@ import { ArrowRight, ChatCircleText, Path, Target } from '@phosphor-icons/react'
 import { Link } from 'react-router-dom';
 import { useAppState } from '../../../state/AppStateContext';
 import AuthStory from '../../../components/AuthStory';
+import { NOME_MASCOTE } from '../../../lib/marca';
 
 export default function WelcomeStep() {
   const { dispatch } = useAppState();
@@ -10,22 +11,23 @@ export default function WelcomeStep() {
       <AuthStory
         titulo={
           <>
-            O próximo passo
-            <br />é o seu <em>começo.</em>
+            Estudo hoje.
+            <br />
+            <em>Conquistas amanhã.</em>
           </>
         }
-        texto="Transforme a preparação para o concurso em um hábito. Uma trilha, uma questão, uma conquista por vez."
-        rodape="No seu ritmo. Com direção."
+        texto="Questões de concursos policiais em trilhas curtas. Uma lição por dia, do edital até a posse."
+        rodape="No seu ritmo. Com disciplina."
       />
       <div className="auth-form-wrap">
         <div className="auth-form">
-          <span className="eyebrow">SUA PREPARAÇÃO, COM FOCO</span>
+          <span className="eyebrow">PREPARAÇÃO POLICIAL, COM MÉTODO</span>
           <h2>
             Um plano que cabe
             <br />
             na sua rotina.
           </h2>
-          <p>Responda algumas perguntas rápidas. Eu, o Foco, organizo os próximos passos para você.</p>
+          <p>Responda algumas perguntas rápidas. Eu sou o {NOME_MASCOTE} e monto os próximos passos com você.</p>
           <div className="welcome-features">
             <div style={{ '--i': 0 } as React.CSSProperties}>
               <span className="metric-icon">

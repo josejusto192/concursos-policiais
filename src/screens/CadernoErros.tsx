@@ -53,7 +53,7 @@ export default function CadernoErros() {
     return (
       <div className="flex flex-1 flex-col items-center justify-center gap-4 p-6 text-center">
         <div className="font-sans text-[13.5px] font-semibold text-text2">Não conseguimos carregar o caderno de erros agora.</div>
-        <button onClick={() => navigate('/trilha')} className="font-sans text-[13px] font-extrabold text-blue">
+        <button onClick={() => navigate('/trilha')} className="font-sans text-[13px] font-extrabold text-brand">
           Voltar para a trilha
         </button>
       </div>
@@ -139,7 +139,7 @@ export default function CadernoErros() {
 
   return (
     <>
-      <div className="z-[3] bg-surface p-[14px_16px_12px]" style={{ borderBottom: '1px solid #EDF0F8' }}>
+      <div className="z-[3] bg-surface p-[14px_16px_12px]" style={{ borderBottom: '1px solid var(--border2)' }}>
         <div className="flex items-center gap-3">
           <button
             onClick={() => navigate('/trilha')}
@@ -164,16 +164,16 @@ export default function CadernoErros() {
       <PatternBackground scrollClassName="p-[18px_18px_230px]">
         <div className="mb-3.5 flex flex-wrap gap-1.5">
           {(q.revisaoEtapa ?? 0) > 0 ? (
-            <span className="rounded-lg bg-[#fff1e0] px-2.5 py-1 font-sans text-[11px] font-bold text-[#b33d00]">
+            <span className="rounded-lg bg-brand-tint px-2.5 py-1 font-sans text-[11px] font-bold text-brand-dark">
               🔁 Revisão programada · {ROTULO_ETAPA[q.revisaoEtapa ?? 1] ?? 'revisão'}
             </span>
           ) : (
             <span className="rounded-lg bg-error-tint px-2.5 py-1 font-sans text-[11px] font-bold text-error">Você errou esta</span>
           )}
-          <span className="rounded-lg bg-blue-tint px-2.5 py-1 font-sans text-[11px] font-bold text-blue">
+          <span className="rounded-lg bg-muted px-2.5 py-1 font-sans text-[11px] font-bold text-ink-soft">
             {q.banca} · {q.ano}
           </span>
-          <span className="rounded-lg bg-yellow-tint px-2.5 py-1 font-sans text-[11px] font-bold text-yellow-text">{q.disciplina}</span>
+          <span className="rounded-lg bg-ink px-2.5 py-1 font-sans text-[11px] font-bold text-white">{q.disciplina}</span>
         </div>
 
         {q.enunciado_html ? (
@@ -189,39 +189,39 @@ export default function CadernoErros() {
           {q.alternativas.map((a) => {
             const sel = selected === a.letra;
             const corr = a.letra === q.gabarito_letra;
-            let bd = '#E6EAF5';
+            let bd = 'var(--border)';
             let bg = '#fff';
-            let color = '#0B1F4D';
-            let bBg = '#F4F6FC';
-            let bColor = '#6B7488';
-            let bBd = '#E6EAF5';
+            let color = 'var(--ink)';
+            let bBg = 'var(--muted)';
+            let bColor = 'var(--text2)';
+            let bBd = 'var(--border)';
             let mark: string = a.letra;
             const estado = !answered ? (sel ? 'alt-selected' : '') : corr ? 'alt-correct' : sel ? 'alt-wrong' : 'alt-dim';
 
             if (!answered) {
               if (sel) {
-                bd = '#1557E6';
-                bg = '#EEF3FF';
-                bBg = '#1557E6';
+                bd = 'var(--ink)';
+                bg = '#fff';
+                bBg = 'var(--ink)';
                 bColor = '#fff';
-                bBd = '#1557E6';
+                bBd = 'var(--ink)';
               }
             } else if (corr) {
-              bd = '#22A06B';
-              bg = '#E9F7F0';
-              bBg = '#22A06B';
+              bd = 'var(--success)';
+              bg = 'var(--success-tint)';
+              bBg = 'var(--success)';
               bColor = '#fff';
-              bBd = '#22A06B';
+              bBd = 'var(--success)';
               mark = '✓';
             } else if (sel) {
-              bd = '#E5484D';
-              bg = '#FDECEC';
-              bBg = '#E5484D';
+              bd = 'var(--error)';
+              bg = 'var(--error-tint)';
+              bBg = 'var(--error)';
               bColor = '#fff';
-              bBd = '#E5484D';
+              bBd = 'var(--error)';
               mark = '✕';
             } else {
-              color = '#8791a8';
+              color = 'var(--text3)';
             }
 
             return (
@@ -249,9 +249,9 @@ export default function CadernoErros() {
         {answered && (
           <div
             className="mt-4.5 animate-slide-up rounded-2xl p-4"
-            style={{ background: isCorrect ? '#E9F7F0' : '#FDECEC', border: `1.5px solid ${isCorrect ? '#b6e6cd' : '#f6c9cb'}` }}
+            style={{ background: isCorrect ? 'var(--success-tint)' : 'var(--error-tint)', border: `1.5px solid ${isCorrect ? 'var(--success-border)' : 'var(--error-border)'}` }}
           >
-            <div className="font-sans text-[15px] font-extrabold" style={{ color: isCorrect ? '#17784f' : '#c0392b' }}>
+            <div className="font-sans text-[15px] font-extrabold" style={{ color: isCorrect ? 'var(--success-dark)' : 'var(--error-dark)' }}>
               {isCorrect ? 'Por que está certo' : `A resposta certa é a ${q.gabarito_letra}`}
             </div>
             {q.comentario_html ? (
@@ -265,8 +265,8 @@ export default function CadernoErros() {
             {q.aula && (
               <button
                 onClick={() => setAulaAberta(true)}
-                className="mt-3 flex w-full items-center gap-2.5 rounded-xl border-none bg-surface p-[10px_12px] text-left font-sans text-[13px] font-extrabold text-blue"
-                style={{ border: '1.5px solid #d6e0fb' }}
+                className="mt-3 flex w-full items-center gap-2.5 rounded-xl border-none bg-surface p-[10px_12px] text-left font-sans text-[13px] font-extrabold text-brand"
+                style={{ border: '1.5px solid var(--border)' }}
               >
                 <PlayCircle weight="fill" size={22} className="flex-none" />
                 <span className="min-w-0 flex-1">
@@ -281,7 +281,7 @@ export default function CadernoErros() {
 
       <div
         className={`question-actions absolute inset-x-0 bottom-0 p-[16px_18px_22px] ${answered ? `feedback-bar ${isCorrect ? 'is-correct' : 'is-wrong'}` : ''}`}
-        style={answered ? undefined : { background: 'linear-gradient(180deg,rgba(244,246,252,0),#F4F6FC 30%)' }}
+        style={answered ? undefined : { background: 'linear-gradient(180deg,rgb(246 246 244 / 0),var(--app-bg) 30%)' }}
       >
         {answered && (
           <div className="feedback-head" role="status">
@@ -307,8 +307,8 @@ export default function CadernoErros() {
             className="btn-3d flex h-[54px] w-full items-center justify-center gap-2 rounded-2xl border-none font-sans text-[16px] font-extrabold text-white"
             style={
               (isCorrect
-                ? { background: '#22A06B', '--btn-sombra': '#17784f' }
-                : { background: '#E5484D', '--btn-sombra': '#b8343a' }) as CSSProperties
+                ? { background: 'var(--success)', '--btn-sombra': 'var(--success-dark)' }
+                : { background: 'var(--brand)', '--btn-sombra': 'var(--brand-dark)' }) as CSSProperties
             }
           >
             {isLast ? 'Concluir revisão' : 'Próxima'} <ArrowRight weight="bold" size={18} />
@@ -319,8 +319,8 @@ export default function CadernoErros() {
             className="btn-3d flex h-[54px] w-full items-center justify-center gap-2 rounded-2xl border-none font-sans text-[16px] font-extrabold text-white"
             style={
               {
-                background: selected ? '#1557E6' : '#c9d2e8',
-                '--btn-sombra': selected ? '#0E3DAE' : 'transparent',
+                background: selected ? 'var(--brand)' : 'var(--border-strong)',
+                '--btn-sombra': selected ? 'var(--brand-dark)' : 'transparent',
                 cursor: selected ? 'pointer' : 'default',
               } as CSSProperties
             }

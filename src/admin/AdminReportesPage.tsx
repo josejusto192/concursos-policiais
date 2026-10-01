@@ -12,7 +12,7 @@ import AdminLayout from './AdminLayout';
 
 const STATUS: { value: TicketStatus; label: string; classe: string }[] = [
   { value: 'aberto', label: 'Aberto', classe: 'bg-amber-100 text-amber-700' },
-  { value: 'em_andamento', label: 'Em andamento', classe: 'bg-blue-100 text-blue-700' },
+  { value: 'em_andamento', label: 'Em andamento', classe: 'bg-brand-tint text-brand-hover' },
   { value: 'resolvido', label: 'Resolvido', classe: 'bg-green-100 text-green-700' },
   { value: 'fechado', label: 'Fechado', classe: 'bg-gray-100 text-gray-600' },
 ];
@@ -110,7 +110,7 @@ export default function AdminReportesPage() {
               )}
               <div className="mt-3 flex flex-wrap items-center gap-3">
                 {t.questao_id ? (
-                  <Link to={`/admin/questoes/${t.questao_id}`} className="text-sm font-bold text-blue-600 hover:underline">
+                  <Link to={`/admin/questoes/${t.questao_id}`} className="text-sm font-bold text-brand hover:underline">
                     Abrir questão para corrigir ›
                   </Link>
                 ) : (
@@ -133,7 +133,7 @@ export default function AdminReportesPage() {
                   <button
                     disabled={ocupado}
                     onClick={() => mudarStatus(t, 'resolvido')}
-                    className="rounded-lg bg-blue-600 px-3 py-1.5 text-sm font-bold text-white hover:bg-blue-700 disabled:opacity-50"
+                    className="rounded-lg bg-brand px-3 py-1.5 text-sm font-bold text-white hover:bg-brand-hover disabled:opacity-50"
                   >
                     Marcar como resolvido
                   </button>

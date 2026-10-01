@@ -1,8 +1,8 @@
 import type { ReactNode } from 'react';
 import Mascot, { type MascotMood } from '../../../components/Mascot';
 
-// O Foco "fala" a pergunta do onboarding num balão (estilo Duolingo).
-export default function FocoFala({
+// O mascote "fala" a pergunta do onboarding num balão (estilo Duolingo).
+export default function MascoteFala({
   titulo,
   subtitulo,
   humor = 'idle',

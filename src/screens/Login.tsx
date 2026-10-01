@@ -55,18 +55,18 @@ export default function LoginScreen() {
         humor={error ? 'encourage' : 'wave'}
         titulo={
           <>
-            Pequenos passos.
+            Disciplina hoje.
             <br />
-            <em>Grandes conquistas.</em>
+            <em>Grandes conquistas amanhã.</em>
           </>
         }
-        texto="Sua preparação para concursos, com direção. Questões comentadas, trilhas e um ritmo que cabe na sua vida."
+        texto="Sua preparação para concursos policiais, com método. Questões comentadas, trilhas e um ritmo que cabe na sua rotina."
       />
       <div className="auth-form-wrap">
         <form className="auth-form" onSubmit={handleLogin}>
           <span className="eyebrow">BOM TER VOCÊ DE VOLTA</span>
           <h2>Vamos continuar?</h2>
-          <p>Sua próxima conquista começa com um pouco de foco.</p>
+          <p>Sua próxima conquista começa com a questão de hoje.</p>
           <div className="form-field">
             <label htmlFor="login-email">E-mail</label>
             <input

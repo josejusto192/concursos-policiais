@@ -3,8 +3,9 @@ import { useEffect, useState } from 'react';
 import { useAppData } from '../../contexts/AppDataContext';
 import { fetchReferrals, referralCodeFor, type ReferralRow } from '../../lib/queries';
 import ModalFrame from '../../components/ModalFrame';
+import { CORES_AVATAR, MARCA } from '../../lib/marca';
 
-const PALETTE = ['#1557E6', '#22A06B', '#F5B301', '#9b59b6', '#e67e22', '#16a085'];
+const PALETTE = CORES_AVATAR;
 
 function initialsOf(nome: string) {
   const parts = nome.trim().split(/\s+/);
@@ -32,7 +33,7 @@ export default function ReferralSheet({ onClose }: { onClose: () => void }) {
   }
 
   function shareWhatsapp() {
-    const text = encodeURIComponent(`Bora estudar pro concurso comigo? Usa meu código ${code} no Foco: ${link}`);
+    const text = encodeURIComponent(`Bora estudar pra carreira policial comigo? Usa meu código ${code} no ${MARCA.nomeCompleto}: ${link}`);
     window.open(`https://wa.me/?text=${text}`, '_blank');
   }
 
@@ -58,14 +59,14 @@ export default function ReferralSheet({ onClose }: { onClose: () => void }) {
 
           <div
             className="mt-4.5 rounded-2xl p-[18px]"
-            style={{ background: 'linear-gradient(135deg,#1557E6,#2f6bf0)', boxShadow: '0 12px 26px -16px rgba(21,87,230,.7)' }}
+            style={{ background: 'linear-gradient(135deg,var(--ink-2),var(--ink))', boxShadow: '0 12px 26px -16px rgba(0,0,0,.5)' }}
           >
-            <div className="font-sans text-[11px] font-bold tracking-[0.5px] text-[#bcd0fb]">SEU CÓDIGO</div>
+            <div className="font-sans text-[11px] font-bold tracking-[0.5px] text-text5">SEU CÓDIGO</div>
             <div className="mt-1 flex items-center justify-between gap-2.5">
               <div className="font-display text-[22px] font-extrabold tracking-[0.5px] text-white">{code}</div>
               <button
                 onClick={copy}
-                className="flex flex-none items-center gap-1.5 rounded-[11px] border-none bg-yellow px-3.5 py-2.5 font-sans text-[12.5px] font-extrabold text-ink"
+                className="flex flex-none items-center gap-1.5 rounded-[11px] border-none bg-brand px-3.5 py-2.5 font-sans text-[12.5px] font-extrabold text-white"
               >
                 <Copy weight="bold" size={15} />
                 Copiar
@@ -75,7 +76,7 @@ export default function ReferralSheet({ onClose }: { onClose: () => void }) {
           <button
             onClick={shareWhatsapp}
             className="mt-3 flex h-[52px] w-full items-center justify-center gap-2 rounded-[15px] border-none bg-success font-sans text-[14.5px] font-extrabold text-white"
-            style={{ boxShadow: '0 5px 0 #17784f' }}
+            style={{ boxShadow: '0 4px 0 var(--success-dark)' }}
           >
             <WhatsappLogo weight="fill" size={18} />
             Compartilhar no WhatsApp
@@ -84,16 +85,16 @@ export default function ReferralSheet({ onClose }: { onClose: () => void }) {
           {copied && <div className="mt-2.5 text-center font-sans text-[12.5px] font-bold text-success">Link copiado! ✓</div>}
 
           <div className="mt-5.5 flex gap-2.5">
-            <div className="flex-1 rounded-[14px] border-[1.5px] border-border bg-[#F8FAFF] p-3.5 text-center">
+            <div className="flex-1 rounded-[14px] border-[1.5px] border-border bg-app-bg p-3.5 text-center">
               <div className="font-display text-[20px] font-extrabold text-ink">{referrals.length}</div>
               <div className="mt-0.5 font-sans text-[11px] font-bold text-text3">indicados</div>
             </div>
-            <div className="flex-1 rounded-[14px] border-[1.5px] border-border bg-[#F8FAFF] p-3.5 text-center">
+            <div className="flex-1 rounded-[14px] border-[1.5px] border-border bg-app-bg p-3.5 text-center">
               <div className="font-display text-[20px] font-extrabold text-success">{confirmed}</div>
               <div className="mt-0.5 font-sans text-[11px] font-bold text-text3">assinaram</div>
             </div>
-            <div className="flex-1 rounded-[14px] border-[1.5px] border-border bg-[#F8FAFF] p-3.5 text-center">
-              <div className="font-display text-[20px] font-extrabold text-blue">R${confirmed * 30}</div>
+            <div className="flex-1 rounded-[14px] border-[1.5px] border-border bg-app-bg p-3.5 text-center">
+              <div className="font-display text-[20px] font-extrabold text-gold-text">R${confirmed * 30}</div>
               <div className="mt-0.5 font-sans text-[11px] font-bold text-text3">em crédito</div>
             </div>
           </div>
@@ -115,8 +116,8 @@ export default function ReferralSheet({ onClose }: { onClose: () => void }) {
                   <span
                     className="flex-none rounded-lg px-2.5 py-1 font-sans text-[10.5px] font-extrabold"
                     style={{
-                      background: f.status === 'assinou' ? '#E9F7F0' : '#F4F6FC',
-                      color: f.status === 'assinou' ? '#17784f' : '#8791a8',
+                      background: f.status === 'assinou' ? 'var(--success-tint)' : 'var(--muted)',
+                      color: f.status === 'assinou' ? 'var(--success-dark)' : 'var(--text3)',
                     }}
                   >
                     {f.status === 'assinou' ? 'Assinou ✓' : 'Pendente'}

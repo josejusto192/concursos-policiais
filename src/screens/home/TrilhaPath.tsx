@@ -9,7 +9,7 @@ import { som, vibrar } from '../../lib/efeitos';
 import { prefereMenosMovimento } from '../../lib/movimento';
 import TrilhaInteligentePath from './TrilhaInteligentePath';
 
-const STEP_HEIGHT = 170;
+const STEP_HEIGHT = 150;
 const centerX = (index: number) => 160 + Math.sin((index * Math.PI) / 2) * 66;
 
 export default function TrilhaPath() {
@@ -85,8 +85,8 @@ function TrilhaManualPath() {
   const route = modules
     .map((_, i) =>
       i === 0
-        ? `M ${centerX(0)} 48`
-        : `C ${centerX(i - 1)} ${(i - 1) * STEP_HEIGHT + 130}, ${centerX(i)} ${i * STEP_HEIGHT - 35}, ${centerX(i)} ${i * STEP_HEIGHT + 48}`,
+        ? `M ${centerX(0)} 40`
+        : `C ${centerX(i - 1)} ${(i - 1) * STEP_HEIGHT + 115}, ${centerX(i)} ${i * STEP_HEIGHT - 30}, ${centerX(i)} ${i * STEP_HEIGHT + 40}`,
     )
     .join(' ');
   return (
@@ -96,7 +96,7 @@ function TrilhaManualPath() {
       </div>
       <div className="map-path" style={{ height }}>
         <svg className="map-line" viewBox={`0 0 320 ${height}`} preserveAspectRatio="none" aria-hidden="true">
-          <path d={route} fill="none" stroke="#d8e2f5" strokeWidth="5" strokeDasharray="3 12" strokeLinecap="round" />
+          <path d={route} fill="none" stroke="#dcdcd7" strokeWidth="4" strokeDasharray="2 11" strokeLinecap="round" />
         </svg>
         {modules.map((m, index) => {
           const current = m.status === 'current';
@@ -153,13 +153,13 @@ function TrilhaManualPath() {
                 }}
               >
                 {done ? (
-                  <Check size={29} weight="bold" />
+                  <Check size={24} weight="bold" />
                 ) : premium ? (
-                  <LockSimple size={26} weight="fill" />
+                  <LockSimple size={21} weight="fill" />
                 ) : current || video ? (
-                  <Play size={26} weight="fill" />
+                  <Play size={22} weight="fill" />
                 ) : (
-                  <LockSimple size={24} weight="duotone" />
+                  <LockSimple size={20} weight="fill" />
                 )}
               </button>
               <div className="map-caption">
@@ -184,7 +184,7 @@ function TrilhaManualPath() {
       </div>
       <div className="map-finish">
         <span>
-          <Trophy size={30} weight="duotone" />
+          <Trophy size={26} weight="fill" />
         </span>
         <strong>Um passo de cada vez.</strong>
         <p>Sua constância leva você mais longe.</p>

@@ -5,23 +5,23 @@ interface PrimaryButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   children: ReactNode;
   icon?: ReactNode;
   iconPosition?: 'start' | 'end';
-  variant?: 'blue' | 'green' | 'red' | 'disabled';
+  variant?: 'brand' | 'ink' | 'green' | 'disabled';
 }
 
 // Botão "3D" (delight.css .btn-3d): a sombra sólida vira a base, e ao tocar
 // o botão afunda e a sombra encolhe.
 const VARIANTS = {
-  blue: { bg: '#1557E6', sombra: '#0E3DAE' },
-  green: { bg: '#22A06B', sombra: '#17784f' },
-  red: { bg: '#E5484D', sombra: '#b8343a' },
-  disabled: { bg: '#c9d2e8', sombra: 'transparent' },
+  brand: { bg: 'var(--brand)', sombra: 'var(--brand-dark)' },
+  ink: { bg: 'var(--ink)', sombra: '#000' },
+  green: { bg: 'var(--success)', sombra: 'var(--success-dark)' },
+  disabled: { bg: 'var(--border-strong)', sombra: 'transparent' },
 };
 
 export default function PrimaryButton({
   children,
   icon,
   iconPosition = 'end',
-  variant = 'blue',
+  variant = 'brand',
   className = '',
   style,
   ...rest
@@ -31,7 +31,7 @@ export default function PrimaryButton({
   return (
     <button
       {...rest}
-      className={`btn-3d flex h-[54px] w-full items-center justify-center gap-2 rounded-2xl border-none font-sans text-[16px] font-extrabold text-white ${className}`}
+      className={`btn-3d flex h-[50px] w-full items-center justify-center gap-2 rounded-2xl border-none font-sans text-[16px] font-extrabold text-white ${className}`}
       style={{ background: v.bg, '--btn-sombra': v.sombra, cursor: variant === 'disabled' ? 'default' : 'pointer', ...style } as CSSProperties}
     >
       {iconPosition === 'start' && iconEl}

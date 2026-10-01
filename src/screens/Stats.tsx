@@ -5,6 +5,7 @@ import { useAppData } from '../contexts/AppDataContext';
 import { fetchMeuDominio, fetchStats, type DominioAssunto, type StatsData } from '../lib/queries';
 import { levelFromXp } from '../lib/format';
 import { ErrorState, LoadingCards } from '../components/Feedback';
+import { MARCA } from '../lib/marca';
 
 export default function Stats() {
   const { usuario, dailyDone, ofensiva } = useAppData();
@@ -57,7 +58,7 @@ export default function Stats() {
             <h1>Cada dia, um pouco melhor.</h1>
             <p>Acompanhe seu ritmo e descubra onde vale reforçar.</p>
           </div>
-          <ChartBar size={32} weight="duotone" className="text-blue" />
+          <ChartBar size={32} weight="duotone" className="text-brand" />
         </header>
         {error ? (
           <ErrorState message={error} retry={() => setTick((t) => t + 1)} />
@@ -67,7 +68,7 @@ export default function Stats() {
           <>
             <div className="metrics-row">
               <div className="metric">
-                <span className="metric-icon yellow">
+                <span className="metric-icon">
                   <Fire size={23} />
                 </span>
                 <div>
@@ -76,7 +77,7 @@ export default function Stats() {
                 </div>
               </div>
               <div className="metric">
-                <span className="metric-icon">
+                <span className="metric-icon yellow">
                   <Lightning size={23} />
                 </span>
                 <div>
@@ -122,11 +123,11 @@ export default function Stats() {
               <section className="panel">
                 <div className="section-heading">
                   <h2>Meta de hoje</h2>
-                  <Target size={21} className="text-blue" />
+                  <Target size={21} className="text-brand" />
                 </div>
                 <div
                   className="goal-ring"
-                  style={{ background: `conic-gradient(#1557e6 ${Math.min(1, dailyDone / dailyGoal) * 360}deg, #eef3ff 0)` }}
+                  style={{ background: `conic-gradient(var(--brand) ${Math.min(1, dailyDone / dailyGoal) * 360}deg, var(--track) 0)` }}
                 >
                   <div>
                     <strong>
@@ -159,7 +160,7 @@ export default function Stats() {
                         <span
                           style={{
                             width: `${d.pct}%`,
-                            background: d.pct >= 75 ? '#22a06b' : d.pct >= 50 ? '#1557e6' : '#e4ad18',
+                            background: d.pct >= 75 ? 'var(--success)' : d.pct >= 50 ? 'var(--ink)' : 'var(--gold-deep)',
                           }}
                         />
                       </div>
@@ -175,7 +176,7 @@ export default function Stats() {
                   </div>
                 </div>
                 {!listaDominio.length ? (
-                  <p className="empty-state">Responda pelo menos 3 questões de um assunto para o Foco calcular seu domínio.</p>
+                  <p className="empty-state">Responda pelo menos 3 questões de um assunto para o {MARCA.nome} calcular seu domínio.</p>
                 ) : (
                   listaDominio.map((d) => (
                     <div key={`${d.disciplina}|${d.assunto}`} className="discipline-item">
@@ -190,7 +191,7 @@ export default function Stats() {
                         <span
                           style={{
                             width: `${d.dominio}%`,
-                            background: d.dominio >= 75 ? '#22a06b' : d.dominio >= 50 ? '#8b5cf6' : '#e4ad18',
+                            background: d.dominio >= 75 ? 'var(--success)' : d.dominio >= 50 ? 'var(--ink)' : 'var(--gold-deep)',
                           }}
                         />
                       </div>

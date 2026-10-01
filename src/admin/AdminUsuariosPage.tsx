@@ -107,7 +107,7 @@ export default function AdminUsuariosPage() {
               const alternar = () => setAberto(expandido ? null : u.id);
               return (
                 <Fragment key={u.id}>
-                  <tr className={`border-t border-gray-100 ${expandido ? 'bg-blue-50/40' : ''}`}>
+                  <tr className={`border-t border-gray-100 ${expandido ? 'bg-brand-tint/40' : ''}`}>
                     <td className="px-2 py-3">
                       <button
                         onClick={alternar}
@@ -125,7 +125,7 @@ export default function AdminUsuariosPage() {
                     <td className="px-4 py-3 text-gray-500">{data(u.created_at)}</td>
                     <td className="px-4 py-3">
                       {u.utm_source ? (
-                        <span className="rounded-full bg-blue-50 px-2 py-0.5 text-xs font-bold text-blue-700" title={u.utm_campaign ?? undefined}>
+                        <span className="rounded-full bg-brand-tint px-2 py-0.5 text-xs font-bold text-brand-hover" title={u.utm_campaign ?? undefined}>
                           {u.utm_source}
                           {u.utm_campaign ? ` · ${u.utm_campaign}` : ''}
                         </span>
@@ -150,7 +150,7 @@ export default function AdminUsuariosPage() {
                           onClick={() => toggleCortesia(u)}
                           title="Cortesia libera o acesso sem pagamento"
                           className={`rounded-full border px-2 py-0.5 text-xs font-bold disabled:opacity-40 ${
-                            u.assinatura_cortesia ? 'border-purple-300 bg-purple-50 text-purple-700' : 'border-gray-200 text-gray-400'
+                            u.assinatura_cortesia ? 'border-gold-border bg-gold-tint text-gold-text' : 'border-gray-200 text-gray-400'
                           }`}
                         >
                           {u.assinatura_cortesia ? 'Cortesia ✓' : 'Dar cortesia'}
@@ -172,7 +172,7 @@ export default function AdminUsuariosPage() {
                     </td>
                   </tr>
                   {expandido && (
-                    <tr className="border-t border-blue-100 bg-blue-50/40">
+                    <tr className="border-t border-brand-tint bg-brand-tint/40">
                       <td colSpan={8} className="px-4 pb-5 pt-1">
                         <FichaAluno usuario={u} />
                       </td>

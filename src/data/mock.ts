@@ -2,6 +2,7 @@
 // Questões, trilhas, módulos, progresso, ranking e indicações vêm de
 // src/lib/queries.ts (Supabase real). Ver src/contexts/AppDataContext.tsx.
 import type { Conquista } from './types';
+import { HEX } from '../lib/marca';
 
 export const CONQUISTAS: Conquista[] = [
   { id: 'streak_7', categoria: 'consistencia', titulo: '7 dias seguidos', glyph: '🔥', criterio: (c) => c.streak >= 7 },
@@ -17,12 +18,13 @@ export const CONQUISTAS: Conquista[] = [
   { id: 'ref_5', categoria: 'indicacoes', titulo: '5 indicações confirmadas', glyph: '$', criterio: (c) => c.referralsConfirmed >= 5 },
 ];
 
+// Cor de cada tipo de conquista (hex: o perfil soma transparência no fim).
 export const CATEGORY_COLOR: Record<string, string> = {
-  consistencia: '#F5B301',
-  volume: '#1557E6',
-  desempenho: '#22A06B',
-  trilha: '#9b59b6',
-  indicacoes: '#1557E6',
+  consistencia: HEX.brand,
+  volume: HEX.ink,
+  desempenho: HEX.success,
+  trilha: HEX.goldShadow,
+  indicacoes: HEX.goldText,
 };
 
 export const MENTOR_BULLETS = [

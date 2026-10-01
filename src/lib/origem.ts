@@ -15,7 +15,7 @@ export interface Origem {
   ref: string | null;
 }
 
-const CHAVE = 'foco:origem';
+const CHAVE = 'tacta:origem';
 const VALIDADE_MS = 30 * 24 * 60 * 60 * 1000;
 const UTMS = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term'] as const;
 

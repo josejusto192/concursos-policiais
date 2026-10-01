@@ -1,4 +1,4 @@
-import { Barbell, Check, LockSimple, Path, Star, Trophy } from '@phosphor-icons/react';
+import { Barbell, Check, LockSimple, Path, Play, Trophy } from '@phosphor-icons/react';
 import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAppData } from '../../contexts/AppDataContext';
@@ -12,9 +12,10 @@ import { prefereMenosMovimento } from '../../lib/movimento';
 // bolinhas (lições) e, no fim de cada unidade, a bolinha de revisão.
 // Terminou a lição, a próxima libera — sem nota mínima nem meta na tela.
 
-const CORES = ['#1557e6', '#7c3aed', '#0f9d6b', '#e8590c', '#d6336c', '#0c8599'];
 // zigue-zague suave das bolinhas dentro da unidade
-const deslocamento = (i: number) => Math.round(Math.sin((i * Math.PI) / 3) * 56);
+const deslocamento = (i: number) => Math.round(Math.sin((i * Math.PI) / 3) * 48);
+// Escudo da revisão da unidade (o "treino" que fecha cada unidade).
+const ESCUDO = 'M0 -24C9 -24 17 -21 22 -17V1C22 14 13 22 0 27C-13 22 -22 14 -22 1V-17C-17 -21 -9 -24 0 -24Z';
 
 type EstadoBolinha = 'done' | 'current' | 'locked';
 
@@ -111,13 +112,12 @@ export default function TrilhaInteligentePath() {
           )}
           {g.unidades.map((m) => {
             numeroUnidade += 1;
-            const cor = CORES[(numeroUnidade - 1) % CORES.length];
             const licoes = m.etapa?.licoes ?? 4;
             const feitas = m.status === 'done' ? licoes + 1 : (m.etapa?.licoesFeitas ?? 0);
             const premium = m.premium && m.status !== 'done';
             const bolinhas = Array.from({ length: licoes + 1 }, (_, i) => i);
             return (
-              <div key={m.id} className={`unidade ${m.status}${premium ? ' premium' : ''}`} style={{ '--cor': cor } as CSSProperties}>
+              <div key={m.id} className={`unidade ${m.status}${premium ? ' premium' : ''}`}>
                 <header className="unidade-banner">
                   <div>
                     <small>UNIDADE {numeroUnidade}</small>
@@ -136,6 +136,9 @@ export default function TrilhaInteligentePath() {
                       `${Math.min(feitas, licoes)}/${licoes} lições`
                     )}
                   </span>
+                  {m.status === 'current' && !premium && (
+                    <i className="unidade-progresso" style={{ width: `${Math.round((Math.min(feitas, licoes) / Math.max(1, licoes)) * 100)}%` }} />
+                  )}
                 </header>
                 <div className="unidade-bolinhas-caminho">
                   {bolinhas.map((i) => {
@@ -150,7 +153,7 @@ export default function TrilhaInteligentePath() {
                         className={`licao ${estado}${revisao ? ' revisao' : ''}${balancando === chave ? ' balanca' : ''}${
                           jogar && animarAvanco ? ' desbloqueou' : ''
                         }`}
-                        style={{ translate: `${deslocamento(i)}px 0` }}
+                        style={{ translate: `${deslocamento(i)}px 0`, '--p': Math.min(feitas, licoes) / Math.max(1, licoes) } as CSSProperties}
                       >
                         {jogar && (
                           <span className="map-current-label">
@@ -159,7 +162,7 @@ export default function TrilhaInteligentePath() {
                           </span>
                         )}
                         <button
-                          className="licao-no"
+                          className={`licao-no${revisao ? ' escudo' : ''}`}
                           aria-label={`${m.titulo}, ${nome}. ${
                             estado === 'done' ? 'Concluída' : jogar ? 'Toque para começar' : premium ? 'Assine para desbloquear' : 'Bloqueada'
                           }`}
@@ -173,15 +176,23 @@ export default function TrilhaInteligentePath() {
                             }
                           }}
                         >
-                          {estado === 'done' ? (
-                            <Check size={28} weight="bold" />
-                          ) : premium || estado === 'locked' ? (
-                            revisao ? <Trophy size={26} weight="duotone" /> : <LockSimple size={24} weight="duotone" />
-                          ) : revisao ? (
-                            <Barbell size={28} weight="fill" />
-                          ) : (
-                            <Star size={28} weight="fill" />
+                          {revisao && (
+                            <svg className="licao-escudo" viewBox="-24 -26 48 58" aria-hidden="true">
+                              <path className="escudo-sombra" d={ESCUDO} transform="translate(0 4)" />
+                              <path className="escudo-face" d={ESCUDO} />
+                            </svg>
                           )}
+                          <span className="licao-icone">
+                            {estado === 'done' ? (
+                              revisao ? <Trophy size={20} weight="fill" /> : <Check size={22} weight="bold" />
+                            ) : revisao ? (
+                              <Barbell size={22} weight="fill" />
+                            ) : premium || estado === 'locked' ? (
+                              <LockSimple size={19} weight="fill" />
+                            ) : (
+                              <Play size={20} weight="fill" />
+                            )}
+                          </span>
                         </button>
                         {(revisao || balancando === chave) && (
                           <span className="licao-legenda">
@@ -199,7 +210,7 @@ export default function TrilhaInteligentePath() {
       ))}
       <div className="map-finish">
         <span>
-          <Trophy size={30} weight="duotone" />
+          <Trophy size={26} weight="fill" />
         </span>
         <strong>Um passo de cada vez.</strong>
         <p>Sua constância leva você mais longe.</p>

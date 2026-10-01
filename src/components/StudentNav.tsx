@@ -3,13 +3,14 @@ import { NavLink } from 'react-router-dom';
 import { useAppData } from '../contexts/AppDataContext';
 import Brand from './Brand';
 import { STUDENT_LINKS } from './studentLinks';
+import { MARCA } from '../lib/marca';
 
 export default function StudentNav() {
   const { usuario, errosCount } = useAppData();
   return (
     <aside className="student-sidebar">
-      <NavLink to="/trilha" aria-label="Foco, início">
-        <Brand caption="UM POUCO TODO DIA" />
+      <NavLink to="/trilha" aria-label={`${MARCA.nome}, início`}>
+        <Brand />
       </NavLink>
       <p className="nav-section-label">SEU ESPAÇO</p>
       <nav aria-label="Navegação principal">
@@ -46,7 +47,7 @@ export default function StudentNav() {
           </NavLink>
         )}
         <NavLink to="/perfil" className="sidebar-profile">
-          <span className="avatar">{usuario?.nome?.trim().slice(0, 1).toUpperCase() || 'F'}</span>
+          <span className="avatar">{usuario?.nome?.trim().slice(0, 1).toUpperCase() || 'T'}</span>
           <span>
             <strong>{usuario?.nome?.split(' ')[0] || 'Meu perfil'}</strong>
             <small>Seu próximo passo começa aqui</small>

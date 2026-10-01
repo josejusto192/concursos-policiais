@@ -355,7 +355,7 @@ export default function AdminQuestoesBancoPage() {
                   {q.revisado_por && nomes.get(q.revisado_por) && <span>por {nomes.get(q.revisado_por)}</span>}
                 </div>
               </div>
-              <Link to={`/admin/questoes/${q.id}`} className="text-xs font-extrabold text-blue">
+              <Link to={`/admin/questoes/${q.id}`} className="text-xs font-extrabold text-brand">
                 Revisar →
               </Link>
             </div>

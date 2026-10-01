@@ -10,6 +10,7 @@ import ContactStep from './steps/ContactStep';
 import ChoiceStep, { type ChoiceOption } from './steps/ChoiceStep';
 import CommitStep from './steps/CommitStep';
 import PlanStep from './steps/PlanStep';
+import { MARCA } from '../../lib/marca';
 
 // A mesma ordem está em etapas_onboarding() (migration 031), usada no funil do admin.
 const STEP_ORDER = ['welcome', 'contact', 'faixa', 'prestou', 'concurso', 'prazo', 'nivel', 'meta', 'commit', 'plan'] as const;
@@ -56,7 +57,7 @@ export default function OnboardingScreen() {
     if (obKind) registrarOnboarding(obKind);
   }, [obKind]);
 
-  // Código de indicação (?ref=FOCO-XXXXXXXX na URL), preservado durante o onboarding.
+  // Código de indicação (?ref=TACTA-XXXXXXXX na URL), preservado durante o onboarding.
   const [refCode] = useState(() => new URLSearchParams(window.location.search).get('ref') ?? lerOrigem()?.ref ?? null);
 
   const qPerDay = QUESTIONS_PER_DAY[ob.meta] || 20;
@@ -87,7 +88,7 @@ export default function OnboardingScreen() {
 
     if (obKind === 'faixa') {
       title = 'Qual é a sua faixa etária?';
-      subtitle = 'Ajuda a gente a conhecer quem estuda com o Foco.';
+      subtitle = `Ajuda a gente a conhecer quem estuda com o ${MARCA.nome}.`;
       humor = 'idle';
       options = FAIXA_OPTIONS.map((v) => ({
         label: v,
@@ -104,7 +105,7 @@ export default function OnboardingScreen() {
         onClick: () => dispatch({ type: 'OB_CHOOSE', key: 'prestou', value: key }),
       }));
     } else if (obKind === 'concurso') {
-      title = 'Qual concurso é o seu foco?';
+      title = 'Qual carreira é o seu alvo?';
       subtitle = 'Escolha sua trilha principal. Dá para trocar depois.';
       humor = 'idle';
       options = trilhas.map((t) => ({

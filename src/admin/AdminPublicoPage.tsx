@@ -3,8 +3,9 @@ import { useEffect, useState } from 'react';
 import { fetchPublico, type Publico } from '../lib/adminQueries';
 import { ErrorState, LoadingCards } from '../components/Feedback';
 import AdminLayout from './AdminLayout';
+import { MARCA } from '../lib/marca';
 
-// Quem usa o Foco: respostas do onboarding, meta x estudo real e onde as
+// Quem usa o app: respostas do onboarding, meta x estudo real e onde as
 // pessoas desistem do cadastro (migration 031).
 
 const PERIODOS: Array<[number, string]> = [
@@ -62,7 +63,7 @@ export default function AdminPublicoPage() {
     <AdminLayout>
       <div className="admin-intro">
         <div>
-          <span className="eyebrow">QUEM ESTUDA COM O FOCO</span>
+          <span className="eyebrow">QUEM ESTUDA COM O {MARCA.nome.toUpperCase()}</span>
           <h1>Público</h1>
           <p>Respostas do cadastro, quanto cada um estuda de verdade e onde as pessoas desistem do onboarding.</p>
         </div>
@@ -85,21 +86,21 @@ export default function AdminPublicoPage() {
             {dias ? `Alunos que criaram conta nos últimos ${dias} dias` : 'Todos os alunos'} (a equipe não entra na conta).
           </p>
           <div className="admin-stats">
-            <Numero icone={<Users size={20} className="text-blue" />} titulo="Novos alunos" valor={dados.total} detalhe="criaram conta no período" />
+            <Numero icone={<Users size={20} className="text-brand" />} titulo="Novos alunos" valor={dados.total} detalhe="criaram conta no período" />
             <Numero
-              icone={<Lightning size={20} className="text-blue" />}
+              icone={<Lightning size={20} className="text-brand" />}
               titulo="Estudaram na semana"
               valor={dados.ativos_7d}
               detalhe={`${pct(dados.ativos_7d, dados.total)}% responderam questões nos últimos 7 dias`}
             />
             <Numero
-              icone={<Crown size={20} className="text-blue" />}
+              icone={<Crown size={20} className="text-brand" />}
               titulo="Assinantes"
               valor={dados.assinantes}
               detalhe={`${pct(dados.assinantes, dados.total)}% dos novos alunos`}
             />
             <Numero
-              icone={<ChartBar size={20} className="text-blue" />}
+              icone={<ChartBar size={20} className="text-brand" />}
               titulo="Cadastro concluído"
               valor={`${pct(dados.funil.find((f) => f.etapa === 'conta_criada')?.sessoes ?? 0, dados.funil[0]?.sessoes ?? 0)}%`}
               detalhe="de quem abriu o onboarding criou a conta"

@@ -4,7 +4,7 @@ import Brand from './Brand';
 import Mascot, { type MascotMood } from './Mascot';
 import { PathIllustration } from '../screens/home/Home';
 
-// Painel azul das telas de acesso (onboarding, login, senha) com o Foco.
+// Painel escuro das telas de acesso (onboarding, login, senha) com o mascote.
 export default function AuthStory({
   titulo,
   texto,
@@ -18,7 +18,7 @@ export default function AuthStory({
 }) {
   return (
     <section className="auth-story">
-      <Brand light caption="UM POUCO TODO DIA" />
+      <Brand light />
       <div>
         <h1>{titulo}</h1>
         <p>{texto}</p>

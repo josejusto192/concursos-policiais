@@ -1,11 +1,12 @@
 import { useEffect, useRef } from 'react';
 import { prefereMenosMovimento } from '../lib/movimento';
+import { HEX } from '../lib/marca';
 
 // Confete leve em <canvas> (sem biblioteca): uma rajada que cai com
 // gravidade e some sozinha em ~3 s. Cobre o elemento pai (position:
 // absolute), então o pai precisa ser `relative`. Mudar `disparo` solta outra
 // rajada. Com "reduzir movimento" ligado no aparelho, não aparece.
-const CORES = ['#1557E6', '#FFCB2D', '#22A06B', '#FF7A8A', '#7C5CFF', '#3A7BFF'];
+const CORES = [HEX.brand, HEX.gold, HEX.ink, HEX.brandLight, HEX.goldShadow, HEX.success];
 
 interface Particula {
   x: number;

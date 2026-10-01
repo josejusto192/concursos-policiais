@@ -15,7 +15,7 @@ export default function MentorSheet() {
         <div className="bg-surface pb-6">
           <div
             className="relative rounded-b-[24px] rounded-t-[26px] p-[22px_22px_24px]"
-            style={{ background: 'linear-gradient(160deg,#1557E6,#1349c4)' }}
+            style={{ background: 'linear-gradient(160deg,var(--ink-2),var(--ink))' }}
           >
             <button
               onClick={requestClose}
@@ -23,18 +23,18 @@ export default function MentorSheet() {
             >
               <X weight="bold" size={15} />
             </button>
-            <div className="font-sans text-[10px] font-extrabold tracking-[1.5px] text-yellow">MENTORIA APROVAÇÃO</div>
+            <div className="font-sans text-[10px] font-extrabold tracking-[1.5px] text-gold">MENTORIA APROVAÇÃO</div>
             <div className="mt-2 font-display text-[23px] font-extrabold leading-[1.25] text-white">
               Da trilha à aprovação, com um mentor ao seu lado.
             </div>
             <div className="mt-2.5 flex gap-4">
               <div>
-                <span className="font-display text-[18px] font-extrabold text-yellow">+2 mil</span>
-                <span className="ml-1 font-sans text-[11px] font-bold text-[#c9d7fb]">aprovados</span>
+                <span className="font-display text-[18px] font-extrabold text-gold">+2 mil</span>
+                <span className="ml-1 font-sans text-[11px] font-bold text-text6">aprovados</span>
               </div>
               <div>
-                <span className="font-display text-[18px] font-extrabold text-yellow">4,9★</span>
-                <span className="ml-1 font-sans text-[11px] font-bold text-[#c9d7fb]">avaliação</span>
+                <span className="font-display text-[18px] font-extrabold text-gold">4,9★</span>
+                <span className="ml-1 font-sans text-[11px] font-bold text-text6">avaliação</span>
               </div>
             </div>
           </div>
@@ -54,7 +54,7 @@ export default function MentorSheet() {
               ))}
             </div>
 
-            <div className="mt-5 rounded-2xl border-[1.5px] border-border bg-[#F8FAFF] p-4 text-center">
+            <div className="mt-5 rounded-2xl border-[1.5px] border-border bg-app-bg p-4 text-center">
               <div className="font-sans text-[12px] font-bold text-text3">A partir de</div>
               <div className="mt-0.5 font-display text-[28px] font-extrabold text-ink">
                 R$ 197<span className="font-sans text-[14px] font-bold text-text3">/mês</span>
@@ -66,8 +66,8 @@ export default function MentorSheet() {
 
             <button
               onClick={requestClose}
-              className="mt-4 flex h-[54px] w-full items-center justify-center gap-2 rounded-2xl border-none bg-blue font-sans text-[16px] font-extrabold text-white"
-              style={{ boxShadow: '0 6px 0 #0E3DAE' }}
+              className="mt-4 flex h-[54px] w-full items-center justify-center gap-2 rounded-2xl border-none bg-brand font-sans text-[16px] font-extrabold text-white"
+              style={{ boxShadow: '0 4px 0 var(--brand-dark)' }}
             >
               Quero minha vaga <ArrowRight weight="bold" size={18} />
             </button>

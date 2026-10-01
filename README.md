@@ -1,8 +1,11 @@
-# Foco — App de questões para concursos (IBGE)
+# Tacta Concursos — App de questões para concursos policiais
 
-App mobile-first, gamificado, de trilhas de estudo por concurso (modelo
-Duolingo). React + TypeScript + Vite + Tailwind, com Supabase real
+App mobile-first, gamificado, de trilhas de estudo por carreira policial
+(modelo Duolingo). React + TypeScript + Vite + Tailwind, com Supabase real
 (Auth + Postgres) — sem dados mockados.
+
+Marca: nome, slogans e mascote (o cão K9 "Major") ficam em
+`src/lib/marca.ts`; as cores, no bloco `:root` de `src/index.css`.
 
 ## Rodando localmente
 
@@ -227,7 +230,7 @@ depois de pagar com Pix/cartão. Vale para assinaturas criadas depois disso.
 4. Cadastre um plano (SQL Editor):
 
 ```sql
-insert into planos (nome, descricao, valor, ciclo) values ('Foco Mensal', 'Acesso completo', 29.90, 'MONTHLY');
+insert into planos (nome, descricao, valor, ciclo) values ('Tacta Mensal', 'Acesso completo', 29.90, 'MONTHLY');
 ```
 
 **Bloqueio (migration `022_bloqueio_por_assinatura.sql`)**: sem assinatura,

@@ -140,7 +140,7 @@ export default function ResetPasswordScreen() {
           <>
             Senha nova,
             <br />
-            <em>mesmo foco.</em>
+            <em>mesma missão.</em>
           </>
         }
         texto="Seu progresso, sua ofensiva e seu caderno de erros continuam do jeito que você deixou."

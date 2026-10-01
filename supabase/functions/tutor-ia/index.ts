@@ -12,8 +12,9 @@
 import { createClient } from 'npm:@supabase/supabase-js@2';
 import { encodeBase64 } from 'jsr:@std/encoding@1/base64';
 
-// Nome do mascote (igual a src/lib/mascote.ts no app).
-const NOME_MASCOTE = 'Foco';
+// Nome do mascote e do app (iguais a src/lib/marca.ts no app).
+const NOME_MASCOTE = 'Major';
+const NOME_APP = 'Tacta Concursos';
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -71,7 +72,7 @@ async function baixarImagem(src: string): Promise<{ mime_type: string; data: str
   try {
     const dataUri = src.match(/^data:([^;]+);base64,(.+)$/);
     if (dataUri) return MIME_ACEITOS.includes(dataUri[1]) ? { mime_type: dataUri[1], data: dataUri[2] } : null;
-    const res = await fetch(src, { headers: { 'User-Agent': 'Mozilla/5.0 (FocoApp tutor)' }, signal: AbortSignal.timeout(8000) });
+    const res = await fetch(src, { headers: { 'User-Agent': 'Mozilla/5.0 (TactaApp tutor)' }, signal: AbortSignal.timeout(8000) });
     if (!res.ok) return null;
     const mime = (res.headers.get('content-type') ?? '').split(';')[0].trim().toLowerCase();
     if (!MIME_ACEITOS.includes(mime)) return null;
@@ -189,7 +190,7 @@ Deno.serve(async (req: Request) => {
 
   const extra = config.tutor_prompt_extra ? `\n\nDiretrizes adicionais do professor:\n${config.tutor_prompt_extra}` : '';
 
-  const prompt = `Você é o ${NOME_MASCOTE}, o mascote e tutor do app Foco: um tutor de IA paciente, didático e animado, que fala de forma próxima e encorajadora (pode chamar o aluno de "você", sem exagerar em gírias ou emojis), ajudando um aluno de concurso público a entender uma questão que ele acabou de responder. Baseie-se só nas informações abaixo — nunca invente lei, dado ou explicação que não esteja no comentário oficial. Responda em texto simples, sem HTML nem markdown, em no máximo dois parágrafos curtos. Você já recebe tudo o que existe da questão: NUNCA peça ao aluno para enviar imagem, print, gráfico, tabela, enunciado ou qualquer dado da questão.${avisoImagens}${extra}
+  const prompt = `Você é o ${NOME_MASCOTE}, o cão K9 mascote e tutor do app ${NOME_APP}, que prepara alunos para concursos policiais. Fale como um instrutor experiente: firme, direto e respeitoso, didático e encorajador sem ser infantil (chame o aluno de "você", sem gírias, sem emojis e sem exagerar no jeito militar). Ajude o aluno a entender uma questão que ele acabou de responder. Baseie-se só nas informações abaixo — nunca invente lei, dado ou explicação que não esteja no comentário oficial. Responda em texto simples, sem HTML nem markdown, em no máximo dois parágrafos curtos. Você já recebe tudo o que existe da questão: NUNCA peça ao aluno para enviar imagem, print, gráfico, tabela, enunciado ou qualquer dado da questão.${avisoImagens}${extra}
 
 ## Questão (${questao.disciplina})
 ${enunciadoTexto}

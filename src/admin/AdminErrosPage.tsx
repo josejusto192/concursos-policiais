@@ -36,7 +36,7 @@ export default function AdminErrosPage() {
                   {e.usuario_id && <span>usuário {e.usuario_id.slice(0, 8)}</span>}
                 </div>
               </div>
-              <span className="flex-none text-xs font-bold text-blue-600">{expanded === e.id ? 'fechar' : 'detalhes'}</span>
+              <span className="flex-none text-xs font-bold text-brand">{expanded === e.id ? 'fechar' : 'detalhes'}</span>
             </div>
             {expanded === e.id && (
               <div className="mt-2 space-y-1 rounded-lg bg-gray-50 p-3 text-xs text-gray-600">

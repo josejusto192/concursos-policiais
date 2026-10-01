@@ -385,7 +385,7 @@ export default function AdminModuloPage() {
             <button
               onClick={handleAddSelecionadas}
               disabled={adding}
-              className="mt-2 rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-bold text-white hover:bg-blue-700 disabled:opacity-50"
+              className="mt-2 rounded-lg bg-brand px-3 py-1.5 text-xs font-bold text-white hover:bg-brand-hover disabled:opacity-50"
             >
               {adding ? 'Adicionando…' : `Adicionar selecionadas (${selecionadas.size})`}
             </button>
@@ -427,14 +427,14 @@ export default function AdminModuloPage() {
                     <div className="flex flex-none flex-col items-end gap-1">
                       <Link
                         to={`/admin/questoes/${q.id}?modulo=${id}`}
-                        className="text-xs font-bold text-blue-600 hover:underline"
+                        className="text-xs font-bold text-brand hover:underline"
                       >
                         Revisar
                       </Link>
                       <button
                         disabled={already || !q.revisado}
                         onClick={() => handleAdd(q)}
-                        className="text-xs font-bold text-blue-600 hover:underline disabled:cursor-default disabled:text-gray-300 disabled:no-underline"
+                        className="text-xs font-bold text-brand hover:underline disabled:cursor-default disabled:text-gray-300 disabled:no-underline"
                       >
                         {already ? 'Já no módulo' : 'Adicionar'}
                       </button>

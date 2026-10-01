@@ -63,7 +63,7 @@ export default function Home() {
     <>
       <header className="compact-home-header">
         <div className="compact-home-top">
-          <Brand />
+          <Brand compact />
           <div className="compact-home-badges" aria-label="Seu progresso">
             <button
               type="button"
